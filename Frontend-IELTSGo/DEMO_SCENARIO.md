@@ -142,7 +142,7 @@
 
 ### PHẦN 2: DASHBOARD VÀ OVERVIEW (10 phút)
 
-#### 📸 Screenshot 2.1: Dashboard - Overview
+#### 📸 Screenshot 2.1: Dashboard - Overview Tab
 **URL**: `http://localhost:3000/dashboard`
 
 ![Dashboard Overview](screenshots/02-dashboard/01_dashboard_overview.png)
@@ -240,7 +240,7 @@
 
 ---
 
-#### 📸 Screenshot 3.4: Course Detail
+#### 📸 Screenshot 3.4: Course Detail - Curriculum Tab
 **URL**: `http://localhost:3000/courses/[courseId]`
 
 ![Course Detail](screenshots/03-courses/03_course_detail.png)
@@ -264,6 +264,39 @@
    - Course header
    - Curriculum với modules expanded
    - Reviews tab (nếu có)
+
+---
+
+#### 📸 Screenshot 3.6: Course Detail - About Tab
+**URL**: `http://localhost:3000/courses/[courseId]`
+
+![Course Detail About](screenshots/03-courses/07_course_detail_about_tab.png)
+
+**Hành động**:
+1. Từ Course Detail, click tab "About"
+2. **Chụp**: Course description và details
+
+---
+
+#### 📸 Screenshot 3.7: Course Detail - Reviews Tab
+**URL**: `http://localhost:3000/courses/[courseId]`
+
+![Course Detail Reviews](screenshots/03-courses/08_course_detail_reviews_tab.png)
+
+**Hành động**:
+1. Từ Course Detail, click tab "Reviews"
+2. **Chụp**: Course reviews và ratings
+
+---
+
+#### 📸 Screenshot 3.8: My Courses - Completed Tab
+**URL**: `http://localhost:3000/my-courses`
+
+![My Courses Completed](screenshots/03-courses/06_my_courses_completed_tab.png)
+
+**Hành động**:
+1. Click tab "Completed"
+2. **Chụp**: Courses đã hoàn thành
 
 ---
 
@@ -355,6 +388,17 @@
 3. **Chụp**: 
    - Question screen với timer
    - Navigation sidebar
+
+---
+
+#### 📸 Screenshot 4.6: My Exercises - Completed Tab
+**URL**: `http://localhost:3000/my-exercises`
+
+![My Exercises Completed](screenshots/04-exercises/06_my_exercises_completed_tab.png)
+
+**Hành động**:
+1. Click tab "Completed"
+2. **Chụp**: Exercises đã hoàn thành
 
 ---
 
@@ -466,7 +510,7 @@
 
 ### PHẦN 6: GOALS & REMINDERS (10 phút)
 
-#### 📸 Screenshot 6.1: Goals
+#### 📸 Screenshot 6.1: Goals - List View
 **URL**: `http://localhost:3000/goals`
 
 ![Goals](screenshots/06-tools/01_goals.png)
@@ -485,7 +529,7 @@
 
 ---
 
-#### 📸 Screenshot 6.2: Reminders
+#### 📸 Screenshot 6.2: Reminders - List View
 **URL**: `http://localhost:3000/reminders`
 
 ![Reminders](screenshots/06-tools/02_reminders.png)
