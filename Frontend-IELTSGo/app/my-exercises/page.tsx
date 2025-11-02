@@ -4,25 +4,27 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
+import { PageHeader } from "@/components/layout/page-header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card" // Still used for empty state cards
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
-  Loader2, 
   Target, 
-  Clock, 
   CheckCircle,
   PlayCircle,
   Award,
-  TrendingUp,
-  BookOpen
+  TrendingUp
 } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { SkeletonCard } from "@/components/ui/skeleton-card"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ExerciseSubmissionCard } from "@/components/exercises/exercise-submission-card"
 import { exercisesApi } from "@/lib/api/exercises"
 import { useAuth } from "@/lib/contexts/auth-context"
 import type { SubmissionWithExercise } from "@/types"
 import { useTranslations } from '@/lib/i18n'
+import { usePullToRefresh } from "@/lib/hooks/use-swipe-gestures"
 
 export default function MyExercisesPage() {
 
@@ -33,12 +35,6 @@ export default function MyExercisesPage() {
   const [submissions, setSubmissions] = useState<SubmissionWithExercise[]>([])
   const [totalSubmissions, setTotalSubmissions] = useState(0)
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (user) {
-      loadSubmissions()
-    }
-  }, [user])
 
   const loadSubmissions = async () => {
     try {
@@ -52,6 +48,19 @@ export default function MyExercisesPage() {
       setLoading(false)
     }
   }
+
+  // Pull to refresh - must be called before useEffect (Rules of Hooks)
+  const { ref: pullToRefreshRef } = usePullToRefresh(() => {
+    if (user) {
+      loadSubmissions()
+    }
+  }, true)
+
+  useEffect(() => {
+    if (user) {
+      loadSubmissions()
+    }
+  }, [user])
 
   if (!user) {
     return (
@@ -116,15 +125,13 @@ export default function MyExercisesPage() {
   }
 
   return (
-    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true}>
+    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
+      <div ref={pullToRefreshRef as React.RefObject<HTMLDivElement>}>
+      <PageHeader
+        title={t('my_exercises')}
+        subtitle={t('track_your_practice_progress')}
+      />
       <PageContainer maxWidth="7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">{t('my_exercises')}</h1>
-          <p className="text-base text-muted-foreground">
-            {t('track_your_practice_progress')}
-          </p>
-        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -196,142 +203,28 @@ export default function MyExercisesPage() {
           <TabsContent value="all" className="space-y-4">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <PageLoading translationKey="loading" size="md" />
               </div>
             ) : submissions.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">{t('no_exercises_yet')}</h3>
-                  <p className="text-muted-foreground mb-6">
-                    {t('start_practicing_by_attempting')}
-                  </p>
-                  <Button onClick={() => router.push('/exercises/list')}>
-                    {t('browse_exercises')}
-                  </Button>
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={<Target className="h-12 w-12 text-muted-foreground" />}
+                title={t('no_exercises_yet')}
+                description={t('start_practicing_by_attempting')}
+                action={{
+                  label: t('browse_exercises'),
+                  onClick: () => router.push('/exercises/list')
+                }}
+              />
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {submissions.map((item) => {
                   const { submission, exercise } = item
-                  const progressPct = submission.total_questions > 0
-                    ? Math.round((submission.questions_answered / submission.total_questions) * 100)
-                    : 0
-                  const scorePct = submission.total_questions > 0 && submission.correct_answers !== undefined
-                    ? Math.round((submission.correct_answers / submission.total_questions) * 100)
-                    : 0
-                  
                   return (
-                    <Card 
+                    <ExerciseSubmissionCard
                       key={submission.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => {
-                        if (submission.status === 'completed') {
-                          router.push(`/exercises/${exercise.id}/result/${submission.id}`)
-                        } else {
-                          router.push(`/exercises/${exercise.id}/take/${submission.id}`)
-                        }
-                      }}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-6">
-                          {/* Thumbnail */}
-                          <div className="w-48 h-32 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
-                            {exercise.thumbnail_url ? (
-                              <img 
-                                src={exercise.thumbnail_url} 
-                                alt={exercise.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen className="h-12 w-12 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <h3 className="text-xl font-bold mb-1">{exercise.title}</h3>
-                                <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {exercise.description || t('no_description_available')}
-                                </p>
-                              </div>
-                              <div className="flex flex-col gap-2 ml-4">
-                                <Badge variant="outline" className="capitalize">
-                                  {exercise.skill_type}
-                                </Badge>
-                                <Badge 
-                                  className={
-                                    submission.status === 'completed' 
-                                      ? 'bg-green-500' 
-                                      : submission.status === 'in_progress'
-                                      ? 'bg-orange-500'
-                                      : 'bg-gray-500'
-                                  }
-                                >
-                                  {submission.status.replace('_', ' ')}
-                                </Badge>
-                              </div>
-                            </div>
-
-                            {/* Progress */}
-                            <div className="mt-4 space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">{t('progress')}</span>
-                                <span className="font-semibold">
-                                  {submission.questions_answered}/{submission.total_questions} {t('questions')}
-                                </span>
-                              </div>
-                              <Progress value={progressPct} className="h-2" />
-                            </div>
-
-                            {/* Stats */}
-                            <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground">
-                              {submission.status === 'completed' && submission.score !== undefined && (
-                                <div className="flex items-center gap-1">
-                                  <TrendingUp className="h-4 w-4" />
-                                  <span className="font-medium">{formatScore(submission.score)}</span>
-                                </div>
-                              )}
-                              {submission.status === 'completed' && submission.band_score && (
-                                <div className="flex items-center gap-1">
-                                  <Award className="h-4 w-4" />
-                                  <span>Band {submission.band_score.toFixed(1)}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                <span>{formatTime(Math.floor(submission.time_spent_seconds / 60))}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Target className="h-4 w-4" />
-                                <span>{t('attempt_number', { number: submission.attempt_number })}</span>
-                              </div>
-                            </div>
-
-                            {/* Action */}
-                            <div className="mt-4">
-                              <Button 
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (submission.status === 'completed') {
-                                    router.push(`/exercises/${exercise.id}/result/${submission.id}`)
-                                  } else {
-                                    router.push(`/exercises/${exercise.id}/take/${submission.id}`)
-                                  }
-                                }}
-                              >
-                                {submission.status === 'completed' ? t('view_results') : t('continue_practice')}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      exercise={exercise}
+                      submission={submission}
+                    />
                   )
                 })}
               </div>
@@ -340,55 +233,25 @@ export default function MyExercisesPage() {
 
           <TabsContent value="in-progress" className="space-y-4">
             {inProgressSubmissions.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <PlayCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    {t('start_practicing_to_see_progress')}
-                  </p>
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={<PlayCircle className="h-12 w-12 text-muted-foreground" />}
+                title={t('no_exercises_in_progress')}
+                description={t('start_practicing_to_see_progress')}
+                action={{
+                  label: t('browse_exercises'),
+                  onClick: () => router.push('/exercises/list')
+                }}
+              />
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {inProgressSubmissions.map((item) => {
                   const { submission, exercise } = item
-                  const progressPct = submission.total_questions > 0
-                    ? Math.round((submission.questions_answered / submission.total_questions) * 100)
-                    : 0
-                  
                   return (
-                    <Card 
+                    <ExerciseSubmissionCard
                       key={submission.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => router.push(`/exercises/${exercise.id}/take/${submission.id}`)}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-6">
-                          <div className="w-48 h-32 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
-                            {exercise.thumbnail_url ? (
-                              <img src={exercise.thumbnail_url} alt={exercise.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen className="h-12 w-12 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-xl font-bold mb-2">{exercise.title}</h3>
-                            <div className="mt-4 space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">{t('progress')}</span>
-                                <span className="font-semibold">{progressPct}%</span>
-                              </div>
-                              <Progress value={progressPct} className="h-2" />
-                            </div>
-                            <div className="mt-4">
-                              <Button size="sm">{t('continue_practice')}</Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      exercise={exercise}
+                      submission={submission}
+                    />
                   )
                 })}
               </div>
@@ -397,66 +260,25 @@ export default function MyExercisesPage() {
 
           <TabsContent value="completed" className="space-y-4">
             {completedSubmissions.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Award className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    {t('complete_your_first_exercise')}
-                  </p>
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={<Award className="h-12 w-12 text-muted-foreground" />}
+                title={t('no_completed_exercises_yet')}
+                description={t('complete_your_first_exercise')}
+                action={{
+                  label: t('browse_exercises'),
+                  onClick: () => router.push('/exercises/list')
+                }}
+              />
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {completedSubmissions.map((item) => {
                   const { submission, exercise } = item
-                  const scorePct = submission.total_questions > 0 && submission.correct_answers !== undefined
-                    ? Math.round((submission.correct_answers / submission.total_questions) * 100)
-                    : 0
-                  
                   return (
-                    <Card 
+                    <ExerciseSubmissionCard
                       key={submission.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => router.push(`/exercises/${exercise.id}/result/${submission.id}`)}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-6">
-                          <div className="w-48 h-32 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
-                            {exercise.thumbnail_url ? (
-                              <img src={exercise.thumbnail_url} alt={exercise.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen className="h-12 w-12 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                              <h3 className="text-xl font-bold mb-2">{exercise.title}</h3>
-                              <Badge className="bg-green-500">{t('completed')}</Badge>
-                            </div>
-                            {submission.score !== undefined && (
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                                <span className="font-semibold text-foreground">
-                                  {t('score_label')} {formatScore(submission.score)}
-                                </span>
-                                {submission.band_score && (
-                                  <span className="font-semibold text-foreground">
-                                    {t('band_label')} {submission.band_score.toFixed(1)}
-                                  </span>
-                                )}
-                                <span>
-                                  {formatTime(Math.floor(submission.time_spent_seconds / 60))}
-                                </span>
-                              </div>
-                            )}
-                            <div className="mt-4">
-                              <Button size="sm" variant="outline">{t('view_results')}</Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      exercise={exercise}
+                      submission={submission}
+                    />
                   )
                 })}
               </div>
@@ -464,6 +286,7 @@ export default function MyExercisesPage() {
           </TabsContent>
         </Tabs>
       </PageContainer>
+      </div>
     </AppLayout>
   )
 }

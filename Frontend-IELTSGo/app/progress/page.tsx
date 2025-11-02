@@ -2,6 +2,7 @@
 
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
+import { PageHeader } from "@/components/layout/page-header"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,13 +11,13 @@ import { StatCard } from "@/components/dashboard/stat-card"
 import { useState, useEffect } from "react"
 import { progressApi } from "@/lib/api/progress"
 import { Button } from "@/components/ui/button"
-import { Clock, TrendingUp, Target, Flame, BarChart3 } from "lucide-react"
+import { Clock, Target, Flame, BarChart3, BarChart } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { useTranslations } from '@/lib/i18n'
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
 
 export default function ProgressPage() {
-
-  const t = useTranslations('common')
-
   return (
     <ProtectedRoute>
       <ProgressContent />
@@ -31,52 +32,106 @@ function ProgressContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let isMounted = true
+    
     const fetchAnalytics = async () => {
       try {
+        console.log('[Progress Page] Starting to fetch analytics for timeRange:', timeRange)
         setLoading(true)
         const data = await progressApi.getProgressAnalytics(timeRange)
         console.log('[Progress Page] Analytics data received:', data)
-        console.log('[Progress Page] Study time by day:', data.studyTimeByDay)
-        setAnalytics(data)
+        console.log('[Progress Page] Study time by day:', data?.studyTimeByDay)
+        console.log('[Progress Page] Completion rate:', data?.completionRate)
+        console.log('[Progress Page] Exercises by type:', data?.exercisesByType)
+        
+        // Ensure data format is correct - accept empty arrays as valid
+        if (data && Array.isArray(data.studyTimeByDay)) {
+          // Transform data if needed to match expected format
+          const transformedData = {
+            studyTimeByDay: data.studyTimeByDay.map((item: any) => ({
+              date: item.date || new Date().toISOString(),
+              value: item.value ?? item.minutes ?? 0,
+            })),
+            scoresBySkill: Array.isArray(data.scoresBySkill) ? data.scoresBySkill : [],
+            completionRate: Array.isArray(data.completionRate) 
+              ? data.completionRate.map((item: any) => ({
+                  date: item.date || new Date().toISOString(),
+                  value: item.value ?? item.rate ?? 0,
+                }))
+              : [],
+            exercisesByType: Array.isArray(data.exercisesByType) ? data.exercisesByType : [],
+          }
+          
+          console.log('[Progress Page] Transformed data:', {
+            studyTimeByDayCount: transformedData.studyTimeByDay.length,
+            completionRateCount: transformedData.completionRate.length,
+            exercisesByTypeCount: transformedData.exercisesByType.length,
+            studyTimeByDay: transformedData.studyTimeByDay,
+            completionRate: transformedData.completionRate,
+            exercisesByType: transformedData.exercisesByType,
+          })
+          
+          if (isMounted) {
+            setAnalytics(transformedData)
+            console.log('[Progress Page] Analytics set successfully, state updated')
+          }
+        } else {
+          console.warn('[Progress Page] Invalid or missing data structure, using mock data')
+          throw new Error('Invalid data format received from API')
+        }
       } catch (error) {
-        console.error("Failed to fetch analytics:", error)
-        console.error("Error details:", error.response?.data || error.message)
+        console.error("[Progress Page] Failed to fetch analytics:", error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        const errorDetails = (error as any)?.response?.data || errorMessage
+        console.error("[Progress Page] Error details:", errorDetails)
+        
         // Mock data for demo - use hardcoded skill names, will be translated when displayed
-        setAnalytics({
-          studyTimeByDay: Array.from({ length: 30 }, (_, i) => ({
-            date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString(),
-            minutes: Math.floor(Math.random() * 120) + 30,
-          })),
-          scoresBySkill: [
-            { skill: "Listening", scores: [6.5, 7.0, 7.0, 7.5, 7.5] },
-            { skill: "Reading", scores: [7.0, 7.5, 8.0, 8.0, 8.5] },
-            { skill: "Writing", scores: [6.0, 6.5, 7.0, 7.0, 7.5] },
-            { skill: "Speaking", scores: [6.5, 7.0, 7.0, 7.5, 8.0] },
-          ],
-          completionRate: Array.from({ length: 30 }, (_, i) => ({
-            date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString(),
-            rate: Math.floor(Math.random() * 40) + 60,
-          })),
-          exercisesByType: [
-            { type: "Reading", count: 15, avgScore: 8.0 },
-            { type: "Listening", count: 12, avgScore: 7.5 },
-            { type: "Writing", count: 10, avgScore: 7.0 },
-            { type: "Speaking", count: 8, avgScore: 7.5 },
-          ],
-        })
+        if (isMounted) {
+          const mockData = {
+            studyTimeByDay: Array.from({ length: 30 }, (_, i) => ({
+              date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString(),
+              value: Math.floor(Math.random() * 120) + 30,
+            })),
+            scoresBySkill: [
+              { skill: t('listening'), scores: [6.5, 7.0, 7.0, 7.5, 7.5] },
+              { skill: t('reading'), scores: [7.0, 7.5, 8.0, 8.0, 8.5] },
+              { skill: t('writing'), scores: [6.0, 6.5, 7.0, 7.0, 7.5] },
+              { skill: t('speaking'), scores: [6.5, 7.0, 7.0, 7.5, 8.0] },
+            ],
+            completionRate: Array.from({ length: 30 }, (_, i) => ({
+              date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString(),
+              value: Math.floor(Math.random() * 40) + 60,
+            })),
+            exercisesByType: [
+              { type: t('reading'), count: 15, avgScore: 8.0 },
+              { type: t('listening'), count: 12, avgScore: 7.5 },
+              { type: t('writing'), count: 10, avgScore: 7.0 },
+              { type: t('speaking'), count: 8, avgScore: 7.5 },
+            ],
+          }
+          setAnalytics(mockData)
+          console.log('[Progress Page] Mock data set:', mockData)
+        }
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+          console.log('[Progress Page] Loading set to false')
+        }
       }
     }
 
     fetchAnalytics()
-  }, [timeRange, t])
+    
+    return () => {
+      isMounted = false
+    }
+  }, [timeRange]) // Removed 't' from dependencies to avoid unnecessary re-fetches
 
   // Calculate summary stats
   const calculateStats = () => {
     if (!analytics) return { totalMinutes: 0, totalExercises: 0, avgScore: 0, activeStreak: 0 }
     
-    const totalMinutes = analytics.studyTimeByDay?.reduce((sum: number, day: any) => sum + (day.minutes || 0), 0) || 0
+    const totalMinutes = analytics.studyTimeByDay?.reduce((sum: number, day: any) => sum + (day.value || 0), 0) || 0
     const totalExercises = analytics.exercisesByType?.reduce((sum: number, type: any) => sum + (type.count || 0), 0) || 0
     const avgScore = analytics.exercisesByType?.length > 0
       ? analytics.exercisesByType.reduce((sum: number, type: any) => sum + (type.avgScore || 0), 0) / analytics.exercisesByType.length
@@ -88,7 +143,7 @@ function ProgressContent() {
       new Date(b.date).getTime() - new Date(a.date).getTime()
     )
     for (const day of sortedDays) {
-      if (day.minutes > 0) activeStreak++
+      if (day.value > 0) activeStreak++
       else break
     }
     
@@ -97,56 +152,49 @@ function ProgressContent() {
 
   const stats = calculateStats()
 
-  return (
-    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true}>
-      <PageContainer>
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">{t('progress_analytics')}</h1>
-          <p className="text-base text-muted-foreground">{t('detailed_insights_into_your_learning_jou')}</p>
-        </div>
+  // Time range filter buttons component
+  const timeRangeFilters = (
+    <div className="flex items-center gap-0.5 px-1.5 py-1 bg-muted/60 rounded-lg border border-border/50">
+      {(["7d", "30d", "90d", "all"] as const).map((range) => (
+        <Button
+          key={range}
+          variant="ghost"
+          size="sm"
+          onClick={() => setTimeRange(range)}
+          className={cn(
+            "h-7 px-3 text-xs font-medium transition-all rounded-md",
+            timeRange === range
+              ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+              : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {range === "7d" ? t('last_7_days') :
+           range === "30d" ? t('last_30_days') :
+           range === "90d" ? t('last_90_days') :
+           t('all_time')}
+        </Button>
+      ))}
+    </div>
+  )
 
+  return (
+    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
+      <PageHeader
+        title={t('progress_analytics')}
+        subtitle={t('detailed_insights_into_your_learning_jou')}
+        centerContent={!loading ? timeRangeFilters : undefined}
+      />
+      <PageContainer>
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">{t('loading_analytics')}</p>
-            </div>
-          </div>
+          <PageLoading translationKey="loading_analytics" />
+        ) : !analytics ? (
+          <EmptyState
+            icon={BarChart}
+            title={t('no_data_available') || 'Không có dữ liệu'}
+            description={t('unable_to_load_analytics') || 'Không thể tải dữ liệu phân tích. Vui lòng thử lại sau.'}
+          />
         ) : (
           <>
-            {/* Time Range Filter */}
-            <div className="flex gap-2 mb-6">
-              <Button 
-                variant={timeRange === "7d" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setTimeRange("7d")}
-              >
-                {t('last_7_days')}
-              </Button>
-              <Button 
-                variant={timeRange === "30d" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setTimeRange("30d")}
-              >
-                {t('last_30_days')}
-              </Button>
-              <Button 
-                variant={timeRange === "90d" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setTimeRange("90d")}
-              >
-                {t('last_90_days')}
-              </Button>
-              <Button 
-                variant={timeRange === "all" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setTimeRange("all")}
-              >
-                {t('all_time')}
-              </Button>
-            </div>
-
             {/* Summary Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard

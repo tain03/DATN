@@ -44,7 +44,7 @@ export function LanguageSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-10 w-10">
+        <Button variant="ghost" size="icon">
           <Globe className="h-5 w-5" />
           <span className="sr-only">{t('select_language')}</span>
         </Button>

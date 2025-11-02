@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/contexts/auth-context"
 import { PreferencesProvider } from "@/lib/contexts/preferences-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LocaleSync } from "@/components/layout/locale-sync"
+import { Toaster } from "@/components/ui/sonner"
 import "@/lib/utils/console-filter"
 
 const notoSans = Noto_Sans({
@@ -42,6 +43,7 @@ export default function RootLayout({
             <PreferencesProvider>
               <LocaleSync />
               {children}
+              <Toaster position="top-right" richColors closeButton />
             </PreferencesProvider>
           </AuthProvider>
         </ThemeProvider>

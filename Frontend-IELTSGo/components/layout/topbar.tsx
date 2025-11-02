@@ -62,7 +62,7 @@ export function TopBar({ className }: TopBarProps) {
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+              <Button variant="ghost" size="icon" className="relative rounded-full">
                 <Avatar className="h-9 w-9 cursor-pointer">
                   <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.fullName} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">

@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Loader2, CheckCircle2, XCircle, Clock, Target, TrendingUp, Home, RotateCcw } from "lucide-react"
+import { CheckCircle2, XCircle, Clock, Target, TrendingUp, Home, RotateCcw } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
 import { exercisesApi } from "@/lib/api/exercises"
 import type { SubmissionResult } from "@/types"
 import { usePreferences } from "@/lib/contexts/preferences-context"
@@ -45,9 +47,9 @@ export default function ExerciseResultPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <PageContainer>
+          <PageLoading translationKey="loading" />
+        </PageContainer>
       </AppLayout>
     )
   }
@@ -55,12 +57,17 @@ export default function ExerciseResultPage() {
   if (!result) {
     return (
       <AppLayout>
-          <PageContainer className="text-center">
-            <p className="text-lg text-muted-foreground">{t('results_not_found')}</p>
-            <Button className="mt-4" onClick={() => router.push("/exercises/list")}>
-              {t('back_to_exercises')}
-            </Button>
-          </PageContainer>
+        <PageContainer>
+          <EmptyState
+            icon={<Target className="h-12 w-12 text-muted-foreground" />}
+            title={t('results_not_found')}
+            description={t('results_not_found_description') || "Không tìm thấy kết quả bài tập"}
+            action={{
+              label: t('back_to_exercises') || "Quay lại bài tập",
+              onClick: () => router.push("/exercises/list")
+            }}
+          />
+        </PageContainer>
       </AppLayout>
     )
   }

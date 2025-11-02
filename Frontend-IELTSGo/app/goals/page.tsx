@@ -2,6 +2,7 @@
 
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
+import { PageHeader } from "@/components/layout/page-header"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { GoalsList } from "@/components/goals/goals-list"
 import { CreateGoalDialog } from "@/components/goals/create-goal-dialog"
@@ -24,19 +25,18 @@ function GoalsContent() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
   return (
-    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true}>
-      <PageContainer>
-        {/* Header */}
-        <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">{t('title')}</h1>
-            <p className="text-base text-muted-foreground">{t('subtitle')}</p>
-          </div>
-          <Button onClick={() => setCreateDialogOpen(true)}>
+    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
+      <PageHeader
+        title={t('title')}
+        subtitle={t('subtitle')}
+        rightActions={
+          <Button onClick={() => setCreateDialogOpen(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             {t('create_goal')}
           </Button>
-        </div>
+        }
+      />
+      <PageContainer>
 
         {/* Goals List */}
         <GoalsList />

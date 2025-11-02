@@ -14,6 +14,7 @@ import { instructorApi } from "@/lib/api/instructor"
 import { Send, Search, Bell, Users } from "lucide-react"
 import { formatDistanceToNow } from "@/lib/utils/date"
 import { useTranslations } from "@/lib/i18n"
+import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
 
 interface Message {
   id: string
@@ -29,6 +30,7 @@ interface Message {
 export default function InstructorMessagesPage() {
   const t = useTranslations('instructor')
   const tCommon = useTranslations('common')
+  const toast = useToastWithI18n()
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -60,12 +62,12 @@ export default function InstructorMessagesPage() {
     e.preventDefault()
     try {
       await instructorApi.sendAnnouncement(announcementData)
-      alert(t('announcement_sent_successfully'))
+      toast.success(t('announcement_sent_successfully'))
       setAnnouncementData({ title: "", content: "", targetAudience: "all" })
       setShowAnnouncement(false)
     } catch (error) {
       console.error("Failed to send announcement:", error)
-      alert(t('failed_to_send_announcement'))
+      toast.error(t('failed_to_send_announcement'))
     }
   }
 

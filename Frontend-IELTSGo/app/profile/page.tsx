@@ -8,17 +8,17 @@ import { ProtectedRoute } from "@/components/auth/protected-route"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
 import { Button } from "@/components/ui/button"
-import { FormField } from "@/components/ui/form-field"
+import { EnhancedFormField } from "@/components/ui/enhanced-form-field"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Camera, CheckCircle2, Edit2, Save, X } from "lucide-react"
 import { userApi } from "@/lib/api/user"
 import { authApi } from "@/lib/api/auth"
 import { useTranslations } from '@/lib/i18n'
+import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
 
 export default function ProfilePage() {
 
@@ -34,10 +34,10 @@ export default function ProfilePage() {
 function ProfileContent() {
   const t = useTranslations('profile')
   const { user, updateProfile, refreshUser } = useAuth()
+  const toast = useToastWithI18n()
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
-  const [successMessage, setSuccessMessage] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({
     fullName: user?.fullName || "",
@@ -76,7 +76,6 @@ function ProfileContent() {
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSuccessMessage("")
     setErrors({})
 
     const newErrors: Record<string, string> = {}
@@ -96,22 +95,21 @@ function ProfileContent() {
         bio: formData.bio?.trim() || "",
         targetBandScore: formData.targetBandScore ? parseFloat(formData.targetBandScore) : undefined,
       })
-      setSuccessMessage(t('profile_updated_successfully'))
+      
       setIsEditing(false)
       
       // Refresh user data from backend to get updated values
       await refreshUser()
       
-      // Clear success message after delay
-      setTimeout(() => {
-        setSuccessMessage("")
-      }, 3000)
+      // Show success toast
+      toast.success(t('profile_updated_successfully'))
     } catch (error: any) {
       console.error("Profile update error:", error)
       const errorMessage = error.response?.data?.error?.message 
         || error.response?.data?.message 
         || error.message 
         || t('failed_to_update_profile')
+      toast.error(errorMessage)
       setErrors({ general: errorMessage })
     } finally {
       setIsLoading(false)
@@ -153,10 +151,11 @@ function ProfileContent() {
             refreshUser()
           }
           
-          setSuccessMessage(t('avatar_updated_successfully'))
-          setTimeout(() => setSuccessMessage(""), 3000)
+          toast.success(t('avatar_updated_successfully'))
         } catch (error: any) {
-          setErrors({ avatar: error.response?.data?.error?.message || t('failed_to_upload_avatar') })
+          const errorMsg = error.response?.data?.error?.message || t('failed_to_upload_avatar')
+          toast.error(errorMsg)
+          setErrors({ avatar: errorMsg })
         } finally {
           setIsUploadingAvatar(false)
         }
@@ -174,7 +173,6 @@ function ProfileContent() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSuccessMessage("")
     setErrors({})
 
     const newErrors: Record<string, string> = {}
@@ -203,11 +201,12 @@ function ProfileContent() {
       )
       
       if (response.success) {
-        setSuccessMessage(t('password_changed_successfully'))
+        toast.success(t('password_changed_successfully'))
         setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-        setTimeout(() => setSuccessMessage(""), 3000)
       } else {
-        setErrors({ general: response.message || t('failed_to_change_password') })
+        const errorMsg = response.message || t('failed_to_change_password')
+        toast.error(errorMsg)
+        setErrors({ general: errorMsg })
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error?.message 
@@ -220,11 +219,14 @@ function ProfileContent() {
         const message = error.response.data.error.message
         if (message.includes("invalid old password")) {
           setErrors({ currentPassword: t('current_password_is_incorrect') })
+          toast.error(t('current_password_is_incorrect'))
         } else {
           setErrors({ general: message })
+          toast.error(message)
         }
       } else {
         setErrors({ general: errorMessage })
+        toast.error(errorMessage)
       }
     } finally {
       setIsLoading(false)
@@ -241,13 +243,6 @@ function ProfileContent() {
             <p className="text-base text-muted-foreground mt-2">{t('manage_your_account_settings_and_prefere')}</p>
           </div>
 
-          {/* Success Message */}
-          {successMessage && (
-            <Alert className="bg-green-50 border-green-200">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
-            </Alert>
-          )}
 
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList>
@@ -373,11 +368,6 @@ function ProfileContent() {
                           </Select>
                         </div>
 
-                        {errors.general && (
-                          <Alert variant="destructive">
-                            <AlertDescription>{errors.general}</AlertDescription>
-                          </Alert>
-                        )}
 
                         <div className="flex items-center justify-end gap-3 pt-4 border-t">
                           <Button
@@ -449,7 +439,7 @@ function ProfileContent() {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handlePasswordChange} className="space-y-4">
-                    <FormField
+                    <EnhancedFormField
                       label={t('current_password')}
                       name="currentPassword"
                       type="password"
@@ -457,9 +447,10 @@ function ProfileContent() {
                       onChange={(value) => setPasswordData({ ...passwordData, currentPassword: value })}
                       error={errors.currentPassword}
                       required
+                      showValidationState={!!errors.currentPassword}
                     />
 
-                    <FormField
+                    <EnhancedFormField
                       label={t('new_password')}
                       name="newPassword"
                       type="password"
@@ -467,9 +458,10 @@ function ProfileContent() {
                       onChange={(value) => setPasswordData({ ...passwordData, newPassword: value })}
                       error={errors.newPassword}
                       required
+                      showValidationState={!!errors.newPassword}
                     />
 
-                    <FormField
+                    <EnhancedFormField
                       label={t('confirm_new_password')}
                       name="confirmPassword"
                       type="password"
@@ -477,13 +469,9 @@ function ProfileContent() {
                       onChange={(value) => setPasswordData({ ...passwordData, confirmPassword: value })}
                       error={errors.confirmPassword}
                       required
+                      showValidationState={!!errors.confirmPassword}
                     />
 
-                    {errors.general && (
-                      <Alert variant="destructive">
-                        <AlertDescription>{errors.general}</AlertDescription>
-                      </Alert>
-                    )}
 
                     <Button type="submit" disabled={isLoading}>
                       {isLoading ? t('changing_password') : t('change_password')}

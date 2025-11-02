@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { getCardVariant } from "@/lib/utils/card-variants"
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -64,24 +65,26 @@ export function GoalCard({ goal, onDelete, onComplete, onUpdate }: GoalCardProps
   return (
     <>
       <Card className={cn(
-        "transition-all hover:shadow-md",
+        getCardVariant('interactive'),
         goal.status === "completed" && "border-green-200 dark:border-green-800"
       )}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg mb-2 line-clamp-2">{goal.title}</CardTitle>
+              <CardTitle className="font-semibold text-lg mb-2 line-clamp-2">{goal.title}</CardTitle>
               <div className="flex items-center gap-2 flex-wrap">
                 {getStatusBadge()}
                 <Badge variant="outline" className="text-xs">{getGoalTypeLabel()}</Badge>
                 {goal.skill_type && (
-                  <Badge variant="outline" className="text-xs capitalize">{goal.skill_type}</Badge>
+                  <Badge variant="outline" className="text-xs capitalize">
+                    {t(goal.skill_type.toLowerCase() as 'listening' | 'reading' | 'writing' | 'speaking') || goal.skill_type}
+                  </Badge>
                 )}
               </div>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

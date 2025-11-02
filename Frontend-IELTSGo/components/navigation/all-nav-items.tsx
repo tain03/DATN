@@ -85,8 +85,23 @@ export function useSidebarNavItems(): SidebarNavItem[] {
       icon: "CheckSquare",
     },
     {
+      title: t('my_exercise_history') || "Exercise History",
+      href: "/exercises/history",
+      icon: "FileText",
+    },
+    {
       type: "separator",
       label: t('study_tools') || "Study Tools",
+    },
+    {
+      title: t('progress_analytics') || "Progress",
+      href: "/progress",
+      icon: "BarChart3",
+    },
+    {
+      title: t('study_history') || "History",
+      href: "/history",
+      icon: "History",
     },
     {
       title: tGoals('title'),

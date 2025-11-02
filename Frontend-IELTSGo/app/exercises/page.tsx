@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/layout/app-layout"
-import { Loader2 } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
 
 export default function ExercisesPage() {
   const router = useRouter()
@@ -16,7 +16,7 @@ export default function ExercisesPage() {
   return (
     <AppLayout>
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <PageLoading translationKey="loading" />
       </div>
     </AppLayout>
   )

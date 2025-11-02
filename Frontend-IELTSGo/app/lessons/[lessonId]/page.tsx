@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import {
-  Loader2,
   CheckCircle,
   PlayCircle,
   FileText,
@@ -19,11 +18,15 @@ import {
   ChevronRight,
   BookOpen,
   Target,
-  Award
+  Award,
+  Loader2
 } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
 import { coursesApi } from "@/lib/api/courses"
 import { exercisesApi } from "@/lib/api/exercises"
 import { useTranslations } from '@/lib/i18n'
+import { useLessonSwipeNavigation } from "@/lib/hooks/use-swipe-gestures"
 
 export default function LessonDetailPage() {
 
@@ -98,9 +101,9 @@ export default function LessonDetailPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <PageContainer>
+          <PageLoading translationKey="loading" />
+        </PageContainer>
       </AppLayout>
     )
   }
@@ -108,9 +111,16 @@ export default function LessonDetailPage() {
   if (!lesson) {
     return (
       <AppLayout>
-        <PageContainer className="py-12 text-center">
-          <h1 className="text-2xl font-bold mb-4">{t('lesson_not_found')}</h1>
-          <Button onClick={() => router.back()}>{t('go_back')}</Button>
+        <PageContainer>
+          <EmptyState
+            icon={<BookOpen className="h-12 w-12 text-muted-foreground" />}
+            title={t('lesson_not_found') || "Lesson not found"}
+            description={t('lesson_not_found_description') || "The lesson you are looking for does not exist"}
+            action={{
+              label: t('go_back') || "Go Back",
+              onClick: () => router.back()
+            }}
+          />
         </PageContainer>
       </AppLayout>
     )

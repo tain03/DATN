@@ -2,6 +2,7 @@
 
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
+import { PageHeader } from "@/components/layout/page-header"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { ActivityTimeline } from "@/components/dashboard/activity-timeline"
 import { useState, useEffect } from "react"
@@ -21,6 +22,7 @@ export default function HistoryPage() {
 }
 
 function HistoryContent() {
+  const t = useTranslations('common')
   const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -55,13 +57,12 @@ function HistoryContent() {
   }, [page])
 
   return (
-    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true}>
+    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
+      <PageHeader
+        title={t('study_history')}
+        subtitle={t('complete_log_of_your_learning_activities')}
+      />
       <PageContainer maxWidth="4xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('study_history')}</h1>
-          <p className="text-muted-foreground">{t('complete_log_of_your_learning_activities')}</p>
-        </div>
 
         {loading && page === 1 ? (
           <div className="flex items-center justify-center h-64">
@@ -77,7 +78,7 @@ function HistoryContent() {
             {hasMore && (
               <div className="mt-6 text-center">
                 <Button onClick={() => setPage((p) => p + 1)} disabled={loading} variant="outline">
-                  {loading ? "Loading..." : "Load More"}
+                  {loading ? t('loading') : t('load_more') || "Load More"}
                 </Button>
               </div>
             )}

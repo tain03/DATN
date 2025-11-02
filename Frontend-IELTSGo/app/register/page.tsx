@@ -6,17 +6,18 @@ import { useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { Button } from "@/components/ui/button"
-import { FormField } from "@/components/ui/form-field"
+import { EnhancedFormField } from "@/components/ui/enhanced-form-field"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, BookOpen, PenTool, BarChart3, Sparkles, CheckCircle2 } from "lucide-react"
+import { BookOpen, PenTool, BarChart3, Sparkles, CheckCircle2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Logo } from "@/components/layout/logo"
 import { useTranslations } from '@/lib/i18n'
+import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
 
 export default function RegisterPage() {
 
   const t = useTranslations('auth')
+  const toast = useToastWithI18n()
 
   const { register, loginWithGoogle } = useAuth()
   const [formData, setFormData] = useState({
@@ -31,7 +32,6 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [apiError, setApiError] = useState("")
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -60,7 +60,6 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setApiError("")
 
     if (!validateForm()) return
 
@@ -102,14 +101,13 @@ export default function RegisterPage() {
         errorMessage = error.response?.data?.error?.message || errorMessage
       }
       
-      setApiError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleGoogleRegister = async () => {
-    setApiError("")
     setIsGoogleLoading(true)
     try {
       await loginWithGoogle()
@@ -117,7 +115,7 @@ export default function RegisterPage() {
       const errorMessage = error.response?.data?.error?.message 
         || error.message 
         || t('google_registration_failed_please_try_ag')
-      setApiError(errorMessage)
+      toast.error(errorMessage)
       setIsGoogleLoading(false)
     }
   }
@@ -218,17 +216,9 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Error Alert */}
-          {apiError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{apiError}</AlertDescription>
-            </Alert>
-          )}
-
           {/* Register Form */}
           <form onSubmit={handleSubmit} className="space-y-5 bg-card/50 backdrop-blur-sm p-6 rounded-lg border border-border/50 shadow-sm">
-            <FormField
+            <EnhancedFormField
               label={t('full_name')}
               name="fullName"
               type="text"
@@ -237,9 +227,10 @@ export default function RegisterPage() {
               onChange={(value) => setFormData({ ...formData, fullName: value })}
               error={errors.fullName}
               required
+              showValidationState={!!errors.fullName}
             />
 
-            <FormField
+            <EnhancedFormField
               label={t('email')}
               name="email"
               type="email"
@@ -248,9 +239,10 @@ export default function RegisterPage() {
               onChange={(value) => setFormData({ ...formData, email: value })}
               error={errors.email}
               required
+              showValidationState={!!errors.email}
             />
 
-            <FormField
+            <EnhancedFormField
               label={t('password')}
               name="password"
               type="password"
@@ -260,9 +252,10 @@ export default function RegisterPage() {
               error={errors.password}
               required
               autoComplete="new-password"
+              showValidationState={!!errors.password}
             />
 
-            <FormField
+            <EnhancedFormField
               label={t('confirm_password')}
               name="confirmPassword"
               type="password"
@@ -272,6 +265,7 @@ export default function RegisterPage() {
               error={errors.confirmPassword}
               required
               autoComplete="new-password"
+              showValidationState={!!errors.confirmPassword}
             />
 
             <div className="space-y-2">

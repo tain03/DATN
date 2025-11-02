@@ -17,7 +17,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { Loader2, Trophy, Medal, Award, Clock, Target, TrendingUp, Sparkles } from "lucide-react"
+import { Trophy, Medal, Award, Clock, Target, TrendingUp, Sparkles } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { cn } from "@/lib/utils"
 import { useTranslations } from "@/lib/i18n"
@@ -260,16 +262,15 @@ export default function LeaderboardPage() {
           <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <PageLoading translationKey="loading" size="md" />
               </div>
             ) : leaderboard.length === 0 ? (
-              <div className="p-20 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                  <Trophy className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p className="text-muted-foreground font-medium mb-2">{t('no_data_yet')}</p>
-                <p className="text-sm text-muted-foreground">{t('start_learning_to_see_rank')}</p>
-              </div>
+              <EmptyState
+                icon={<Trophy className="h-12 w-12 text-muted-foreground" />}
+                title={t('no_data_yet')}
+                description={t('start_learning_to_see_rank')}
+                className="py-20"
+              />
             ) : (
               <>
                 <div className="divide-y">

@@ -14,6 +14,7 @@ import { instructorApi } from "@/lib/api/instructor"
 import { ArrowLeft, Plus, Trash2, GripVertical } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from '@/lib/i18n'
+import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
 
 interface Module {
   id: string
@@ -34,6 +35,7 @@ interface Lesson {
 export default function CreateCoursePage() {
 
   const t = useTranslations('common')
+  const toast = useToastWithI18n()
 
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -61,10 +63,11 @@ export default function CreateCoursePage() {
       }
 
       const course = await instructorApi.createCourse(courseData)
+      toast.success(t('course_created_successfully') || "Course created successfully")
       router.push(`/instructor/courses/${course.id}`)
     } catch (error) {
       console.error("Failed to create course:", error)
-      alert("Failed to create course. Please try again.")
+      toast.error(t('failed_to_create_course') || "Failed to create course. Please try again.")
     } finally {
       setLoading(false)
     }

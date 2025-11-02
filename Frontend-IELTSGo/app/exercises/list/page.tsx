@@ -6,10 +6,14 @@ import { PageContainer } from "@/components/layout/page-container"
 import { ExerciseCard } from "@/components/exercises/exercise-card"
 import { ExerciseFiltersComponent } from "@/components/exercises/exercise-filters"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { SkeletonCard } from "@/components/ui/skeleton-card"
+import { EmptyState } from "@/components/ui/empty-state"
+import { Target } from "lucide-react"
 import { exercisesApi, type ExerciseFilters } from "@/lib/api/exercises"
 import type { Exercise } from "@/types"
 import { useTranslations } from '@/lib/i18n'
+import { usePullToRefresh } from "@/lib/hooks/use-swipe-gestures"
 
 type ExerciseSource = "all" | "course" | "standalone"
 
@@ -60,6 +64,11 @@ export default function ExercisesListPage() {
     fetchExercises()
   }, [filters, page, sourceFilter])
 
+  // Pull to refresh
+  const { ref: pullToRefreshRef } = usePullToRefresh(() => {
+    fetchExercises()
+  }, true)
+
   const handleFiltersChange = (newFilters: ExerciseFilters) => {
     // Remove undefined and empty values to ensure clean filter state
     const cleanFilters: ExerciseFilters = {}
@@ -90,6 +99,7 @@ export default function ExercisesListPage() {
 
   return (
     <AppLayout showFooter={true}>
+      <div ref={pullToRefreshRef as React.RefObject<HTMLDivElement>}>
       <PageContainer>
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">{t('ielts_exercises')}</h1>
@@ -101,23 +111,31 @@ export default function ExercisesListPage() {
         <ExerciseFiltersComponent filters={filters} onFiltersChange={handleFiltersChange} onSearch={handleSearch} />
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
+          <>
+            <SkeletonCard gridCols={3} count={6} className="mt-8" />
+          </>
         ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-destructive text-lg mb-4">{error}</p>
-            <Button variant="outline" className="bg-transparent" onClick={fetchExercises}>
-              {tCommon('try_again')}
-            </Button>
-          </div>
+          <EmptyState
+            icon={<Target className="h-12 w-12 text-muted-foreground" />}
+            title={error}
+            description={tCommon('please_try_again_later') || "Please try again later"}
+            action={{
+              label: tCommon('try_again') || "Try Again",
+              onClick: fetchExercises
+            }}
+            className="mt-8"
+          />
         ) : exercises.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg">{t('no_exercises_found_matching_your_criteri')}</p>
-            <Button variant="outline" className="mt-4 bg-transparent" onClick={() => handleFiltersChange({})}>
-              {tCommon('clear_filters')}
-            </Button>
-          </div>
+          <EmptyState
+            icon={<Target className="h-12 w-12 text-muted-foreground" />}
+            title={t('no_exercises_found_matching_your_criteri')}
+            description={tCommon('try_adjusting_your_filters') || "Try adjusting your filters or search terms"}
+            action={{
+              label: tCommon('clear_filters') || "Clear Filters",
+              onClick: () => handleFiltersChange({})
+            }}
+            className="mt-8"
+          />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
@@ -152,6 +170,7 @@ export default function ExercisesListPage() {
           </>
         )}
       </PageContainer>
+      </div>
     </AppLayout>
   )
 }

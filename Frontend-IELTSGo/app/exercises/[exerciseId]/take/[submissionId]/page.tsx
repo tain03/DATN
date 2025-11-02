@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Loader2, Clock, ChevronLeft, ChevronRight, Flag, Eye, EyeOff } from "lucide-react"
+import Image from "next/image"
+import { Clock, ChevronLeft, ChevronRight, Flag, Eye, EyeOff, Loader2 } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
 import { exercisesApi } from "@/lib/api/exercises"
 import type { ExerciseSection, QuestionWithOptions } from "@/types"
 import { useTranslations } from '@/lib/i18n'
+import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
 
 interface ExerciseData {
   exercise: {
@@ -25,6 +28,7 @@ interface ExerciseData {
 export default function TakeExercisePage() {
 
   const t = useTranslations('exercises')
+  const toast = useToastWithI18n()
 
   const params = useParams()
   const router = useRouter()
@@ -154,7 +158,7 @@ export default function TakeExercisePage() {
       router.push(`/exercises/${exerciseId}/result/${submissionId}`)
     } catch (error) {
       console.error("Failed to submit answers:", error)
-      alert(t('failed_to_submit_answers_please_try_agai'))
+      toast.error(t('failed_to_submit_answers_please_try_agai'))
     } finally {
       setSubmitting(false)
     }
@@ -174,7 +178,7 @@ export default function TakeExercisePage() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <PageLoading translationKey="loading" />
         </div>
       </AppLayout>
     )
@@ -329,11 +333,15 @@ export default function TakeExercisePage() {
 
             {/* Image */}
             {currentQuestion.question.image_url && (
-              <img
-                src={currentQuestion.question.image_url}
-                alt="Question"
-                className="max-w-full rounded-lg"
-              />
+              <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
+                <Image
+                  src={currentQuestion.question.image_url}
+                  alt="Question"
+                  fill
+                  className="object-contain rounded-lg"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 900px"
+                />
+              </div>
             )}
 
             {/* Answer Input */}

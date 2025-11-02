@@ -6,7 +6,10 @@ import { PageContainer } from "@/components/layout/page-container"
 import { CourseCard } from "@/components/courses/course-card"
 import { CourseFiltersComponent } from "@/components/courses/course-filters"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { SkeletonCard } from "@/components/ui/skeleton-card"
+import { EmptyState } from "@/components/ui/empty-state"
+import { BookOpen } from "lucide-react"
 import { coursesApi, type CourseFilters } from "@/lib/api/courses"
 import type { Course } from "@/types"
 import { useTranslations } from '@/lib/i18n'
@@ -84,28 +87,40 @@ export default function CoursesPage() {
         <CourseFiltersComponent filters={filters} onFiltersChange={handleFiltersChange} onSearch={handleSearch} />
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
+          <>
+            <SkeletonCard gridCols={3} count={6} className="mt-8" />
+          </>
         ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-destructive text-lg mb-4">{error}</p>
-            <Button variant="outline" className="bg-transparent" onClick={fetchCourses}>
-              {t('try_again')}
-            </Button>
-          </div>
+          <EmptyState
+            icon={<BookOpen className="h-12 w-12 text-muted-foreground" />}
+            title={error}
+            description={t('please_try_again_later') || "Please try again later"}
+            action={{
+              label: t('try_again') || "Try Again",
+              onClick: fetchCourses
+            }}
+            className="mt-8"
+          />
         ) : courses.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg">{tCourses('no_courses_found_matching_your_criteria')}</p>
-            <Button variant="outline" className="mt-4 bg-transparent" onClick={() => handleFiltersChange({})}>
-              {t('clear_filters')}
-            </Button>
-          </div>
+          <EmptyState
+            icon={<BookOpen className="h-12 w-12 text-muted-foreground" />}
+            title={tCourses('no_courses_found_matching_your_criteria')}
+            description={tCourses('try_adjusting_your_filters') || "Try adjusting your filters or search terms"}
+            action={{
+              label: t('clear_filters') || "Clear Filters",
+              onClick: () => handleFiltersChange({})
+            }}
+            className="mt-8"
+          />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-              {courses.map((course) => (
-                <CourseCard key={course.id} course={course} />
+              {courses.map((course, index) => (
+                <CourseCard 
+                  key={course.id} 
+                  course={course}
+                  priority={index < 3} // Priority for first 3 above-fold cards
+                />
               ))}
             </div>
 

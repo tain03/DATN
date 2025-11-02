@@ -100,7 +100,7 @@ export function DashboardHeader({
             <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
+                  <Button variant="outline" size="sm" className="text-xs">
                     {timeRangeLabels[timeRange]}
                     <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
                   </Button>

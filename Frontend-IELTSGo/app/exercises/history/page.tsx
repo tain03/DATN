@@ -7,7 +7,9 @@ import { PageContainer } from "@/components/layout/page-container"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Loader2, Clock, Target, TrendingUp, Eye, Calendar } from "lucide-react"
+import { Clock, Target, TrendingUp, Eye, Calendar } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
 import { exercisesApi } from "@/lib/api/exercises"
 import type { Submission, Exercise } from "@/types"
 import { useTranslations } from '@/lib/i18n'
@@ -156,17 +158,18 @@ export default function ExerciseHistoryPage() {
         {/* Submissions List */}
         {loading ? (
           <div className="flex items-center justify-center min-h-[400px]">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <PageLoading translationKey="loading" size="md" />
           </div>
         ) : submissions.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">
-                {t('no_attempts_yet')}
-              </p>
-              <Button onClick={() => router.push("/exercises/list")}>{t('browse_exercises')}</Button>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={<Target className="h-12 w-12 text-muted-foreground" />}
+            title={t('no_attempts_yet')}
+            description={t('no_attempts_description') || "Bắt đầu luyện tập để xem lịch sử của bạn"}
+            action={{
+              label: t('browse_exercises'),
+              onClick: () => router.push("/exercises/list")
+            }}
+          />
         ) : (
           <div className="space-y-4">
             {submissions.map(({ submission, exercise }) => {

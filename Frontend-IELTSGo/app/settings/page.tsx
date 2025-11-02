@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { Bell, Monitor, BookOpen, Lock, Save, Loader2, CheckCircle2, Clock, Settings } from "lucide-react"
+import { Bell, Monitor, BookOpen, Lock, Save, CheckCircle2, Clock, Settings } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
 import type { UserPreferences, UpdatePreferencesRequest, NotificationPreferences, UpdateNotificationPreferencesRequest } from "@/types"
 import { notificationsApi } from "@/lib/api/notifications"
 import { useLocale, useTranslations } from "@/lib/i18n/hooks"
@@ -30,6 +31,7 @@ function SettingsContent() {
   const { user } = useAuth()
   const { preferences: contextPrefs, isLoading: contextLoading, updatePreferences: updateContextPrefs } = usePreferences()
   const { setLocale } = useLocale()
+  const toast = useToastWithI18n()
   const t = useTranslations("settings")
   const tCommon = useTranslations("common")
   const [preferences, setPreferences] = useState<UserPreferences | null>(null)
@@ -38,7 +40,6 @@ function SettingsContent() {
   const [originalNotificationPreferences, setOriginalNotificationPreferences] = useState<NotificationPreferences | null>(null)
   const [isLoadingNotificationPrefs, setIsLoadingNotificationPrefs] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [successMessage, setSuccessMessage] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Sync with context preferences
@@ -72,7 +73,6 @@ function SettingsContent() {
     if (!preferences || !originalPreferences) return
 
     setIsSaving(true)
-    setSuccessMessage("")
     setErrors({})
 
     try {
@@ -118,8 +118,7 @@ function SettingsContent() {
 
       // Check if there are any changes
       if (Object.keys(updateData).length === 0) {
-        setSuccessMessage("No changes to save")
-        setTimeout(() => setSuccessMessage(""), 2000)
+        toast.info("No changes to save")
         setIsSaving(false)
         return
       }
@@ -174,8 +173,7 @@ function SettingsContent() {
         }
       }
       
-      setSuccessMessage(t("saveSuccess"))
-      setTimeout(() => setSuccessMessage(""), 3000)
+      toast.success(t("saveSuccess"))
       
       // Preferences will be updated via context useEffect
     } catch (error: any) {
@@ -197,19 +195,11 @@ function SettingsContent() {
             <p className="text-base text-muted-foreground dark:text-muted-foreground">{t("description")}</p>
           </div>
 
-          {/* Success Message */}
-          {successMessage && (
-            <Alert className="bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800">
-              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertDescription className="text-green-800 dark:text-green-200">{successMessage}</AlertDescription>
-            </Alert>
-          )}
 
           {contextLoading ? (
             <Card>
               <CardContent className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="ml-2 text-muted-foreground">{tCommon("loading")}</span>
+                <PageLoading translationKey="loading" size="sm" showDots={false} />
               </CardContent>
             </Card>
           ) : preferences ? (
@@ -703,13 +693,6 @@ function SettingsContent() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Error Message */}
-              {errors.general && (
-                <Alert variant="destructive">
-                  <AlertDescription>{errors.general}</AlertDescription>
-                </Alert>
-              )}
 
               {/* Save Button */}
               <div className="flex justify-end pt-4">

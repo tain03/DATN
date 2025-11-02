@@ -19,11 +19,15 @@ import { formatDuration, formatNumber } from "@/lib/utils/format"
 import { ReviewList } from "@/components/course/review-list"
 import { ReviewForm } from "@/components/course/review-form"
 import { useTranslations } from '@/lib/i18n'
+import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
 
 export default function CourseDetailPage() {
 
   const tCourses = useTranslations('courses')
   const t = useTranslations('common')
+  const toast = useToastWithI18n()
 
   const params = useParams()
   const router = useRouter()
@@ -115,15 +119,14 @@ export default function CourseDetailPage() {
       console.error("[DEBUG] Error response:", error.response?.data)
       
       const errorData = error.response?.data?.error
-      let errorMessage = "Không thể đăng ký khóa học"
       
       if (errorData?.details === "this course requires payment") {
-        errorMessage = "Khóa học này yêu cầu thanh toán. Vui lòng mua khóa học trước khi đăng ký."
+        toast.error(tCourses('course_requires_payment') || "Khóa học này yêu cầu thanh toán. Vui lòng mua khóa học trước khi đăng ký.")
       } else if (errorData?.message) {
-        errorMessage = errorData.message
+        toast.error(errorData.message)
+      } else {
+        toast.error(tCourses('enrollment_failed') || "Không thể đăng ký khóa học")
       }
-      
-      alert(errorMessage)
     } finally {
       setEnrolling(false)
     }
@@ -144,17 +147,16 @@ export default function CourseDetailPage() {
       router.push(`/courses/${params.courseId}/lessons/${lessonId}`)
     } else {
       console.warn('[DEBUG] No lessons available to start')
-      // Show a toast or alert that no lessons are available
-      alert('Chưa có bài học nào. Nội dung đang được cập nhật.')
+      toast.info(tCourses('no_lessons_available') || "Chưa có bài học nào. Nội dung đang được cập nhật.")
     }
   }
 
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <PageContainer>
+          <PageLoading translationKey="loading" />
+        </PageContainer>
       </AppLayout>
     )
   }
@@ -162,9 +164,16 @@ export default function CourseDetailPage() {
   if (!course) {
     return (
       <AppLayout>
-        <PageContainer className="py-20 text-center">
-          <h1 className="text-2xl font-bold mb-4">{tCourses('course_not_found')}</h1>
-          <Button onClick={() => router.push("/courses")}>{tCourses('back_to_courses')}</Button>
+        <PageContainer>
+          <EmptyState
+            icon={<BookOpen className="h-12 w-12 text-muted-foreground" />}
+            title={tCourses('course_not_found')}
+            description={tCourses('course_not_found_description') || "This course may have been removed or does not exist"}
+            action={{
+              label: tCourses('back_to_courses') || "Back to Courses",
+              onClick: () => router.push("/courses")
+            }}
+          />
         </PageContainer>
       </AppLayout>
     )
@@ -266,34 +275,34 @@ export default function CourseDetailPage() {
                     </div>
                   ) : (
                     <div className="mb-4">
-                      <Badge className="text-lg px-3 py-1">MIỄN PHÍ</Badge>
+                      <Badge className="text-lg px-3 py-1">{t('free')}</Badge>
                     </div>
                   )}
 
                   {isEnrolled ? (
                     modules.length > 0 && modules.some(m => m.lessons && m.lessons.length > 0) ? (
                       <Button className="w-full mb-4" size="lg" onClick={handleStartLearning}>
-                        Tiếp tục học
+                        {tCourses('continue_learning')}
                       </Button>
                     ) : (
                       <Button className="w-full mb-4" size="lg" disabled variant="secondary">
-                        Nội dung đang cập nhật
+                        {tCourses('content_being_updated')}
                       </Button>
                     )
                   ) : ((course.enrollment_type || course.enrollmentType) === "premium" || 
                        (course.enrollment_type || course.enrollmentType) === "paid") ? (
                     <Button className="w-full mb-4" size="lg" onClick={handleEnroll} disabled={true}>
-                      Yêu cầu thanh toán
+                      {tCourses('payment_required') || "Yêu cầu thanh toán"}
                     </Button>
                   ) : (
                     <Button className="w-full mb-4" size="lg" onClick={handleEnroll} disabled={enrolling}>
                       {enrolling ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Đang đăng ký...
+                          {t('loading')}
                         </>
                       ) : (
-                        "Đăng ký ngay"
+                        tCourses('enroll_now') || t('register')
                       )}
                     </Button>
                   )}
@@ -393,7 +402,7 @@ export default function CourseDetailPage() {
                                   if (isEnrolled || isPreview) {
                                     router.push(`/courses/${params.courseId}/lessons/${lesson.id}`)
                                   } else {
-                                    alert(tCourses('please_enroll_to_view_lesson'))
+                                    toast.error(tCourses('please_enroll_to_view_lesson'))
                                   }
                                 }
 
@@ -455,7 +464,7 @@ export default function CourseDetailPage() {
                                   if (isEnrolled || exercise.is_free) {
                                     router.push(`/exercises/${exercise.id}`)
                                   } else {
-                                    alert(tCourses('please_enroll_to_take_exercise'))
+                                    toast.error(tCourses('please_enroll_to_take_exercise'))
                                   }
                                 }
 
@@ -517,10 +526,10 @@ export default function CourseDetailPage() {
                   <p>{course.description || course.short_description}</p>
                   <h3 className="font-semibold mt-6 mb-3">{tCourses('what_you_will_learn')}</h3>
                   <ul className="space-y-3 text-muted-foreground">
-                    <li>Nắm vững các kỹ thuật {(course.skill_type || course.skillType || 'IELTS').toLowerCase()} cần thiết cho IELTS</li>
-                    <li>Thực hành với tài liệu chính thống</li>
-                    <li>Nhận phản hồi chi tiết</li>
-                    <li>Theo dõi tiến trình học tập</li>
+                    <li>{tCourses('master_techniques') || `Nắm vững các kỹ thuật ${(course.skill_type || course.skillType || 'IELTS').toLowerCase()} cần thiết cho IELTS`}</li>
+                    <li>{tCourses('practice_with_official_materials') || "Thực hành với tài liệu chính thống"}</li>
+                    <li>{tCourses('receive_detailed_feedback') || "Nhận phản hồi chi tiết"}</li>
+                    <li>{tCourses('track_learning_progress') || "Theo dõi tiến trình học tập"}</li>
                   </ul>
                 </div>
               </CardContent>
@@ -556,11 +565,11 @@ export default function CourseDetailPage() {
               <Card className="mt-6">
                 <CardContent className="py-8">
                   <p className="text-center text-muted-foreground mb-4">
-                    Bạn cần đăng ký khóa học để viết đánh giá
+                    {tCourses('need_enroll_to_review')}
                   </p>
                   <div className="flex justify-center">
                     <Button onClick={handleEnroll} disabled={enrolling}>
-                      {enrolling ? "Đang đăng ký..." : "Đăng ký ngay"}
+                      {enrolling ? t('loading') : tCourses('enroll_now')}
                     </Button>
                   </div>
                 </CardContent>

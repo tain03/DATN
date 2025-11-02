@@ -21,10 +21,12 @@ import {
   VolumeX,
   Maximize,
   FileText,
-  Loader2,
   PenTool,
   Target,
+  Loader2,
 } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
 import { coursesApi } from "@/lib/api/courses"
 import { getToken } from "@/lib/api/apiClient"
 import type { Lesson, Module } from "@/types"
@@ -32,6 +34,7 @@ import { formatDuration } from "@/lib/utils/format"
 import { useYouTubeProgress } from "@/lib/hooks/use-youtube-progress"
 import { usePreferences } from "@/lib/contexts/preferences-context"
 import { useTranslations } from '@/lib/i18n'
+import { useLessonSwipeNavigation } from "@/lib/hooks/use-swipe-gestures"
 
 export default function LessonPlayerPage() {
 
@@ -464,11 +467,32 @@ export default function LessonPlayerPage() {
     }
   }
 
+  // Calculate lesson navigation state
+  const allLessons = modules.flatMap((m) => m.lessons || [])
+  const currentIndex = allLessons.findIndex((l) => l?.id === params.lessonId)
+  const hasPrevious = currentIndex > 0
+  const hasNext = currentIndex < allLessons.length - 1
+
+  // Swipe gestures for mobile navigation - must be called before early returns (Rules of Hooks)
+  const { ref: swipeRef } = useLessonSwipeNavigation(
+    () => {
+      if (hasPrevious) {
+        handlePreviousLesson()
+      }
+    },
+    () => {
+      if (hasNext) {
+        handleNextLesson()
+      }
+    },
+    true // Enable on mobile only
+  )
+
   if (loading) {
     return (
       <AppLayout showSidebar={false} showFooter={false}>
         <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <PageLoading translationKey="loading" />
         </div>
       </AppLayout>
     )
@@ -477,22 +501,24 @@ export default function LessonPlayerPage() {
   if (!lesson) {
     return (
       <AppLayout showSidebar={false} showFooter={false}>
-        <PageContainer className="py-20 text-center">
-          <h1 className="text-2xl font-bold mb-4">{t('lesson_not_found')}</h1>
-          <Button onClick={() => router.push(`/courses/${params.courseId}`)}>{t('back_to_course')}</Button>
+        <PageContainer>
+          <EmptyState
+            icon={<BookOpen className="h-12 w-12 text-muted-foreground" />}
+            title={t('lesson_not_found') || "Lesson not found"}
+            description={t('lesson_not_found_description') || "The lesson you are looking for does not exist"}
+            action={{
+              label: t('back_to_course') || "Back to Course",
+              onClick: () => router.push(`/courses/${params.courseId}`)
+            }}
+          />
         </PageContainer>
       </AppLayout>
     )
   }
 
-  const allLessons = modules.flatMap((m) => m.lessons || [])
-  const currentIndex = allLessons.findIndex((l) => l?.id === params.lessonId)
-  const hasPrevious = currentIndex > 0
-  const hasNext = currentIndex < allLessons.length - 1
-
   return (
     <AppLayout showSidebar={false} showFooter={false}>
-    <div className="min-h-screen relative">
+    <div ref={swipeRef as React.RefObject<HTMLDivElement>} className="min-h-screen relative">
       {/* Header */}
       <div className="border-b bg-white sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-3">

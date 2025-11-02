@@ -11,7 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Award, BookOpen, UserPlus, UserMinus, Trophy, Target, Zap, Lock, Loader2, Edit2, Eye, EyeOff, UserX } from "lucide-react"
+import { Award, BookOpen, UserPlus, UserMinus, Trophy, Target, Zap, Lock, Edit2, Eye, EyeOff, UserX, Loader2 } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -398,14 +400,41 @@ export default function UserProfilePage() {
     }
   }
 
-  if (loading || !profile) {
+  if (loading) {
     return (
       <AppLayout showSidebar={false} showFooter>
         <PageContainer>
-          <div className="text-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">{t('loading_profile')}</p>
-          </div>
+          <PageLoading translationKey="loading_profile" />
+        </PageContainer>
+      </AppLayout>
+    )
+  }
+
+  // Handle profile not found (404) or null
+  if (!profile || (profile.id === userId && !profile.fullName)) {
+    return (
+      <AppLayout showSidebar={false} showFooter>
+        <PageContainer>
+          <EmptyState
+            icon={Lock}
+            title={t('profile_not_found') || "Profile Not Found"}
+            description={t('profile_not_found_description') || "The user profile you are looking for could not be found."}
+          />
+        </PageContainer>
+      </AppLayout>
+    )
+  }
+
+  // Handle private profile (only show message if not own profile and profile is private)
+  if (!isOwnProfile && profileVisibility === "private" && !isProfileVisible()) {
+    return (
+      <AppLayout showSidebar={false} showFooter>
+        <PageContainer>
+          <EmptyState
+            icon={Lock}
+            title={t('profile_is_private') || "Profile is Private"}
+            description={t('this_user_has_set_their_profile_to_private') || "This user has set their profile to private."}
+          />
         </PageContainer>
       </AppLayout>
     )
@@ -439,7 +468,7 @@ export default function UserProfilePage() {
                     <p className="text-muted-foreground truncate">{profile.email}</p>
                   </div>
                   {isOwnProfile ? (
-                    <Button asChild variant="outline" size="default" className="h-9 px-4 flex-shrink-0">
+                    <Button asChild variant="outline" size="default" className="flex-shrink-0">
                       <Link href="/profile">
                         <Edit2 className="h-4 w-4 mr-2" />
                         <span className="whitespace-nowrap">{t('edit_profile')}</span>

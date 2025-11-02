@@ -6,17 +6,18 @@ import { useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { Button } from "@/components/ui/button"
-import { FormField } from "@/components/ui/form-field"
+import { EnhancedFormField } from "@/components/ui/enhanced-form-field"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, Users, BookOpen, Trophy, Sparkles } from "lucide-react"
+import { Users, BookOpen, Trophy, Sparkles } from "lucide-react"
 import { Logo } from "@/components/layout/logo"
 import { useTranslations } from '@/lib/i18n'
+import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
 
 export default function LoginPage() {
 
   const t = useTranslations('auth')
+  const toast = useToastWithI18n()
 
   const { login, loginWithGoogle } = useAuth()
   const [formData, setFormData] = useState({
@@ -27,7 +28,6 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [apiError, setApiError] = useState("")
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -50,7 +50,6 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setApiError("")
 
     if (!validateForm()) return
 
@@ -64,14 +63,13 @@ export default function LoginPage() {
       const errorMessage = error.response?.data?.error?.message 
         || error.message 
         || t('login_failed_please_try_again')
-      setApiError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleGoogleLogin = async () => {
-    setApiError("")
     setIsGoogleLoading(true)
     try {
       await loginWithGoogle()
@@ -79,7 +77,7 @@ export default function LoginPage() {
       const errorMessage = error.response?.data?.error?.message 
         || error.message 
         || t('google_login_failed_please_try_again')
-      setApiError(errorMessage)
+      toast.error(errorMessage)
       setIsGoogleLoading(false)
     }
   }
@@ -106,17 +104,9 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Error Alert */}
-          {apiError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{apiError}</AlertDescription>
-            </Alert>
-          )}
-
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5 bg-card/50 backdrop-blur-sm p-6 rounded-lg border border-border/50 shadow-sm">
-            <FormField
+            <EnhancedFormField
               label={t('auth.email')}
               name="email"
               type="email"
@@ -125,9 +115,10 @@ export default function LoginPage() {
               onChange={(value) => setFormData({ ...formData, email: value })}
               error={errors.email}
               required
+              showValidationState={!!errors.email}
             />
 
-            <FormField
+            <EnhancedFormField
               label={t('auth.password')}
               name="password"
               type="password"
@@ -136,6 +127,7 @@ export default function LoginPage() {
               onChange={(value) => setFormData({ ...formData, password: value })}
               error={errors.password}
               required
+              showValidationState={!!errors.password}
             />
 
             <div className="flex items-center justify-between">

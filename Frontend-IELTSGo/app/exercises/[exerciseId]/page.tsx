@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, Clock, BookOpen, FileText, PlayCircle, Award, Target, CheckCircle, ChevronLeft } from "lucide-react"
+import { Clock, BookOpen, FileText, PlayCircle, Award, Target, CheckCircle, ChevronLeft, Loader2 } from "lucide-react"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
+import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
 import { exercisesApi } from "@/lib/api/exercises"
 import type { ExerciseDetailResponse } from "@/types"
 import { useAuth } from "@/lib/contexts/auth-context"
@@ -19,6 +22,7 @@ export default function ExerciseDetailPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
+  const toast = useToastWithI18n()
   const t = useTranslations('exercises')
   const tCommon = useTranslations('common')
 
@@ -74,13 +78,13 @@ export default function ExerciseDetailPage() {
 
       // Better error messages
       if (error.response?.status === 401) {
-        alert(t('session_expired_please_login_again'))
+        toast.error(t('session_expired_please_login_again'))
         router.push('/login')
       } else if (error.response?.status === 404) {
-        alert(t('exercise_not_found'))
+        toast.error(t('exercise_not_found'))
       } else {
         const errorMsg = error.response?.data?.error?.message || error.message || t('cannot_start_exercise_please_try_again')
-        alert(errorMsg + ' ' + tCommon('please_try_again'))
+        toast.error(errorMsg)
       }
     } finally {
       setStarting(false)
@@ -90,9 +94,9 @@ export default function ExerciseDetailPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <PageContainer>
+          <PageLoading translationKey="loading" />
+        </PageContainer>
       </AppLayout>
     )
   }
@@ -100,12 +104,17 @@ export default function ExerciseDetailPage() {
   if (!exerciseData) {
     return (
       <AppLayout>
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold">{t('exercise_not_found')}</h2>
-          <Button onClick={() => router.back()} className="mt-4">
-            {tCommon('go_back')}
-          </Button>
-        </div>
+        <PageContainer>
+          <EmptyState
+            icon={<FileText className="h-12 w-12 text-muted-foreground" />}
+            title={t('exercise_not_found')}
+            description={t('exercise_not_found_description') || "This exercise may have been removed or does not exist"}
+            action={{
+              label: tCommon('go_back') || "Go Back",
+              onClick: () => router.back()
+            }}
+          />
+        </PageContainer>
       </AppLayout>
     )
   }

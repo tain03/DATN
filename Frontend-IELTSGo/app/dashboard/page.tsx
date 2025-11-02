@@ -9,7 +9,7 @@ import { StatCard } from "@/components/dashboard/stat-card"
 import { ProgressChart } from "@/components/dashboard/progress-chart"
 import { SkillProgressCard } from "@/components/dashboard/skill-progress-card"
 import { ActivityTimeline } from "@/components/dashboard/activity-timeline"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { PageHeader } from "@/components/layout/page-header"
 import { BookOpen, CheckCircle, Clock, TrendingUp, Flame, BarChart3, Target, ArrowRight } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -17,8 +17,11 @@ import { progressApi } from "@/lib/api/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getCardVariant } from "@/lib/utils/card-variants"
 import { cn } from "@/lib/utils"
 import { useTranslations } from "@/lib/i18n"
+import { PageLoading } from "@/components/ui/page-loading"
+import { usePullToRefresh } from "@/lib/hooks/use-swipe-gestures"
 
 export default function DashboardPage() {
   return (
@@ -41,36 +44,40 @@ function DashboardContent() {
   const [history, setHistory] = useState<any[]>([])
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "all">("30d")
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true)
-      try {
-        const [summaryData, analyticsData, historyData] = await Promise.all([
-          progressApi.getProgressSummary(),
-          progressApi.getProgressAnalytics(timeRange),
-          progressApi.getStudyHistory(1, 10),
-        ])
-        setSummary(summaryData)
-        setAnalytics(analyticsData)
-        setHistory(historyData.data || [])
-      } finally {
-        setLoading(false)
-      }
+  const fetchDashboardData = async () => {
+    setLoading(true)
+    try {
+      const [summaryData, analyticsData, historyData] = await Promise.all([
+        progressApi.getProgressSummary(),
+        progressApi.getProgressAnalytics(timeRange),
+        progressApi.getStudyHistory(1, 10),
+      ])
+      setSummary(summaryData)
+      setAnalytics(analyticsData)
+      setHistory(historyData.data || [])
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchDashboardData()
   }, [timeRange])
 
+  // Pull to refresh
+  const { ref: pullToRefreshRef } = usePullToRefresh(() => {
+    fetchDashboardData()
+  }, true)
+
   if (loading) {
     return (
-      <AppLayout showSidebar={true} showFooter={false} hideNavbar={true}>
+      <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
+        <PageHeader
+          title={user?.fullName ? `Chào mừng trở lại, ${user.fullName.split(' ')[0]}!` : t('welcome')}
+          subtitle={t('track_your_journey')}
+        />
         <PageContainer>
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">{t('loading')}</p>
-            </div>
-          </div>
+          <PageLoading translationKey="loading" />
         </PageContainer>
       </AppLayout>
     )
@@ -125,20 +132,38 @@ function DashboardContent() {
     return analytics?.exercisesByType?.find((t: any) => t.type.toLowerCase() === skill.toLowerCase())?.count || 0
   }
 
+  // Time range filter buttons component
+  const timeRangeFilters = (
+    <div className="flex items-center gap-0.5 px-1.5 py-1 bg-muted/60 rounded-lg border border-border/50">
+      {(["7d", "30d", "90d", "all"] as const).map((range) => (
+        <Button
+          key={range}
+          variant="ghost"
+          size="sm"
+          onClick={() => setTimeRange(range)}
+          className={cn(
+            "px-3 text-xs font-medium transition-all rounded-md",
+            timeRange === range
+              ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+              : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {range === "7d" ? t('timeRange.7d') :
+           range === "30d" ? t('timeRange.30d') :
+           range === "90d" ? t('timeRange.90d') :
+           t('timeRange.all')}
+        </Button>
+      ))}
+    </div>
+  )
+
   return (
     <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
-      {/* Integrated Dashboard Header */}
-      <DashboardHeader
-        welcomeMessage={t('welcomeBack', { name: user?.fullName?.split(" ")[0] || tCommon('student') })}
+      <div ref={pullToRefreshRef as React.RefObject<HTMLDivElement>}>
+      <PageHeader
+        title={t('welcomeBack', { name: user?.fullName?.split(" ")[0] || tCommon('student') })}
         subtitle={`${t('subtitle')}${user?.targetBandScore ? ` • ${t('targetBand', { score: user.targetBandScore })}` : ''}`}
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        timeRangeLabels={{
-          "7d": t('timeRange.7d'),
-          "30d": t('timeRange.30d'),
-          "90d": t('timeRange.90d'),
-          "all": t('timeRange.all'),
-        }}
+        centerContent={timeRangeFilters}
       />
 
       <PageContainer className="py-6">
@@ -146,7 +171,10 @@ function DashboardContent() {
         {/* Quick Actions - Refined design */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card 
-            className="group relative overflow-hidden border hover:border-primary/30 transition-all duration-200 cursor-pointer bg-gradient-to-br from-white to-blue-50/50 dark:from-card dark:to-blue-950/10 hover:shadow-lg hover:shadow-blue-500/10" 
+            className={cn(
+              getCardVariant({ gradient: 'blue' }),
+              "group relative overflow-hidden hover:border-primary/30 cursor-pointer hover:shadow-lg hover:shadow-blue-500/10"
+            )}
             onClick={() => router.push("/courses")}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/0 to-blue-500/5 group-hover:from-blue-500/5 group-hover:via-blue-500/5 group-hover:to-blue-500/10 transition-all duration-200" />
@@ -165,7 +193,10 @@ function DashboardContent() {
           </Card>
 
           <Card 
-            className="group relative overflow-hidden border hover:border-primary/30 transition-all duration-200 cursor-pointer bg-gradient-to-br from-white to-green-50/50 dark:from-card dark:to-green-950/10 hover:shadow-lg hover:shadow-green-500/10" 
+            className={cn(
+              getCardVariant({ gradient: 'green' }),
+              "group relative overflow-hidden hover:border-primary/30 cursor-pointer hover:shadow-lg hover:shadow-green-500/10"
+            )}
             onClick={() => router.push("/exercises")}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/0 via-green-500/0 to-green-500/5 group-hover:from-green-500/5 group-hover:via-green-500/5 group-hover:to-green-500/10 transition-all duration-200" />
@@ -184,7 +215,10 @@ function DashboardContent() {
           </Card>
 
           <Card 
-            className="group relative overflow-hidden border hover:border-primary/30 transition-all duration-200 cursor-pointer bg-gradient-to-br from-white to-purple-50/50 dark:from-card dark:to-purple-950/10 hover:shadow-lg hover:shadow-purple-500/10" 
+            className={cn(
+              getCardVariant({ gradient: 'purple' }),
+              "group relative overflow-hidden hover:border-primary/30 cursor-pointer hover:shadow-lg hover:shadow-purple-500/10"
+            )}
             onClick={() => router.push("/goals")}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 via-purple-500/0 to-purple-500/5 group-hover:from-purple-500/5 group-hover:via-purple-500/5 group-hover:to-purple-500/10 transition-all duration-200" />
@@ -371,6 +405,7 @@ function DashboardContent() {
           )}
         </Tabs>
       </PageContainer>
+      </div>
     </AppLayout>
   )
 }

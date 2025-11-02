@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "@/lib/i18n"
+import { useSwipeToDismiss } from "@/lib/hooks/use-swipe-gestures"
 
 interface NotificationItemProps {
   notification: Notification
@@ -27,6 +28,12 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete }: Notif
   const messageRef = useRef<HTMLParagraphElement>(null)
   const isRead = notification.read ?? notification.isRead ?? notification.is_read ?? false
   const createdAt = notification.createdAt || notification.created_at
+
+  // Swipe to dismiss
+  const { ref: swipeRef } = useSwipeToDismiss(
+    () => onDelete(notification.id),
+    true // Enable on mobile
+  )
 
   // Mapping for hardcoded notification texts to translation keys
   const getNotificationTranslationKey = (text: string, type: string): string | null => {
@@ -511,6 +518,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete }: Notif
 
   return (
     <div
+      ref={swipeRef as React.RefObject<HTMLDivElement>}
       className={cn(
         "group relative flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 cursor-pointer",
         "transition-all duration-200 border-b border-gray-100/80 dark:border-gray-800/50 last:border-b-0",
@@ -607,7 +615,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete }: Notif
             variant="ghost"
             size="icon"
             className={cn(
-              "h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200",
+              "shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200",
               "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200",
               "hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
             )}

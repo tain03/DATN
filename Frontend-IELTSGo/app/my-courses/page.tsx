@@ -2,26 +2,38 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
+import { PageHeader } from "@/components/layout/page-header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
-  Loader2, 
   BookOpen, 
   Clock, 
   CheckCircle,
   PlayCircle,
   Award,
-  Target
+  Target,
+  Loader2,
+  Star,
+  Users,
+  GraduationCap,
+  TrendingUp
 } from "lucide-react"
 import { coursesApi } from "@/lib/api/courses"
 import { useAuth } from "@/lib/contexts/auth-context"
 import type { Course, CourseEnrollment } from "@/types"
 import { useTranslations } from '@/lib/i18n'
+import { usePullToRefresh } from "@/lib/hooks/use-swipe-gestures"
+import { PageLoading } from "@/components/ui/page-loading"
+import { EmptyState } from "@/components/ui/empty-state"
+import { CourseCard } from "@/components/courses/course-card"
+import { HorizontalCardLayout } from "@/components/cards/base-card-layout"
+import { formatDuration, formatNumber } from "@/lib/utils/format"
 
 interface EnrolledCourseWithProgress {
   course: Course
@@ -73,6 +85,11 @@ export default function MyCoursesPage() {
     setTotalStudyMinutes(total)
   }
 
+  // Pull to refresh
+  const { ref: pullToRefreshRef } = usePullToRefresh(() => {
+    loadEnrolledCourses()
+  }, true)
+
   if (!user) {
     return (
       <AppLayout showSidebar={true} showFooter={false} hideNavbar={true}>
@@ -84,6 +101,20 @@ export default function MyCoursesPage() {
           <Button onClick={() => router.push('/auth/login')}>
             {t('sign_in')}
           </Button>
+        </PageContainer>
+      </AppLayout>
+    )
+  }
+
+  if (loading) {
+    return (
+      <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
+        <PageHeader
+          title={t('my_learning')}
+          subtitle={t('track_your_progress_and_continue_your_ielt')}
+        />
+        <PageContainer>
+          <PageLoading translationKey="loading" />
         </PageContainer>
       </AppLayout>
     )
@@ -102,15 +133,13 @@ export default function MyCoursesPage() {
   const totalStudyMins = totalStudyMinutes % 60
 
   return (
-    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true}>
+    <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
+      <div ref={pullToRefreshRef as React.RefObject<HTMLDivElement>}>
+      <PageHeader
+        title={t('my_learning')}
+        subtitle={t('track_your_progress_and_continue_your_ielt')}
+      />
       <PageContainer maxWidth="7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">{t('my_learning')}</h1>
-          <p className="text-base text-muted-foreground">
-            {t('track_your_progress_and_continue_your_ielt')}
-          </p>
-        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -181,103 +210,133 @@ export default function MyCoursesPage() {
 
           <TabsContent value="all" className="space-y-4">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              <PageLoading translationKey="loading" />
             ) : enrolledCourses.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">{t('no_courses_yet')}</h3>
-                  <p className="text-muted-foreground mb-6">
-                    {t('start_your_ielts_journey_by_enrolling_in_a')}
-                  </p>
-                  <Button onClick={() => router.push('/courses')}>
-                    {t('browse_courses')}
-                  </Button>
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={<BookOpen className="h-12 w-12 text-muted-foreground" />}
+                title={t('no_courses_yet')}
+                description={t('start_your_ielts_journey_by_enrolling_in_a')}
+                action={{
+                  label: t('browse_courses') || "Browse Courses",
+                  onClick: () => router.push('/courses')
+                }}
+              />
             ) : (
               <div className="grid grid-cols-1 gap-4">
-                {enrolledCourses.map((item) => {
-                  const { course, enrollment } = item
+                {enrolledCourses.map(({ course, enrollment }) => {
                   const progressPct = Math.round(enrollment.progress_percentage || 0)
+                  const level = course.level || 'beginner'
+                  const skillType = course.skill_type?.toLowerCase() || 'general'
+                  const skillColors: Record<string, string> = {
+                    listening: "bg-blue-500",
+                    reading: "bg-green-500",
+                    writing: "bg-orange-500",
+                    speaking: "bg-purple-500",
+                    general: "bg-gray-500",
+                  }
+                  const levelColors: Record<string, string> = {
+                    beginner: "bg-emerald-500",
+                    intermediate: "bg-yellow-500",
+                    advanced: "bg-red-500",
+                  }
                   
                   return (
-                    <Card 
+                    <HorizontalCardLayout
                       key={course.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
+                      variant="interactive"
                       onClick={() => router.push(`/courses/${course.id}`)}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-6">
-                          {/* Thumbnail */}
-                          <div className="w-48 h-32 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
-                            {course.thumbnail_url ? (
-                              <img 
-                                src={course.thumbnail_url} 
-                                alt={course.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen className="h-12 w-12 text-muted-foreground" />
-                              </div>
-                            )}
+                      thumbnail={{
+                        src: course.thumbnail_url || undefined,
+                        alt: course.title,
+                        placeholder: {
+                          icon: BookOpen,
+                        }
+                      }}
+                      title={course.title}
+                      description={course.short_description || course.description || null}
+                      badges={
+                        <>
+                          <Badge className={skillColors[skillType] || skillColors.general} aria-label={t(skillType)}>
+                            {t(skillType).toUpperCase()}
+                          </Badge>
+                          <Badge className={levelColors[level.toLowerCase()] || levelColors.beginner} variant="secondary">
+                            {t(level.toLowerCase() || 'beginner')}
+                          </Badge>
+                          {enrollment.progress_percentage > 0 && enrollment.progress_percentage < 100 && (
+                            <Badge className="bg-orange-500">
+                              {t('in_progress')}
+                            </Badge>
+                          )}
+                          {enrollment.progress_percentage >= 100 && (
+                            <Badge className="bg-green-500">
+                              {t('completed')}
+                            </Badge>
+                          )}
+                        </>
+                      }
+                      stats={
+                        <>
+                          {course.instructor_name && (
+                            <div className="flex items-center gap-1.5">
+                              <GraduationCap className="h-4 w-4 text-purple-600" aria-hidden="true" />
+                              <span className="text-sm">{course.instructor_name}</span>
+                            </div>
+                          )}
+                          {course.average_rating > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden="true" />
+                              <span className="font-medium">
+                                {course.average_rating.toFixed(1)}
+                              </span>
+                              {course.total_reviews > 0 && (
+                                <span className="text-muted-foreground text-sm">
+                                  ({formatNumber(course.total_reviews)})
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {course.total_enrollments > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Users className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                              <span className="text-sm">{formatNumber(course.total_enrollments)}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <BookOpen className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                            <span className="font-medium">
+                              {enrollment.lessons_completed || 0}/{course.total_lessons || 0} {t('lessons')}
+                            </span>
                           </div>
-
-                          {/* Content */}
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <h3 className="text-xl font-bold mb-1">{course.title}</h3>
-                                <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {course.short_description || course.description}
-                                </p>
-                              </div>
-                              <Badge variant="outline" className="ml-4">
-                                {course.skill_type}
-                              </Badge>
+                          {enrollment.total_time_spent_minutes > 0 ? (
+                            <div className="flex items-center gap-1.5">
+                              <TrendingUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                              <span className="text-sm">{enrollment.total_time_spent_minutes || 0} {t('minutes')}</span>
                             </div>
-
-                            {/* Progress */}
-                            <div className="mt-4 space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">{t('progress')}</span>
-                                <span className="font-semibold">{progressPct}%</span>
-                              </div>
-                              <Progress value={progressPct} className="h-2" />
+                          ) : course.duration_hours && course.duration_hours > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                              <span className="text-sm">{formatDuration(Math.round(course.duration_hours * 3600))}</span>
                             </div>
-
-                            {/* Stats */}
-                            <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <BookOpen className="h-4 w-4" />
-                                <span>{enrollment.lessons_completed || 0}/{course.total_lessons || 0} {t('lessons')}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                <span>{enrollment.total_time_spent_minutes || 0} {t('minutes')}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Target className="h-4 w-4" />
-                                <span>{t('band')} {course.target_band_score || '7.0'}</span>
-                              </div>
-                            </div>
-
-                            {/* Action */}
-                            <div className="mt-4">
-                              <Button 
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  router.push(`/courses/${course.id}`)
-                                }}
-                              >{t('continue_learning')}</Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                          )}
+                        </>
+                      }
+                      progress={enrollment.progress_percentage > 0 && enrollment.progress_percentage < 100 ? {
+                        value: progressPct,
+                        label: t('progress'),
+                      } : undefined}
+                      action={{
+                        label: enrollment.progress_percentage >= 100 
+                          ? t('review_course')
+                          : enrollment.progress_percentage > 0
+                          ? t('continue_learning')
+                          : t('view_course'),
+                        onClick: (e) => {
+                          e.stopPropagation()
+                          router.push(`/courses/${course.id}`)
+                        },
+                        variant: enrollment.progress_percentage >= 100 ? 'outline' : 'default',
+                      }}
+                    />
                   )
                 })}
               </div>
@@ -285,54 +344,123 @@ export default function MyCoursesPage() {
           </TabsContent>
 
           <TabsContent value="in-progress" className="space-y-4">
-            {inProgressCourses.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <PlayCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    {t('start_learning_to_see_your_progress_here')}
-                  </p>
-                </CardContent>
-              </Card>
+            {loading ? (
+              <PageLoading translationKey="loading" />
+            ) : inProgressCourses.length === 0 ? (
+              <EmptyState
+                icon={<PlayCircle className="h-12 w-12 text-muted-foreground" />}
+                title={t('no_in_progress_courses') || "No courses in progress"}
+                description={t('no_in_progress_courses_description') || "Start a course to see your progress here"}
+                action={{
+                  label: t('browse_courses') || "Browse Courses",
+                  onClick: () => router.push('/courses')
+                }}
+              />
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {inProgressCourses.map((item) => {
                   const { course, enrollment } = item
                   const progressPct = Math.round(enrollment.progress_percentage || 0)
+                  const skillType = course.skill_type?.toLowerCase() || 'general'
+                  const level = course.level || 'beginner'
+                  const skillColors: Record<string, string> = {
+                    listening: "bg-blue-500",
+                    reading: "bg-green-500",
+                    writing: "bg-orange-500",
+                    speaking: "bg-purple-500",
+                    general: "bg-gray-500",
+                  }
+                  const levelColors: Record<string, string> = {
+                    beginner: "bg-emerald-500",
+                    intermediate: "bg-yellow-500",
+                    advanced: "bg-red-500",
+                  }
                   
                   return (
-                    <Card 
+                    <HorizontalCardLayout
                       key={course.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
+                      variant="interactive"
                       onClick={() => router.push(`/courses/${course.id}`)}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-6">
-                          <div className="w-48 h-32 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
-                            {course.thumbnail_url ? (
-                              <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen className="h-12 w-12 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-xl font-bold mb-2">{course.title}</h3>
-                            <div className="mt-4 space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">{t('progress')}</span>
-                                <span className="font-semibold">{progressPct}%</span>
-                              </div>
-                              <Progress value={progressPct} className="h-2" />
+                      thumbnail={{
+                        src: course.thumbnail_url || undefined,
+                        alt: course.title,
+                        placeholder: {
+                          icon: BookOpen,
+                        }
+                      }}
+                      title={course.title}
+                      description={course.short_description || course.description || null}
+                      badges={
+                        <>
+                          <Badge className={skillColors[skillType] || skillColors.general} aria-label={t(skillType)}>
+                            {t(skillType).toUpperCase()}
+                          </Badge>
+                          <Badge className={levelColors[level.toLowerCase()] || levelColors.beginner} variant="secondary">
+                            {t(level.toLowerCase() || 'beginner')}
+                          </Badge>
+                          <Badge className="bg-orange-500">
+                            {t('in_progress')}
+                          </Badge>
+                        </>
+                      }
+                      stats={
+                        <>
+                          {course.instructor_name && (
+                            <div className="flex items-center gap-1.5">
+                              <GraduationCap className="h-4 w-4 text-purple-600" aria-hidden="true" />
+                              <span className="text-sm">{course.instructor_name}</span>
                             </div>
-                            <div className="mt-4">
-                              <Button size="sm">{t('continue_learning')}</Button>
+                          )}
+                          {course.average_rating > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden="true" />
+                              <span className="font-medium">
+                                {course.average_rating.toFixed(1)}
+                              </span>
+                              {course.total_reviews > 0 && (
+                                <span className="text-muted-foreground text-sm">
+                                  ({formatNumber(course.total_reviews)})
+                                </span>
+                              )}
                             </div>
+                          )}
+                          {course.total_enrollments > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Users className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                              <span className="text-sm">{formatNumber(course.total_enrollments)}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <BookOpen className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                            <span className="font-medium">
+                              {enrollment.lessons_completed || 0}/{course.total_lessons || 0} {t('lessons')}
+                            </span>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                          {enrollment.total_time_spent_minutes > 0 ? (
+                            <div className="flex items-center gap-1.5">
+                              <TrendingUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                              <span className="text-sm">{enrollment.total_time_spent_minutes || 0} {t('minutes')}</span>
+                            </div>
+                          ) : course.duration_hours && course.duration_hours > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                              <span className="text-sm">{formatDuration(Math.round(course.duration_hours * 3600))}</span>
+                            </div>
+                          )}
+                        </>
+                      }
+                      progress={{
+                        value: progressPct,
+                        label: t('progress'),
+                      }}
+                      action={{
+                        label: t('continue_learning'),
+                        onClick: (e) => {
+                          e.stopPropagation()
+                          router.push(`/courses/${course.id}`)
+                        },
+                      }}
+                    />
                   )
                 })}
               </div>
@@ -353,39 +481,101 @@ export default function MyCoursesPage() {
               <div className="grid grid-cols-1 gap-4">
                 {completedCourses.map((item) => {
                   const { course, enrollment } = item
+                  const skillType = course.skill_type?.toLowerCase() || 'general'
+                  const level = course.level || 'beginner'
+                  const skillColors: Record<string, string> = {
+                    listening: "bg-blue-500",
+                    reading: "bg-green-500",
+                    writing: "bg-orange-500",
+                    speaking: "bg-purple-500",
+                    general: "bg-gray-500",
+                  }
+                  const levelColors: Record<string, string> = {
+                    beginner: "bg-emerald-500",
+                    intermediate: "bg-yellow-500",
+                    advanced: "bg-red-500",
+                  }
                   
                   return (
-                    <Card 
+                    <HorizontalCardLayout
                       key={course.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
+                      variant="interactive"
                       onClick={() => router.push(`/courses/${course.id}`)}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-6">
-                          <div className="w-48 h-32 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
-                            {course.thumbnail_url ? (
-                              <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen className="h-12 w-12 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                              <h3 className="text-xl font-bold mb-2">{course.title}</h3>
-                              <Badge className="bg-green-500">{t('completed')}</Badge>
+                      thumbnail={{
+                        src: course.thumbnail_url || undefined,
+                        alt: course.title,
+                        placeholder: {
+                          icon: BookOpen,
+                        }
+                      }}
+                      title={course.title}
+                      description={course.short_description || course.description || null}
+                      badges={
+                        <>
+                          <Badge className={skillColors[skillType] || skillColors.general} aria-label={t(skillType)}>
+                            {t(skillType).toUpperCase()}
+                          </Badge>
+                          <Badge className={levelColors[level.toLowerCase()] || levelColors.beginner} variant="secondary">
+                            {t(level.toLowerCase() || 'beginner')}
+                          </Badge>
+                          <Badge className="bg-green-500">{t('completed')}</Badge>
+                        </>
+                      }
+                      stats={
+                        <>
+                          {course.instructor_name && (
+                            <div className="flex items-center gap-1.5">
+                              <GraduationCap className="h-4 w-4 text-purple-600" aria-hidden="true" />
+                              <span className="text-sm">{course.instructor_name}</span>
                             </div>
-                              <p className="text-sm text-muted-foreground">
-                                {enrollment.lessons_completed} {t('lessons')} • {enrollment.total_time_spent_minutes} {t('minutes')}
-                              </p>
-                            <div className="mt-4">
-                              <Button size="sm" variant="outline">{t('review_course')}</Button>
+                          )}
+                          {course.average_rating > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden="true" />
+                              <span className="font-medium">
+                                {course.average_rating.toFixed(1)}
+                              </span>
+                              {course.total_reviews > 0 && (
+                                <span className="text-muted-foreground text-sm">
+                                  ({formatNumber(course.total_reviews)})
+                                </span>
+                              )}
                             </div>
+                          )}
+                          {course.total_enrollments > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Users className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                              <span className="text-sm">{formatNumber(course.total_enrollments)}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <BookOpen className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                            <span className="font-medium">
+                              {enrollment.lessons_completed || 0}/{course.total_lessons || 0} {t('lessons')}
+                            </span>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                          {enrollment.total_time_spent_minutes > 0 ? (
+                            <div className="flex items-center gap-1.5">
+                              <TrendingUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                              <span className="text-sm">{enrollment.total_time_spent_minutes || 0} {t('minutes')}</span>
+                            </div>
+                          ) : course.duration_hours && course.duration_hours > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                              <span className="text-sm">{formatDuration(Math.round(course.duration_hours * 3600))}</span>
+                            </div>
+                          )}
+                        </>
+                      }
+                      action={{
+                        label: t('review_course'),
+                        onClick: (e) => {
+                          e.stopPropagation()
+                          router.push(`/courses/${course.id}`)
+                        },
+                        variant: "outline",
+                      }}
+                    />
                   )
                 })}
               </div>
@@ -393,6 +583,7 @@ export default function MyCoursesPage() {
           </TabsContent>
         </Tabs>
       </PageContainer>
+      </div>
     </AppLayout>
   )
 }
