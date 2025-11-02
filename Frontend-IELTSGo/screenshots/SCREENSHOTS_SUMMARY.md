@@ -1,6 +1,6 @@
 # 📸 Tổng hợp Screenshots Demo - Phần Học Viên
 
-## ✅ Đã chụp thành công: 39 ảnh
+## ✅ Đã chụp thành công: 41 ảnh
 
 ### 📁 Cấu trúc thư mục
 
@@ -29,13 +29,14 @@ screenshots/
 │   ├── 07_course_detail_about_tab.png
 │   └── 08_course_detail_reviews_tab.png
 │
-├── 04-exercises/            ✅ 6 ảnh
+├── 04-exercises/            ✅ 7 ảnh
 │   ├── 01_exercises_list.png
 │   ├── 02_my_exercises.png
 │   ├── 03_exercise_history.png
 │   ├── 04_exercise_detail.png
 │   ├── 05_take_exercise.png
-│   └── 06_my_exercises_completed_tab.png
+│   ├── 06_my_exercises_completed_tab.png
+│   └── 07_exercise_result.png
 │
 ├── 05-progress/             ✅ 4 ảnh
 │   ├── 01_progress_analytics.png
@@ -43,9 +44,10 @@ screenshots/
 │   ├── 03_progress_completion_rate_tab.png
 │   └── 04_progress_exercises_tab.png
 │
-├── 06-tools/                ✅ 6 ảnh
+├── 06-tools/                ✅ 7 ảnh
 │   ├── 01_goals.png
 │   ├── 01_goals_create_dialog.png
+│   ├── 01_goals_edit_dialog.png
 │   ├── 02_reminders.png
 │   ├── 02_reminders_create_dialog.png
 │   ├── 02_reminders_edit_dialog.png
