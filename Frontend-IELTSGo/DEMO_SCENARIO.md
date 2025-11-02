@@ -145,7 +145,7 @@
 #### 📸 Screenshot 2.1: Dashboard - Overview Tab
 **URL**: `http://localhost:3000/dashboard`
 
-![Dashboard Overview](screenshots/02-dashboard/01_dashboard_overview.png)
+![Dashboard Overview](screenshots/02-dashboard/01_dashboard_overview_tab.png)
 
 **Mô tả**:
 - PageHeader với welcome message và time range filters
@@ -178,6 +178,28 @@
    - Progress charts với data
 
 **Lưu ý**: Đảm bảo có data để charts hiển thị đẹp
+
+---
+
+#### 📸 Screenshot 2.2: Dashboard - Analytics Tab
+**URL**: `http://localhost:3000/dashboard`
+
+![Dashboard Analytics](screenshots/02-dashboard/02_dashboard_analytics_tab.png)
+
+**Hành động**:
+1. Click tab "Analytics"
+2. **Chụp**: Analytics charts và breakdowns
+
+---
+
+#### 📸 Screenshot 2.3: Dashboard - Skills Tab
+**URL**: `http://localhost:3000/dashboard`
+
+![Dashboard Skills](screenshots/02-dashboard/03_dashboard_skills_tab.png)
+
+**Hành động**:
+1. Click tab "Skills"
+2. **Chụp**: Skills progress cards (Listening, Reading, Writing, Speaking)
 
 ---
 
@@ -476,7 +498,7 @@
 #### 📸 Screenshot 5.1: Progress Analytics
 **URL**: `http://localhost:3000/progress`
 
-![Progress Analytics](screenshots/05-progress/01_progress_analytics.png)
+![Progress Analytics](screenshots/05-progress/01_progress_analytics_study_time_tab.png)
 
 **Mô tả**:
 - PageHeader với time range filters (7d, 30d, 90d, All Time)
@@ -499,6 +521,28 @@
    - Study Time chart
    - Completion Rate chart
    - Exercises breakdown
+
+---
+
+#### 📸 Screenshot 5.1a: Progress Analytics - Completion Rate Tab
+**URL**: `http://localhost:3000/progress`
+
+![Progress Completion Rate](screenshots/05-progress/02_progress_analytics_completion_tab.png)
+
+**Hành động**:
+1. Click tab "Completion Rate"
+2. **Chụp**: Completion Rate chart
+
+---
+
+#### 📸 Screenshot 5.1b: Progress Analytics - Exercises Tab
+**URL**: `http://localhost:3000/progress`
+
+![Progress Exercises](screenshots/05-progress/03_progress_analytics_exercises_tab.png)
+
+**Hành động**:
+1. Click tab "Exercises"
+2. **Chụp**: Exercises breakdown by type
 
 ---
 
@@ -569,7 +613,7 @@
 #### 📸 Screenshot 7.1: Achievements
 **URL**: `http://localhost:3000/achievements`
 
-![Achievements](screenshots/06-tools/03_achievements.png)
+![Achievements](screenshots/06-tools/03_achievements_earned_tab.png)
 
 **Mô tả**:
 - PageHeader
@@ -587,6 +631,15 @@
 3. **Chụp**: 
    - Tab "Earned"
    - Tab "Available"
+
+#### 📸 Screenshot 7.1a: Achievements - Available Tab
+**URL**: `http://localhost:3000/achievements`
+
+![Achievements Available](screenshots/06-tools/03_achievements_available_tab.png)
+
+**Hành động**:
+1. Click tab "All Achievements"
+2. **Chụp**: Available achievements list
 
 ---
 
@@ -618,7 +671,7 @@
 #### 📸 Screenshot 7.3: Leaderboard
 **URL**: `http://localhost:3000/leaderboard`
 
-![Leaderboard](screenshots/07-social/02_leaderboard.png)
+![Leaderboard](screenshots/07-social/02_leaderboard_today_tab.png)
 
 **Mô tả**:
 - PageHeader với time filters (Today, This Week, This Month, All Time)
@@ -634,6 +687,28 @@
 1. Truy cập `/leaderboard`
 2. Thử thay đổi time filter
 3. **Chụp**: Leaderboard table
+
+---
+
+#### 📸 Screenshot 7.3a: Leaderboard - Weekly Tab
+**URL**: `http://localhost:3000/leaderboard`
+
+![Leaderboard Weekly](screenshots/07-social/03_leaderboard_weekly_tab.png)
+
+**Hành động**:
+1. Click tab "This Week"
+2. **Chụp**: Weekly leaderboard
+
+---
+
+#### 📸 Screenshot 7.3b: Leaderboard - Monthly Tab
+**URL**: `http://localhost:3000/leaderboard`
+
+![Leaderboard Monthly](screenshots/07-social/04_leaderboard_monthly_tab.png)
+
+**Hành động**:
+1. Click tab "This Month"
+2. **Chụp**: Monthly leaderboard
 
 ---
 
