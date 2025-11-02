@@ -305,9 +305,22 @@
 
 ![Course Detail Reviews](screenshots/03-courses/08_course_detail_reviews_tab.png)
 
+**Mô tả**:
+- Tab "Reviews" đang active
+- Review Form (nếu đã enroll): Form để chỉnh sửa đánh giá của bạn với:
+  - Rating stars (1-5 stars)
+  - Title field (optional)
+  - Comment field (optional)
+  - "Cập nhật đánh giá" button
+- Review List: Danh sách các reviews từ users khác với:
+  - User avatar và name
+  - Rating stars
+  - Review title và comment
+  - Timestamp (ví dụ: "1 ngày trước", "2 ngày trước")
+
 **Hành động**:
 1. Từ Course Detail, click tab "Reviews"
-2. **Chụp**: Course reviews và ratings
+2. **Chụp**: Review Form và Review List với các reviews từ users
 
 ---
 
@@ -413,17 +426,6 @@
 
 ---
 
-#### 📸 Screenshot 4.6: My Exercises - Completed Tab
-**URL**: `http://localhost:3000/my-exercises`
-
-![My Exercises Completed](screenshots/04-exercises/03_my_exercises_completed_tab.png)
-
-**Hành động**:
-1. Click tab "Completed"
-2. **Chụp**: Exercises đã hoàn thành
-
----
-
 #### 📸 Screenshot 4.4: Exercise Result
 **URL**: `http://localhost:3000/exercises/[exerciseId]/result/[submissionId]`
 
@@ -477,10 +479,21 @@
 
 ---
 
-#### 📸 Screenshot 4.6: Exercise History
+#### 📸 Screenshot 4.6: My Exercises - Completed Tab
+**URL**: `http://localhost:3000/my-exercises`
+
+![My Exercises Completed](screenshots/04-exercises/03_my_exercises_completed_tab.png)
+
+**Hành động**:
+1. Click tab "Completed"
+2. **Chụp**: Exercises đã hoàn thành
+
+---
+
+#### 📸 Screenshot 4.7: Exercise History
 **URL**: `http://localhost:3000/exercises/history`
 
-![Exercise History](screenshots/04-exercises/03_exercise_history.png)
+![Exercise History](screenshots/04-exercises/05_exercise_history.png)
 
 **Mô tả**:
 - List tất cả submissions đã làm
@@ -549,7 +562,7 @@
 #### 📸 Screenshot 5.2: Study History
 **URL**: `http://localhost:3000/history`
 
-![Study History](screenshots/05-progress/02_study_history.png)
+![Study History](screenshots/06-study-tools/01_study_history.png)
 
 **Mô tả**:
 - Timeline của các hoạt động học tập
@@ -566,7 +579,7 @@
 #### 📸 Screenshot 6.1: Goals - List View
 **URL**: `http://localhost:3000/goals`
 
-![Goals](screenshots/06-tools/01_goals.png)
+![Goals](screenshots/06-study-tools/02_study_goals.png)
 
 **Mô tả**:
 - PageHeader với "Create Goal" button
@@ -585,7 +598,7 @@
 #### 📸 Screenshot 6.2: Reminders - List View
 **URL**: `http://localhost:3000/reminders`
 
-![Reminders](screenshots/06-tools/02_reminders.png)
+![Reminders](screenshots/06-study-tools/03_study_reminders.png)
 
 **Mô tả**:
 - PageHeader với "Create Reminder" button
@@ -646,7 +659,7 @@
 #### 📸 Screenshot 7.2: Notifications
 **URL**: `http://localhost:3000/notifications`
 
-![Notifications](screenshots/07-social/01_notifications.png)
+![Notifications](screenshots/07-social/03_notifications.png)
 
 **Mô tả**:
 - PageHeader với "Mark All Read" button
@@ -717,7 +730,7 @@
 #### 📸 Screenshot 8.1: Profile (My Profile)
 **URL**: `http://localhost:3000/profile`
 
-![Profile](screenshots/08-profile/01_profile.png)
+![Profile](screenshots/08-profile/01_profile_settings.png)
 
 **Mô tả**:
 - Profile information form:
@@ -738,6 +751,8 @@
 
 #### 📸 Screenshot 8.2: User Profile (Public)
 **URL**: `http://localhost:3000/users/[userId]`
+
+![User Profile Public](screenshots/08-profile/03_user_profile_public.png)
 
 **Mô tả**:
 - User header với avatar, name, bio
@@ -1122,6 +1137,44 @@
 ---
 
 **Chúc bạn chụp ảnh demo thành công! 📸✨**
+
+---
+
+## 📋 KIỂM TRA CUỐI CÙNG
+
+### ✅ Đã Kiểm Tra và Xác Nhận:
+1. ✅ **38 đường dẫn ảnh** trong DEMO_SCENARIO.md - Tất cả đều tồn tại
+2. ✅ **User Profile (Public)** - Đã thêm đường dẫn: `screenshots/08-profile/03_user_profile_public.png`
+3. ✅ **Course Detail - Reviews Tab** - Đã chụp lại với nội dung đúng (Review Form và Review List)
+4. ✅ **Tab Screenshots** - Đã kiểm tra và xác nhận:
+   - Dashboard (Overview, Analytics, Skills) ✅
+   - My Courses (All, In Progress, Completed) ✅
+   - My Exercises (All, In Progress, Completed) ✅
+   - Progress Analytics (Study Time, Completion Rate, Exercises) ✅
+   - Course Detail (Curriculum, About, Reviews) ✅
+   - Achievements (Earned, Available) ✅
+   - Leaderboard (Today, This Week, This Month) ✅
+
+### 📝 Lưu Ý:
+- ✅ Tất cả các file ảnh được tham chiếu trong DEMO_SCENARIO.md đều tồn tại
+- ✅ Script `scripts/verify-screenshots.sh` đã được tạo để kiểm tra tự động
+- ⚠️ File duplicate (*_correct.png, *_final.png, *_verified.png) có thể xóa để dọn dẹp
+- 📋 Chi tiết kiểm tra: Xem file `VERIFICATION_REPORT.md`
+
+### ✅ Đã Kiểm Tra và Chụp Lại:
+- [x] Exercises List ✅ - Đã chụp lại với dữ liệu đầy đủ
+- [x] Exercise History ✅ - Đã chụp lại với dữ liệu đầy đủ
+- [x] Study History ✅ - Đã chụp lại với dữ liệu đầy đủ
+- [x] Goals ✅ - Đã chụp lại với dữ liệu đầy đủ
+- [x] Reminders ✅ - Đã chụp lại với dữ liệu đầy đủ (On/Off sections)
+- [x] Notifications ✅ - Đã chụp lại với dữ liệu đầy đủ (Unread/Read sections)
+- [x] Profile Settings ✅ - Đã chụp lại với tab "Profile" active
+- [x] Settings ✅ - Đã chụp lại với tất cả sections (Notifications, Display, Study Preferences, Privacy)
+
+### 📝 Ghi Chú:
+- Tất cả screenshots đã được chụp và kiểm tra
+- Một số translation keys có thể chưa được resolve (ví dụ: `exercises.continue`, `exercises.completed_label`) nhưng không ảnh hưởng đến demo
+- Tất cả đường dẫn ảnh trong DEMO_SCENARIO.md đều tồn tại và chính xác
 
 *Last Updated: 2025-01-XX*
 

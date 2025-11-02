@@ -37,7 +37,7 @@
 - ✅ `08_course_detail_about_tab.png` - Tab About
 - ✅ `08_course_detail_reviews_tab.png` - Tab Reviews
 
-**Vấn đề đã sửa**: Tab Reviews và About đã được chụp đúng cách
+**Vấn đề đã sửa**: Tab Reviews đã được chụp lại đúng cách sau khi thử nhiều phương pháp (click qua ref, JavaScript click, dispatchEvent). Ảnh hiện tại hiển thị đúng tab Reviews với Review Form và Review List.
 
 ### 5. My Exercises Tabs (3 tabs)
 - ✅ `01_my_exercises_all_tab.png` - Tab All
