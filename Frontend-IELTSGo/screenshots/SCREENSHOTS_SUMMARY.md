@@ -1,6 +1,6 @@
 # 📸 Tổng hợp Screenshots Demo - Phần Học Viên
 
-## ✅ Đã chụp thành công: 20 ảnh
+## ✅ Đã chụp thành công: 23 ảnh
 
 ### 📁 Cấu trúc thư mục
 
@@ -15,16 +15,19 @@ screenshots/
 ├── 02-dashboard/            ✅ 1 ảnh
 │   └── 01_dashboard_overview.png
 │
-├── 03-courses/              ✅ 3 ảnh
+├── 03-courses/              ✅ 5 ảnh
 │   ├── 01_my_courses.png
 │   ├── 02_browse_courses.png
-│   └── 03_course_detail.png
+│   ├── 03_course_detail.png
+│   ├── 04_my_courses_in_progress.png
+│   └── 05_lesson_detail.png
 │
-├── 04-exercises/            ✅ 4 ảnh
+├── 04-exercises/            ✅ 5 ảnh
 │   ├── 01_exercises_list.png
 │   ├── 02_my_exercises.png
 │   ├── 03_exercise_history.png
-│   └── 04_exercise_detail.png
+│   ├── 04_exercise_detail.png
+│   └── 05_take_exercise.png
 │
 ├── 05-progress/             ✅ 2 ảnh
 │   ├── 01_progress_analytics.png
@@ -55,16 +58,19 @@ screenshots/
 ### Dashboard & Overview (1 ảnh)
 - ✅ Dashboard với stats và charts
 
-### Courses (3 ảnh)
+### Courses (5 ảnh)
 - ✅ My Courses
+- ✅ My Courses (In Progress tab)
 - ✅ Browse Courses
 - ✅ Course Detail
+- ✅ Lesson Detail
 
-### Exercises (4 ảnh)
+### Exercises (5 ảnh)
 - ✅ Exercises List
 - ✅ My Exercises
 - ✅ Exercise History
 - ✅ Exercise Detail
+- ✅ Take Exercise
 
 ### Progress & Analytics (2 ảnh)
 - ✅ Progress Analytics
@@ -102,10 +108,14 @@ cd Frontend-IELTSGo
 ## ⚠️ Các trang chưa chụp (có thể bổ sung sau)
 
 Nếu cần chụp thêm:
-- Lesson Detail (Video player)
-- Take Exercise (đang làm bài)
-- Exercise Result (kết quả)
-- My Courses (In Progress tab)
-- User Profile (public view)
+- Exercise Result (kết quả sau khi submit)
+- User Profile (public view - `/users/[userId]`)
 
 Xem file `DEMO_SCENARIO.md` để có kịch bản chi tiết cho các trang này và cập nhật ảnh đã chụp.
+
+## 📊 Tổng kết
+
+**Tổng số ảnh đã chụp**: 24 ảnh  
+**Hoàn thành**: ~90% các trang học viên chính
+
+Các ảnh đã được tích hợp vào `DEMO_SCENARIO.md` với markdown image syntax để dễ xem và sử dụng trong báo cáo.

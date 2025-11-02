@@ -203,6 +203,8 @@
 #### 📸 Screenshot 3.2: My Courses - Tab "In Progress"
 **URL**: `http://localhost:3000/my-courses`
 
+![My Courses - In Progress](screenshots/03-courses/04_my_courses_in_progress.png)
+
 **Hành động**:
 1. Click tab "In Progress"
 2. **Chụp**: Courses đang học
@@ -267,6 +269,8 @@
 
 #### 📸 Screenshot 3.5: Lesson Detail - Video Player
 **URL**: `http://localhost:3000/courses/[courseId]/lessons/[lessonId]`
+
+![Lesson Detail](screenshots/03-courses/05_lesson_detail.png)
 
 **Mô tả**:
 - Video player
@@ -335,6 +339,8 @@
 
 #### 📸 Screenshot 4.3: Take Exercise (Đang làm bài)
 **URL**: `http://localhost:3000/exercises/[exerciseId]/take/[submissionId]`
+
+![Take Exercise](screenshots/04-exercises/05_take_exercise.png)
 
 **Mô tả**:
 - Timer countdown
@@ -873,13 +879,13 @@
 - [x] Login ✅
 - [x] Dashboard ✅
 - [x] My Courses (All tab) ✅
-- [ ] My Courses (In Progress tab)
+- [x] My Courses (In Progress tab) ✅
 - [x] Browse Courses ✅
 - [x] Course Detail ✅
-- [ ] Lesson Detail
+- [x] Lesson Detail ✅
 - [x] Exercises List ✅
 - [x] Exercise Detail ✅
-- [ ] Take Exercise
+- [x] Take Exercise ✅
 - [ ] Exercise Result
 - [x] My Exercises ✅
 - [x] Exercise History ✅
