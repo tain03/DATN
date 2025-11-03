@@ -4,19 +4,32 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
+	"github.com/bisosad1501/DATN/services/user-service/internal/config"
 	"github.com/bisosad1501/DATN/services/user-service/internal/database"
 	"github.com/bisosad1501/DATN/services/user-service/internal/models"
 	"github.com/google/uuid"
 )
 
 type UserRepository struct {
-	db *database.Database
+	db     *database.Database
+	config *config.Config
 }
 
-func NewUserRepository(db *database.Database) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *database.Database, cfg *config.Config) *UserRepository {
+	return &UserRepository{db: db, config: cfg}
+}
+
+// getDBLinkConnectionString builds dblink connection string from config
+// Returns properly escaped string for use in SQL queries
+func (r *UserRepository) getDBLinkConnectionString(dbName string) string {
+	// Use same password from config, assume same user and host
+	// Escape single quotes in password if needed
+	password := r.config.DBPassword
+	password = strings.ReplaceAll(password, "'", "''")
+	return fmt.Sprintf("dbname=%s user=%s password=%s", dbName, r.config.DBUser, password)
 }
 
 // CreateProfile creates a new user profile
@@ -1414,8 +1427,23 @@ func (r *UserRepository) GetTopLearners(period string, page, limit int) ([]model
 	// Calculate offset for pagination
 	offset := (page - 1) * limit
 	
+	// Build dblink connection string from config
+	dbLinkConnStr := r.getDBLinkConnectionString("auth_db")
+	
+	// Build achievement filter
+	achievementFilter := func() string {
+		if period == "daily" {
+			return "WHERE earned_at >= CURRENT_DATE"
+		} else if period == "weekly" {
+			return "WHERE earned_at >= DATE_TRUNC('week', CURRENT_DATE)"
+		} else if period == "monthly" {
+			return "WHERE earned_at >= DATE_TRUNC('month', CURRENT_DATE)"
+		}
+		return ""
+	}()
+	
 	// Build query with period filtering
-	query := `
+	query := fmt.Sprintf(`
 		WITH user_stats AS (
 			SELECT 
 				up.user_id,
@@ -1431,22 +1459,13 @@ func (r *UserRepository) GetTopLearners(period string, page, limit int) ([]model
 			FROM user_profiles up
 			LEFT JOIN learning_progress lp ON up.user_id = lp.user_id
 			LEFT JOIN dblink(
-				'dbname=auth_db user=ielts_admin password=ielts_password_2025',
+				'%s',
 				'SELECT id, email FROM users WHERE deleted_at IS NULL'
 			) AS au(id uuid, email text) ON up.user_id = au.id
 			LEFT JOIN (
 				SELECT user_id, COUNT(*) as achievements_count
 				FROM user_achievements
-				` + func() string {
-				if period == "daily" {
-					return "WHERE earned_at >= CURRENT_DATE"
-				} else if period == "weekly" {
-					return "WHERE earned_at >= DATE_TRUNC('week', CURRENT_DATE)"
-				} else if period == "monthly" {
-					return "WHERE earned_at >= DATE_TRUNC('month', CURRENT_DATE)"
-				}
-				return ""
-			}() + `
+				%s
 				GROUP BY user_id
 			) achievement_counts ON up.user_id = achievement_counts.user_id
 			LEFT JOIN (
@@ -1454,7 +1473,7 @@ func (r *UserRepository) GetTopLearners(period string, page, limit int) ([]model
 					user_id,
 					ROUND((SUM(duration_minutes) / 60.0)::numeric, 2) as total_study_hours
 				FROM study_sessions ss
-				WHERE 1=1 ` + dateFilter + `
+				WHERE 1=1 %s
 				GROUP BY user_id
 			) study_times ON up.user_id = study_times.user_id
 		),
@@ -1478,7 +1497,7 @@ func (r *UserRepository) GetTopLearners(period string, page, limit int) ([]model
 		FROM ranked_users
 		ORDER BY rank ASC
 		LIMIT $1 OFFSET $2
-	`
+	`, dbLinkConnStr, achievementFilter, dateFilter)
 	rows, err := r.db.DB.Query(query, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get top learners: %w", err)
@@ -1504,7 +1523,10 @@ func (r *UserRepository) GetTopLearners(period string, page, limit int) ([]model
 // Uses the same optimized query structure as GetTopLearners
 // Always returns a rank, even if user has no achievements or study hours yet
 func (r *UserRepository) GetUserRank(userID uuid.UUID) (*models.LeaderboardEntry, error) {
-	query := `
+	// Build dblink connection string from config
+	dbLinkConnStr := r.getDBLinkConnectionString("auth_db")
+	
+	query := fmt.Sprintf(`
 		WITH all_user_stats AS (
 			SELECT 
 				up.user_id,
@@ -1520,7 +1542,7 @@ func (r *UserRepository) GetUserRank(userID uuid.UUID) (*models.LeaderboardEntry
 			FROM user_profiles up
 			LEFT JOIN learning_progress lp ON up.user_id = lp.user_id
 			LEFT JOIN dblink(
-				'dbname=auth_db user=ielts_admin password=ielts_password_2025',
+				'%s',
 				'SELECT id, email FROM users WHERE deleted_at IS NULL'
 			) AS au(id uuid, email text) ON up.user_id = au.id
 			LEFT JOIN (
@@ -1573,7 +1595,7 @@ func (r *UserRepository) GetUserRank(userID uuid.UUID) (*models.LeaderboardEntry
 		FROM current_user_stats cus
 		CROSS JOIN active_count ac
 		LEFT JOIN ranked_users ru ON cus.user_id = ru.user_id
-	`
+	`, dbLinkConnStr)
 	entry := &models.LeaderboardEntry{}
 	err := r.db.DB.QueryRow(query, userID).Scan(&entry.Rank, &entry.UserID, &entry.FullName,
 		&entry.AvatarURL, &entry.TotalPoints, &entry.CurrentStreakDays, &entry.TotalStudyHours,

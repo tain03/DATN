@@ -30,7 +30,7 @@ func main() {
 	defer db.Close()
 
 	// Initialize repository
-	userRepo := repository.NewUserRepository(db)
+	userRepo := repository.NewUserRepository(db, cfg)
 
 	// Initialize service
 	userService := service.NewUserService(userRepo, cfg)
