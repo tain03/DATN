@@ -20,7 +20,7 @@ func NewCourseRepository(db *sql.DB) *CourseRepository {
 }
 
 // GetCourses retrieves courses with filters
-func (r *CourseRepository) GetCourses(query *models.CourseListQuery) ([]models.Course, error) {
+func (r *CourseRepository) GetCourses(query *models.CourseListQuery) ([]models.Course, int, error) {
 	var conditions []string
 	var args []interface{}
 
@@ -100,6 +100,17 @@ func (r *CourseRepository) GetCourses(query *models.CourseListQuery) ([]models.C
 		baseQuery += " AND " + strings.Join(conditions, " AND ")
 	}
 
+	// Get total count first (before pagination)
+	countQuery := "SELECT COUNT(*) FROM courses c WHERE c.status = 'published'"
+	if len(conditions) > 0 {
+		countQuery += " AND " + strings.Join(conditions, " AND ")
+	}
+	var total int
+	err := r.db.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
 	baseQuery += " ORDER BY display_order ASC, created_at DESC"
 
 	// Pagination
@@ -124,7 +135,7 @@ func (r *CourseRepository) GetCourses(query *models.CourseListQuery) ([]models.C
 		log.Printf("[GetCourses] SQL Error: %v", err)
 		log.Printf("[GetCourses] Query: %s", baseQuery)
 		log.Printf("[GetCourses] Args: %v", args)
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -148,7 +159,7 @@ func (r *CourseRepository) GetCourses(query *models.CourseListQuery) ([]models.C
 		courses = append(courses, course)
 	}
 
-	return courses, nil
+	return courses, total, nil
 }
 
 // GetCourseByID retrieves a course by ID
@@ -465,8 +476,18 @@ func (r *CourseRepository) GetEnrollment(userID, courseID uuid.UUID) (*models.Co
 	return &enrollment, nil
 }
 
-// GetUserEnrollments retrieves all enrollments for a user with REAL-TIME progress calculation
-func (r *CourseRepository) GetUserEnrollments(userID uuid.UUID) ([]models.CourseEnrollment, error) {
+// GetUserEnrollments retrieves all enrollments for a user with REAL-TIME progress calculation (with pagination)
+func (r *CourseRepository) GetUserEnrollments(userID uuid.UUID, page, limit int) ([]models.CourseEnrollment, int, error) {
+	// Get total count first
+	countQuery := `SELECT COUNT(*) FROM course_enrollments WHERE user_id = $1`
+	var total int
+	err := r.db.QueryRow(countQuery, userID).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
 	// 📊 SOURCE OF TRUTH: Use study_sessions from user_db (same as Dashboard)
 	// ✅ FIX: Use parameterized query properly - CTEs can reference outer query parameters
 	query := `
@@ -519,11 +540,12 @@ func (r *CourseRepository) GetUserEnrollments(userID uuid.UUID) ([]models.Course
 				 e.certificate_issued, e.certificate_url, e.expires_at, e.last_accessed_at,
 				 e.created_at, e.updated_at, clc.total_lessons, cst.total_minutes
 		ORDER BY e.enrollment_date DESC
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.Query(query, userID)
+	rows, err := r.db.Query(query, userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -546,7 +568,7 @@ func (r *CourseRepository) GetUserEnrollments(userID uuid.UUID) ([]models.Course
 		enrollments = append(enrollments, enrollment)
 	}
 
-	return enrollments, nil
+	return enrollments, total, nil
 }
 
 // GetCourseEnrollments retrieves all enrollments for a course (for notifications)
@@ -780,10 +802,25 @@ func (r *CourseRepository) GetModuleCourseID(moduleID uuid.UUID) (uuid.UUID, err
 // COURSE REVIEWS
 // ============================================
 
-// GetCourseReviews retrieves approved reviews for a course
-func (r *CourseRepository) GetCourseReviews(courseID uuid.UUID) ([]models.CourseReview, error) {
-    // Use dblink to get user info from user_db and auth_db (cross-database JOIN)
-    query := `
+// GetCourseReviews retrieves approved reviews for a course with pagination
+func (r *CourseRepository) GetCourseReviews(courseID uuid.UUID, page, limit int) ([]models.CourseReview, int, error) {
+	// Get total count first
+	countQuery := `
+		SELECT COUNT(*) 
+		FROM course_reviews
+		WHERE course_id = $1 AND is_approved = true
+	`
+	var total int
+	err := r.db.QueryRow(countQuery, courseID).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
+	// Use dblink to get user info from user_db and auth_db (cross-database JOIN)
+	query := `
         SELECT 
             cr.id, cr.user_id, cr.course_id, cr.rating, cr.title, cr.comment, cr.helpful_count, 
             cr.is_approved, cr.approved_by, cr.approved_at, cr.created_at, cr.updated_at,
@@ -799,11 +836,12 @@ func (r *CourseRepository) GetCourseReviews(courseID uuid.UUID) ([]models.Course
         ) AS au(id uuid, email text) ON cr.user_id = au.id
         WHERE cr.course_id = $1 AND cr.is_approved = true
         ORDER BY cr.created_at DESC
+        LIMIT $2 OFFSET $3
     `
 
-	rows, err := r.db.Query(query, courseID)
+	rows, err := r.db.Query(query, courseID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -824,7 +862,7 @@ func (r *CourseRepository) GetCourseReviews(courseID uuid.UUID) ([]models.Course
 		reviews = append(reviews, review)
 	}
 
-	return reviews, nil
+	return reviews, total, nil
 }
 
 // CreateReview creates a new course review
@@ -1030,19 +1068,30 @@ func (r *CourseRepository) CreateVideoWatchHistory(history *models.VideoWatchHis
 }
 
 // GetUserVideoWatchHistory retrieves watch history for a user
-func (r *CourseRepository) GetUserVideoWatchHistory(userID uuid.UUID, limit int) ([]models.VideoWatchHistory, error) {
+func (r *CourseRepository) GetUserVideoWatchHistory(userID uuid.UUID, page, limit int) ([]models.VideoWatchHistory, int, error) {
+	// Get total count first
+	countQuery := `SELECT COUNT(*) FROM video_watch_history WHERE user_id = $1`
+	var total int
+	err := r.db.QueryRow(countQuery, userID).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
 	query := `
 		SELECT id, user_id, video_id, lesson_id, watched_seconds, total_seconds,
 			   watch_percentage, session_id, device_type, watched_at
 		FROM video_watch_history
 		WHERE user_id = $1
 		ORDER BY watched_at DESC
-		LIMIT $2
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.Query(query, userID, limit)
+	rows, err := r.db.Query(query, userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -1061,7 +1110,7 @@ func (r *CourseRepository) GetUserVideoWatchHistory(userID uuid.UUID, limit int)
 		history = append(history, record)
 	}
 
-	return history, nil
+	return history, total, nil
 }
 
 // ============================================

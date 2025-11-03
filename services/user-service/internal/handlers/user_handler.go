@@ -376,7 +376,7 @@ func (h *UserHandler) EndSession(c *gin.Context) {
 	})
 }
 
-// GetHistory gets study history
+// GetHistory gets study history with pagination
 func (h *UserHandler) GetHistory(c *gin.Context) {
 	userIDStr, _ := c.Get("user_id")
 	userID, err := uuid.Parse(userIDStr.(string))
@@ -391,21 +391,21 @@ func (h *UserHandler) GetHistory(c *gin.Context) {
 		return
 	}
 
-	// Get limit from query param (support both 'limit' and 'page_size')
-	limitStr := c.Query("limit")
-	if limitStr == "" {
-		limitStr = c.DefaultQuery("page_size", "20")
-	}
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		limit = 20
+	// Parse pagination params
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	// Support page_size as alternative
+	if limitStr := c.Query("page_size"); limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
 	}
 	// Cap at 200 to prevent excessive queries
 	if limit > 200 {
 		limit = 200
 	}
 
-	sessions, err := h.service.GetStudyHistory(userID, limit)
+	sessions, total, err := h.service.GetStudyHistory(userID, page, limit)
 	if err != nil {
 		log.Printf("❌ Error getting study history: %v", err)
 		c.JSON(http.StatusInternalServerError, models.Response{
@@ -419,11 +419,17 @@ func (h *UserHandler) GetHistory(c *gin.Context) {
 		return
 	}
 
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 	c.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Data: gin.H{
 			"sessions": sessions,
-			"count":    len(sessions),
+			"pagination": gin.H{
+				"page":        page,
+				"limit":       limit,
+				"total":       total,
+				"total_pages": totalPages,
+			},
 		},
 	})
 }

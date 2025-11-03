@@ -124,6 +124,24 @@ type MyEnrollmentsResponse struct {
 	Total       int                    `json:"total"`
 }
 
+// CourseReviewsResponse represents paginated course reviews
+type CourseReviewsResponse struct {
+	Reviews    []CourseReview `json:"reviews"`
+	Total      int            `json:"total"`
+	Page       int            `json:"page"`
+	Limit      int            `json:"limit"`
+	TotalPages int            `json:"total_pages"`
+}
+
+// VideoWatchHistoryResponse represents paginated video watch history
+type VideoWatchHistoryResponse struct {
+	History    []VideoWatchHistory `json:"history"`
+	Total      int                 `json:"total"`
+	Page       int                 `json:"page"`
+	Limit      int                 `json:"limit"`
+	TotalPages int                 `json:"total_pages"`
+}
+
 // EnrollmentWithCourse represents enrollment with course details
 type EnrollmentWithCourse struct {
 	Enrollment CourseEnrollment `json:"enrollment"`

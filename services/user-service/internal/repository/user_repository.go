@@ -453,7 +453,18 @@ func (r *UserRepository) EndStudySession(sessionID uuid.UUID, completionPercenta
 }
 
 // GetRecentSessions retrieves recent study sessions
-func (r *UserRepository) GetRecentSessions(userID uuid.UUID, limit int) ([]models.StudySession, error) {
+func (r *UserRepository) GetRecentSessions(userID uuid.UUID, page, limit int) ([]models.StudySession, int, error) {
+	// Get total count first
+	countQuery := `SELECT COUNT(*) FROM study_sessions WHERE user_id = $1`
+	var total int
+	err := r.db.DB.QueryRow(countQuery, userID).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count sessions: %w", err)
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
 	query := `
 		SELECT id, user_id, session_type, skill_type, resource_id, resource_type,
 		       started_at, ended_at, duration_minutes, is_completed, completion_percentage,
@@ -461,12 +472,12 @@ func (r *UserRepository) GetRecentSessions(userID uuid.UUID, limit int) ([]model
 		FROM study_sessions
 		WHERE user_id = $1
 		ORDER BY started_at DESC
-		LIMIT $2
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.DB.Query(query, userID, limit)
+	rows, err := r.db.DB.Query(query, userID, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get recent sessions: %w", err)
+		return nil, 0, fmt.Errorf("failed to get recent sessions: %w", err)
 	}
 	defer rows.Close()
 
@@ -480,12 +491,12 @@ func (r *UserRepository) GetRecentSessions(userID uuid.UUID, limit int) ([]model
 			&session.Score, &session.DeviceType, &session.CreatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan session: %w", err)
+			return nil, 0, fmt.Errorf("failed to scan session: %w", err)
 		}
 		sessions = append(sessions, session)
 	}
 
-	return sessions, nil
+	return sessions, total, nil
 }
 
 // GetUserAchievements retrieves user's earned achievements

@@ -31,7 +31,7 @@ func NewCourseService(repo *repository.CourseRepository, userServiceClient *clie
 }
 
 // GetCourses retrieves courses with filters
-func (s *CourseService) GetCourses(query *models.CourseListQuery) ([]models.Course, error) {
+func (s *CourseService) GetCourses(query *models.CourseListQuery) ([]models.Course, int, error) {
 	// Set defaults
 	if query.Page <= 0 {
 		query.Page = 1
@@ -275,11 +275,19 @@ func (s *CourseService) EnrollCourse(userID uuid.UUID, req *models.EnrollmentReq
 	return s.repo.GetEnrollment(userID, req.CourseID)
 }
 
-// GetMyEnrollments retrieves user's enrollments
-func (s *CourseService) GetMyEnrollments(userID uuid.UUID) (*models.MyEnrollmentsResponse, error) {
-	enrollments, err := s.repo.GetUserEnrollments(userID)
+// GetMyEnrollments retrieves user's enrollments with pagination
+func (s *CourseService) GetMyEnrollments(userID uuid.UUID, page, limit int) (*models.MyEnrollmentsResponse, int, error) {
+	// Validate pagination params
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	enrollments, total, err := s.repo.GetUserEnrollments(userID, page, limit)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get enrollments: %w", err)
+		return nil, 0, fmt.Errorf("failed to get enrollments: %w", err)
 	}
 
 	var enrollmentsWithCourses []models.EnrollmentWithCourse
@@ -302,7 +310,7 @@ func (s *CourseService) GetMyEnrollments(userID uuid.UUID) (*models.MyEnrollment
 	return &models.MyEnrollmentsResponse{
 		Enrollments: enrollmentsWithCourses,
 		Total:       len(enrollmentsWithCourses),
-	}, nil
+	}, total, nil
 }
 
 // UpdateLessonProgress updates lesson progress
@@ -869,9 +877,16 @@ func (s *CourseService) PublishCourse(courseID uuid.UUID, userID uuid.UUID, user
 // COURSE REVIEWS
 // ============================================
 
-// GetCourseReviews retrieves reviews for a course
-func (s *CourseService) GetCourseReviews(courseID uuid.UUID) ([]models.CourseReview, error) {
-	return s.repo.GetCourseReviews(courseID)
+// GetCourseReviews retrieves reviews for a course with pagination
+func (s *CourseService) GetCourseReviews(courseID uuid.UUID, page, limit int) ([]models.CourseReview, int, error) {
+	// Validate pagination params
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	return s.repo.GetCourseReviews(courseID, page, limit)
 }
 
 // CreateReview creates a new review for a course
@@ -1016,11 +1031,15 @@ func (s *CourseService) TrackVideoProgress(userID uuid.UUID, req *models.TrackVi
 }
 
 // GetUserVideoWatchHistory retrieves user's video watch history
-func (s *CourseService) GetUserVideoWatchHistory(userID uuid.UUID, limit int) ([]models.VideoWatchHistory, error) {
-	if limit <= 0 {
+func (s *CourseService) GetUserVideoWatchHistory(userID uuid.UUID, page, limit int) ([]models.VideoWatchHistory, int, error) {
+	// Validate pagination params
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
 		limit = 20
 	}
-	return s.repo.GetUserVideoWatchHistory(userID, limit)
+	return s.repo.GetUserVideoWatchHistory(userID, page, limit)
 }
 
 // ============================================

@@ -61,7 +61,7 @@ func (h *CourseHandler) GetCourses(c *gin.Context) {
 		return
 	}
 
-	courses, err := h.service.GetCourses(&query)
+	courses, total, err := h.service.GetCourses(&query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,
@@ -74,11 +74,22 @@ func (h *CourseHandler) GetCourses(c *gin.Context) {
 		return
 	}
 
+	limit := query.Limit
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	totalPages := (total + limit - 1) / limit
+
 	c.JSON(http.StatusOK, Response{
 		Success: true,
 		Data: map[string]interface{}{
 			"courses": courses,
-			"count":   len(courses),
+			"pagination": map[string]interface{}{
+				"page":        query.Page,
+				"limit":       limit,
+				"total":       total,
+				"total_pages": totalPages,
+			},
 		},
 	})
 }
@@ -239,7 +250,7 @@ func (h *CourseHandler) EnrollCourse(c *gin.Context) {
 	})
 }
 
-// GetMyEnrollments retrieves user's enrollments
+// GetMyEnrollments retrieves user's enrollments with pagination
 func (h *CourseHandler) GetMyEnrollments(c *gin.Context) {
 	userIDVal, exists := c.Get("user_id")
 	if !exists {
@@ -266,7 +277,11 @@ func (h *CourseHandler) GetMyEnrollments(c *gin.Context) {
 		return
 	}
 
-	enrollments, err := h.service.GetMyEnrollments(userID)
+	// Parse pagination params
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	enrollments, total, err := h.service.GetMyEnrollments(userID, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,
@@ -279,9 +294,18 @@ func (h *CourseHandler) GetMyEnrollments(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + limit - 1) / limit
 	c.JSON(http.StatusOK, Response{
 		Success: true,
-		Data:    enrollments,
+		Data: map[string]interface{}{
+			"enrollments": enrollments.Enrollments,
+			"pagination": map[string]interface{}{
+				"page":        page,
+				"limit":       limit,
+				"total":       total,
+				"total_pages": totalPages,
+			},
+		},
 	})
 }
 
@@ -933,7 +957,7 @@ func (h *CourseHandler) PublishCourse(c *gin.Context) {
 // COURSE REVIEWS
 // ============================================
 
-// GetCourseReviews retrieves reviews for a course
+// GetCourseReviews retrieves reviews for a course with pagination
 func (h *CourseHandler) GetCourseReviews(c *gin.Context) {
 	courseIDStr := c.Param("id")
 	courseID, err := uuid.Parse(courseIDStr)
@@ -948,7 +972,11 @@ func (h *CourseHandler) GetCourseReviews(c *gin.Context) {
 		return
 	}
 
-	reviews, err := h.service.GetCourseReviews(courseID)
+	// Parse pagination params
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	reviews, total, err := h.service.GetCourseReviews(courseID, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,
@@ -961,9 +989,16 @@ func (h *CourseHandler) GetCourseReviews(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + limit - 1) / limit
 	c.JSON(http.StatusOK, Response{
 		Success: true,
-		Data:    reviews,
+		Data: models.CourseReviewsResponse{
+			Reviews:    reviews,
+			Total:      total,
+			Page:       page,
+			Limit:      limit,
+			TotalPages: totalPages,
+		},
 	})
 }
 
@@ -1197,7 +1232,7 @@ func (h *CourseHandler) TrackVideoProgress(c *gin.Context) {
 	})
 }
 
-// GetVideoWatchHistory retrieves user's video watch history
+// GetVideoWatchHistory retrieves user's video watch history with pagination
 func (h *CourseHandler) GetVideoWatchHistory(c *gin.Context) {
 	userIDStr := c.GetString("user_id")
 	userID, err := uuid.Parse(userIDStr)
@@ -1212,14 +1247,11 @@ func (h *CourseHandler) GetVideoWatchHistory(c *gin.Context) {
 		return
 	}
 
-	limit := 20 // Default limit
-	if limitStr := c.Query("limit"); limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
-			limit = parsedLimit
-		}
-	}
+	// Parse pagination params
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 
-	history, err := h.service.GetUserVideoWatchHistory(userID, limit)
+	history, total, err := h.service.GetUserVideoWatchHistory(userID, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,
@@ -1232,9 +1264,16 @@ func (h *CourseHandler) GetVideoWatchHistory(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + limit - 1) / limit
 	c.JSON(http.StatusOK, Response{
 		Success: true,
-		Data:    history,
+		Data: models.VideoWatchHistoryResponse{
+			History:    history,
+			Total:      total,
+			Page:       page,
+			Limit:      limit,
+			TotalPages: totalPages,
+		},
 	})
 }
 

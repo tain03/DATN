@@ -83,13 +83,17 @@ func (h *ExerciseHandler) GetExercises(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + query.Limit - 1) / query.Limit
 	c.JSON(http.StatusOK, Response{
 		Success: true,
 		Data: gin.H{
 			"exercises": exercises,
-			"total":     total,
-			"page":      query.Page,
-			"limit":     query.Limit,
+			"pagination": gin.H{
+				"page":        query.Page,
+				"limit":      query.Limit,
+				"total":      total,
+				"total_pages": totalPages,
+			},
 		},
 	})
 }
