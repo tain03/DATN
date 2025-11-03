@@ -105,11 +105,6 @@ export function VerticalCardLayout({
                 sizes={imageConfig.sizes}
                 priority={image.priority}
               />
-              {image.overlay && (
-                <div className="absolute inset-0 z-10">
-                  {image.overlay}
-                </div>
-              )}
             </>
           ) : (
             <div className={CARD_CONFIG.image.placeholder.className}>
@@ -129,6 +124,14 @@ export function VerticalCardLayout({
                   CARD_CONFIG.image.placeholder.iconColor
                 )} />
               )}
+            </div>
+          )}
+          {/* Overlay badges - render on top of both image and placeholder */}
+          {image.overlay && (
+            <div className="absolute inset-0 z-10 pointer-events-none">
+              <div className="relative w-full h-full pointer-events-auto">
+                {image.overlay}
+              </div>
             </div>
           )}
         </div>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { VerticalCardLayout } from "@/components/cards/base-card-layout"
 import type { Exercise } from "@/types"
 import { useTranslations } from '@/lib/i18n'
+import { cn } from "@/lib/utils"
 
 interface ExerciseCardProps {
   exercise: Exercise
@@ -25,35 +26,36 @@ function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCard
   const averageScore = exercise.average_score
   const totalAttempts = exercise.total_attempts || 0
   
-  // Skill and difficulty color mappings
+  // Skill and difficulty color mappings (matching Course Card)
   const skillColors: Record<string, string> = {
     listening: "bg-blue-500",
     reading: "bg-green-500",
     writing: "bg-orange-500",
     speaking: "bg-purple-500",
+    general: "bg-gray-500",
   }
 
   const levelColors: Record<string, string> = {
-    easy: "bg-emerald-500",
-    medium: "bg-yellow-500",
-    hard: "bg-red-500",
     beginner: "bg-emerald-500",
     intermediate: "bg-yellow-500",
     advanced: "bg-red-500",
+    easy: "bg-emerald-500", // Map easy to beginner color
+    medium: "bg-yellow-500", // Map medium to intermediate color
+    hard: "bg-red-500", // Map hard to advanced color
   }
 
-  // Build image overlay with badges
+  // Build image overlay with badges (matching Course Card style)
   const imageOverlay = (
     <>
       <div className="absolute top-3 left-3 flex gap-2 z-20">
         <Badge 
-          className={skillColors[skillType.toLowerCase()] || "bg-gray-500"}
+          className={cn(skillColors[skillType.toLowerCase()] || skillColors.general || "bg-gray-500")}
           aria-label={t(skillType.toLowerCase() || 'reading')}
         >
           {t(skillType.toLowerCase() || 'reading').toUpperCase()}
         </Badge>
         <Badge 
-          className={levelColors[difficulty.toLowerCase()] || levelColors.easy} 
+          className={cn(levelColors[difficulty.toLowerCase()] || levelColors.beginner)} 
           variant="secondary"
           aria-label={t(difficulty.toLowerCase() || 'medium')}
         >
