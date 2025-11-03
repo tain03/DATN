@@ -76,10 +76,22 @@ func (h *InternalHandler) SendNotificationInternal(c *gin.Context) {
 
 	notification, err := h.notificationService.CreateNotification(createReq)
 	if err != nil {
+		// Check if error is due to user preferences blocking
+		if err.Error() == "notification blocked by user preferences" {
+			// Return 200 OK when blocked by preferences - this is expected behavior, not an error
+			// Other services should treat this as success (notification not needed)
+			log.Printf("[Internal] Notification blocked by user preferences for user %s (type: %s)", req.UserID, req.Type)
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"message": "Notification blocked by user preferences",
+				"blocked": true,
+			})
+			return
+		}
 		log.Printf("[Internal] Failed to create notification for user %s: %v", req.UserID, err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "creation_failed",
-			Message: "Failed to create notification",
+			Message: "Failed to create notification: " + err.Error(),
 		})
 		return
 	}

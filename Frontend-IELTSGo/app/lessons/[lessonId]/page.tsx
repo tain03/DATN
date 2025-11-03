@@ -49,7 +49,6 @@ export default function LessonDetailPage() {
       setLoading(true)
       const data = await coursesApi.getLessonById(params.lessonId as string)
       setLesson(data)
-      console.log('[Lesson Detail] Loaded:', data)
 
       // If lesson is exercise type, load exercise details
       if (data?.lesson?.content_type === 'exercise' && data?.lesson?.completion_criteria?.exercise_id) {
@@ -67,7 +66,6 @@ export default function LessonDetailPage() {
       setLoadingExercise(true)
       const data = await exercisesApi.getExerciseById(exerciseId)
       setExerciseInfo(data)
-      console.log('[Lesson Detail] Exercise info loaded:', data)
     } catch (error) {
       console.error('[Lesson Detail] Error loading exercise:', error)
     } finally {

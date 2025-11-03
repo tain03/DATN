@@ -41,7 +41,6 @@ export default function ExerciseDetailPage() {
         setLoading(true)
         const data = await exercisesApi.getExerciseById(exerciseId)
         setExerciseData(data)
-        console.log('[Exercise Detail] Loaded:', data)
       } catch (error) {
         console.error('[Exercise Detail] Failed to load:', error)
       } finally {
@@ -56,25 +55,18 @@ export default function ExerciseDetailPage() {
 
   const handleStartExercise = async () => {
     if (!user) {
-      console.log('[Exercise Detail] User not logged in, redirecting to login')
       router.push('/login')
       return
     }
 
     try {
       setStarting(true)
-      console.log('[Exercise Detail] Starting exercise:', exerciseId)
-      console.log('[Exercise Detail] User:', user)
-      console.log('[Exercise Detail] Token:', localStorage.getItem('access_token') ? 'exists' : 'missing')
 
       const submission = await exercisesApi.startExercise(exerciseId)
-      console.log('[Exercise Detail] Started submission:', submission)
 
       router.push(`/exercises/${exerciseId}/take/${submission.id}`)
     } catch (error: any) {
       console.error('[Exercise Detail] Failed to start:', error)
-      console.error('[Exercise Detail] Error response:', error.response?.data)
-      console.error('[Exercise Detail] Error status:', error.response?.status)
 
       // Better error messages
       if (error.response?.status === 401) {

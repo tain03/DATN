@@ -763,3 +763,6 @@ export interface LoginCredentials {
   password: string
   rememberMe?: boolean
 }
+
+// Re-export AI types
+export * from "./ai"

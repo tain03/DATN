@@ -42,20 +42,8 @@ function GoogleCallbackContent() {
               error = error || params.get("error")
             }
           } catch (hashErr) {
-            console.warn("Failed to parse URL fragment for tokens:", hashErr)
           }
         }
-
-        console.log("[GoogleCallback] Parsed params/fragment:", {
-          success,
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken,
-          userId,
-          email,
-          role,
-          error,
-          url: typeof window !== "undefined" ? window.location.href : undefined,
-        })
 
         // Handle error from backend
         if (error) {
@@ -67,7 +55,6 @@ function GoogleCallbackContent() {
 
         // Backend redirect with tokens
         if (success === "true" && accessToken && refreshToken && userId && email && role) {
-          console.log("[GoogleCallback] Processing backend redirect with tokens")
           setMessage(t('storing_authentication_tokens'))
 
           // Store tokens
@@ -88,7 +75,6 @@ function GoogleCallbackContent() {
             avatar = profile.avatar_url || ""
             targetBandScore = profile.target_band_score
           } catch (error) {
-            console.warn("Failed to fetch profile after Google login:", error)
             // Don't fallback to email - leave fullName empty
             fullName = ""
           }
@@ -107,7 +93,6 @@ function GoogleCallbackContent() {
           }
 
           localStorage.setItem("user_data", JSON.stringify(userData))
-          console.log("[GoogleCallback] Stored user data:", userData)
 
           setStatus("success")
           setMessage(tCommon('successfully_authenticated_redirecting'))
@@ -119,7 +104,6 @@ function GoogleCallbackContent() {
             ? "/instructor" 
             : "/dashboard"
           
-          console.log("[GoogleCallback] Redirecting to:", redirectPath)
           
           // Use window.location.href instead of router.push to force a full page reload
           // This ensures AuthContext re-initializes with the new tokens
@@ -130,12 +114,10 @@ function GoogleCallbackContent() {
         }
 
         // Fallback: Old flow with code (shouldn't happen now)
-        console.log("[GoogleCallback] Backend redirect condition not met, trying code exchange flow")
         const code = searchParams.get("code")
         const state = searchParams.get("state")
 
         if (code) {
-          console.log("[GoogleCallback] Found authorization code, exchanging for tokens...")
           setMessage(t('processing_authorization_code'))
 
           // Verify state (CSRF protection)
@@ -175,7 +157,6 @@ function GoogleCallbackContent() {
             avatar = profile.avatar_url || ""
             targetBandScore = profile.target_band_score
           } catch (error) {
-            console.warn("Failed to fetch profile after Google token exchange:", error)
             // Don't fallback to email - leave fullName empty
             fullName = ""
           }

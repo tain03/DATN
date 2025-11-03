@@ -150,9 +150,7 @@ export default function UserProfilePage() {
   const loadProfile = async () => {
     try {
       setLoading(true)
-      console.log("[Profile] Loading profile for userId:", userId)
       const data = await socialApi.getUserProfile(userId)
-      console.log("[Profile] Backend response:", data)
       
       // Map BE response to FE UserProfile interface
       // BE returns: user_id, full_name, email, avatar_url, bio, level, points, 
@@ -175,7 +173,6 @@ export default function UserProfilePage() {
         isFollowing: Boolean(data.is_following || data.isFollowing) || false,
       }
       
-      console.log("[Profile] Mapped profile:", mappedProfile)
       setProfile(mappedProfile)
       
       // ✅ Load profile visibility preference from backend response
@@ -209,7 +206,6 @@ export default function UserProfilePage() {
         })
       } else if (error?.response?.status === 404 || error?.message?.includes("not found")) {
         // Profile not found
-        console.warn("User profile not found:", userId)
         setProfile(null)
       } else {
         // Other unexpected errors - log as error
@@ -254,7 +250,6 @@ export default function UserProfilePage() {
     const wasFollowing = profile.isFollowing
     const previousCount = profile.followersCount
     
-    console.log("[Follow] Starting:", { wasFollowing, userId, previousCount })
     
     setFollowLoading(true)
     
@@ -267,19 +262,13 @@ export default function UserProfilePage() {
     
     try {
       if (wasFollowing) {
-        console.log("[Follow] Unfollowing user:", userId)
         await socialApi.unfollowUser(userId)
-        console.log("[Follow] Unfollow successful")
       } else {
-        console.log("[Follow] Following user:", userId)
         await socialApi.followUser(userId)
-        console.log("[Follow] Follow successful")
       }
       
       // Reload profile to get accurate counts from BE
-      console.log("[Follow] Reloading profile...")
       await loadProfile()
-      console.log("[Follow] Profile reloaded")
       
       // Show success toast
       toast({
@@ -290,7 +279,6 @@ export default function UserProfilePage() {
       })
     } catch (error: any) {
       console.error("[Follow] Error:", error)
-      console.error("[Follow] Error response:", error?.response?.data)
       
       // Revert optimistic update on error
       setProfile({

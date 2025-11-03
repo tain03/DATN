@@ -12,9 +12,12 @@ import Image from "next/image"
 import { Clock, ChevronLeft, ChevronRight, Flag, Eye, EyeOff, Loader2 } from "lucide-react"
 import { PageLoading } from "@/components/ui/page-loading"
 import { exercisesApi } from "@/lib/api/exercises"
+import { aiApi } from "@/lib/api/ai"
 import type { ExerciseSection, QuestionWithOptions } from "@/types"
 import { useTranslations } from '@/lib/i18n'
 import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
+import { WritingExerciseForm, useWritingExerciseForm } from "@/components/exercises/writing-exercise-form"
+import { SpeakingExerciseForm, useSpeakingExerciseForm } from "@/components/exercises/speaking-exercise-form"
 
 interface ExerciseData {
   exercise: {
@@ -42,6 +45,22 @@ export default function TakeExercisePage() {
   const [timeSpent, setTimeSpent] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [showSectionContent, setShowSectionContent] = useState(true) // Show passage/audio
+  
+  // AI Evaluation states (for writing/speaking exercises)
+  const [essayText, setEssayText] = useState("")
+  const [wordCount, setWordCount] = useState(0)
+  const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [audioDuration, setAudioDuration] = useState<number>(0)
+  
+  // Helper function to count words
+  const countWords = (text: string): number => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length
+  }
+  
+  useEffect(() => {
+    const count = countWords(essayText)
+    setWordCount(count)
+  }, [essayText])
 
   // Timer
   useEffect(() => {
@@ -80,15 +99,6 @@ export default function TakeExercisePage() {
   // Get current section
   const currentSection = currentQuestion?.sectionData
 
-  // Debug logging
-  useEffect(() => {
-    if (currentSection) {
-      console.log('[Take Exercise] Current Section:', currentSection)
-      console.log('[Take Exercise] Has audio_url:', !!currentSection.audio_url)
-      console.log('[Take Exercise] Has passage_content:', !!currentSection.passage_content)
-      console.log('[Take Exercise] Has instructions:', !!currentSection.instructions)
-    }
-  }, [currentSection])
 
   const handleAnswerChange = (questionId: string, answer: any) => {
     setAnswers(new Map(answers.set(questionId, answer)))
@@ -174,7 +184,125 @@ export default function TakeExercisePage() {
     return `${minutes}:${secs.toString().padStart(2, "0")}`
   }
 
-  if (loading || !exerciseData || !currentQuestion) {
+  // Check if this is a Writing or Speaking exercise (AI evaluation)
+  const skillType = exerciseData?.exercise.skill_type?.toLowerCase()
+  const isWritingExercise = skillType === "writing"
+  const isSpeakingExercise = skillType === "speaking"
+  const isAIExercise = isWritingExercise || isSpeakingExercise
+
+  if (loading || !exerciseData) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <PageLoading translationKey="loading" />
+        </div>
+      </AppLayout>
+    )
+  }
+
+  // For Writing/Speaking exercises, render AI forms instead of questions
+  if (isAIExercise) {
+    // Get prompt from first section instructions or exercise description
+    const promptText = 
+      exerciseData.sections[0]?.section?.instructions || 
+      exerciseData.exercise.instructions || 
+      exerciseData.exercise.description || 
+      ""
+
+    // Determine task type/part number
+    let taskType: "task1" | "task2" = "task2"
+    let partNumber: 1 | 2 | 3 = 1
+    
+    if (isWritingExercise) {
+      const titleLower = exerciseData.exercise.title?.toLowerCase() || ""
+      taskType = (titleLower.includes("task 1") || titleLower.includes("task1")) ? "task1" : "task2"
+    } else if (isSpeakingExercise) {
+      const titleLower = exerciseData.exercise.title?.toLowerCase() || ""
+      if (titleLower.includes("part 2") || titleLower.includes("part2")) partNumber = 2
+      else if (titleLower.includes("part 3") || titleLower.includes("part3")) partNumber = 3
+    }
+
+    return (
+      <AppLayout>
+        <PageContainer maxWidth="5xl" className="py-4">
+          {/* Header with Timer */}
+          <Card className="mb-4">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold">{exerciseData.exercise.title}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {isWritingExercise ? "Writing Exercise" : "Speaking Exercise"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    <span className="font-mono text-lg">{formatTime(timeSpent)}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Writing Form */}
+          {isWritingExercise && (
+            <WritingExerciseForm
+              prompt={promptText}
+              taskType={taskType}
+              value={essayText}
+              onChange={(text) => setEssayText(text)}
+              onSubmit={(text) => setEssayText(text)}
+              submitting={submitting}
+              timeSpentSeconds={timeSpent}
+            />
+          )}
+
+          {/* Speaking Form */}
+          {isSpeakingExercise && (
+            <SpeakingExerciseForm
+              prompt={promptText}
+              partNumber={partNumber}
+              onSubmit={(file, duration) => {
+                setAudioFile(file)
+                setAudioDuration(duration)
+              }}
+              onFileChange={(file, duration) => {
+                setAudioFile(file)
+                setAudioDuration(duration)
+              }}
+              submitting={submitting}
+            />
+          )}
+
+          {/* Submit Button */}
+          <div className="mt-6 flex justify-end">
+            <Button
+              onClick={handleSubmit}
+              disabled={
+                submitting || 
+                (isWritingExercise && (essayText.trim().length === 0 || wordCount < (taskType === "task1" ? 150 : 250))) || 
+                (isSpeakingExercise && !audioFile)
+              }
+              size="lg"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t('submitting')}
+                </>
+              ) : (
+                t('submit_exercise')
+              )}
+            </Button>
+          </div>
+        </PageContainer>
+      </AppLayout>
+    )
+  }
+
+  // Original logic for Listening/Reading exercises with questions
+  if (!currentQuestion) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-[60vh]">

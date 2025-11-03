@@ -5,30 +5,54 @@ import { sseManager } from "./sse-manager"
 
 export const notificationsApi = {
   // Get all notifications
-  getNotifications: async (page = 1, limit = 20): Promise<{ 
+  getNotifications: async (page = 1, limit = 20, forceRefresh = false): Promise<{ 
     notifications: Notification[]; 
     pagination: { page: number; limit: number; total: number; total_pages: number }
   }> => {
     const cacheKey = apiCache.generateKey('/notifications', { page, limit })
+    
+    // If forceRefresh, clear cache first
+    if (forceRefresh) {
+      apiCache.delete(cacheKey)
+    }
     
     // Check cache first (shorter TTL for notifications - 10 seconds)
     const cached = apiCache.get<{ 
       notifications: Notification[]; 
       pagination: { page: number; limit: number; total: number; total_pages: number }
     }>(cacheKey)
-    if (cached) {
+    if (cached && !forceRefresh) {
       return cached
     }
 
-    const response = await apiClient.get<{
-      success: boolean
-      data: {
-        notifications: Notification[]
-        pagination: { page: number; limit: number; total: number; total_pages: number }
-      }
+    // Backend returns { notifications: [...], pagination: {...} } directly (no data wrapper)
+    const backendResponse = await apiClient.get<{
+      notifications: Notification[]
+      pagination: { page: number; limit: number; total_items: number; total_pages: number }
     }>(`/notifications?page=${page}&limit=${limit}`)
     
-    const result = response.data.data
+    // Transform backend response to frontend format
+    // Backend uses total_items, frontend expects total
+    const result: {
+      notifications: Notification[]
+      pagination: { page: number; limit: number; total: number; total_pages: number }
+    } = backendResponse.data ? {
+      notifications: backendResponse.data.notifications || [],
+      pagination: {
+        page: backendResponse.data.pagination?.page || page,
+        limit: backendResponse.data.pagination?.limit || limit,
+        total: backendResponse.data.pagination?.total_items || 0,
+        total_pages: backendResponse.data.pagination?.total_pages || 0,
+      }
+    } : {
+      notifications: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        total_pages: 0
+      }
+    }
     
     // Cache for 10 seconds (notifications update frequently)
     apiCache.set(cacheKey, result, 10000)

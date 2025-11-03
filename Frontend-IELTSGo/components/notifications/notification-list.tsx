@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { notificationsApi } from "@/lib/api/notifications"
 import type { Notification } from "@/types"
 import { NotificationItem } from "./notification-item"
@@ -16,6 +16,8 @@ interface NotificationListProps {
   onNotificationRead: () => void
   newNotification?: any
   onNewNotificationHandled?: () => void
+  isOpen?: boolean // Trigger reload when dropdown opens
+  onUnreadCountSync?: (count: number) => void // Callback to sync unread count
 }
 
 type NotificationGroup = {
@@ -23,7 +25,7 @@ type NotificationGroup = {
   notifications: Notification[]
 }
 
-export function NotificationList({ onMarkAllAsRead, onNotificationRead, newNotification, onNewNotificationHandled }: NotificationListProps) {
+export function NotificationList({ onMarkAllAsRead, onNotificationRead, newNotification, onNewNotificationHandled, isOpen, onUnreadCountSync }: NotificationListProps) {
   const t = useTranslations('notifications')
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,6 +42,15 @@ export function NotificationList({ onMarkAllAsRead, onNotificationRead, newNotif
       clearInterval(interval)
     }
   }, [])
+
+  // Reload notifications when dropdown opens to ensure sync with unread count
+  // Force refresh when dropdown opens to bypass cache
+  useEffect(() => {
+    if (isOpen) {
+      loadNotifications(true) // Force refresh to get latest notifications
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
 
   // Handle new notification from SSE (sent from NotificationBell)
   useEffect(() => {
@@ -71,20 +82,41 @@ export function NotificationList({ onMarkAllAsRead, onNotificationRead, newNotif
     }
   }, [newNotification, onNotificationRead, onNewNotificationHandled])
 
-  const loadNotifications = async () => {
+  const loadNotifications = async (forceRefresh = false) => {
     try {
       setLoading(true)
-      const response = await notificationsApi.getNotifications(1, 50)
-      setNotifications(response.notifications || [])
+      // Force refresh when dropdown opens to ensure fresh data
+      const response = await notificationsApi.getNotifications(1, 50, forceRefresh)
+      // Handle case where response might be undefined or missing notifications
+      if (response && response.notifications) {
+        setNotifications(response.notifications)
+        
+        // Sync unread count with actual notifications loaded
+        const actualUnreadCount = response.notifications.filter(n => !n.read && !n.isRead && !n.is_read).length
+        if (onUnreadCountSync) {
+          onUnreadCountSync(actualUnreadCount)
+        }
+      } else {
+        setNotifications([])
+        // If no notifications, sync unread count to 0
+        if (onUnreadCountSync) {
+          onUnreadCountSync(0)
+        }
+      }
     } catch (error) {
       console.error("[NotificationList] Failed to load notifications:", error)
       setNotifications([])
+      // Sync unread count to 0 on error (or keep current, but better to reset)
+      if (onUnreadCountSync) {
+        onUnreadCountSync(0)
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const handleMarkAsRead = async (notificationId: string) => {
+  // Memoize handlers to prevent unnecessary re-renders of NotificationItem
+  const handleMarkAsRead = useCallback(async (notificationId: string) => {
     try {
       await notificationsApi.markAsRead(notificationId)
       setNotifications((prev) => prev.map((n) => 
@@ -96,9 +128,9 @@ export function NotificationList({ onMarkAllAsRead, onNotificationRead, newNotif
     } catch (error) {
       console.error("Failed to mark as read:", error)
     }
-  }
+  }, [onNotificationRead])
 
-  const handleDelete = async (notificationId: string) => {
+  const handleDelete = useCallback(async (notificationId: string) => {
     try {
       await notificationsApi.deleteNotification(notificationId)
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
@@ -106,7 +138,7 @@ export function NotificationList({ onMarkAllAsRead, onNotificationRead, newNotif
     } catch (error) {
       console.error("Failed to delete notification:", error)
     }
-  }
+  }, [onNotificationRead])
 
   // Group notifications by date (giống Udemy/Coursera)
   const groupedNotifications = useMemo(() => {

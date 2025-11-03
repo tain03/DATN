@@ -24,18 +24,12 @@ export function NotificationBell() {
     const handleNotification = (notification: any) => {
       if (!isMounted) return
       
-      // Update badge count immediately for real-time feedback
-      setUnreadCount((prev) => prev + 1)
-      
       // Pass notification to NotificationList via state update trigger
       setNewNotification(notification)
       
-      // Refresh unread count from server to ensure sync (non-blocking)
-      setTimeout(() => {
-        if (isMounted) {
-          loadUnreadCount()
-        }
-      }, 500)
+      // Refresh unread count from server immediately (single source of truth)
+      // Don't increment locally to avoid duplicates from SSE reconnections
+      loadUnreadCount()
     }
 
     const handleError = (error: Event | Error) => {
@@ -77,11 +71,22 @@ export function NotificationBell() {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationsApi.markAllAsRead()
-      setUnreadCount(0)
+      // Reload unread count from server immediately (single source of truth)
+      loadUnreadCount()
     } catch (error) {
       // Silent error handling
+      console.error("[NotificationBell] Failed to mark all as read:", error)
     }
   }
+
+  // Sync unread count when dropdown opens
+  useEffect(() => {
+    if (isOpen) {
+      // Reload unread count when dropdown opens to ensure accuracy
+      loadUnreadCount()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -106,11 +111,14 @@ export function NotificationBell() {
       >
         <NotificationList
           onMarkAllAsRead={handleMarkAllAsRead}
-          onNotificationRead={() => setUnreadCount((prev) => Math.max(0, prev - 1))}
+          onNotificationRead={() => loadUnreadCount()}
           newNotification={newNotification}
           onNewNotificationHandled={() => setNewNotification(null)}
+          isOpen={isOpen}
+          onUnreadCountSync={setUnreadCount}
         />
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
+

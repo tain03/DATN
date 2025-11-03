@@ -24,8 +24,9 @@ func (r *NotificationRepository) CreateNotification(notification *models.Notific
 		INSERT INTO notifications (
 			id, user_id, type, category, title, message,
 			action_type, action_data, icon_url, image_url,
+			is_read, is_sent, sent_at,
 			scheduled_for, expires_at, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 	`
 
 	_, err := r.db.Exec(query,
@@ -39,6 +40,9 @@ func (r *NotificationRepository) CreateNotification(notification *models.Notific
 		notification.ActionData,
 		notification.IconURL,
 		notification.ImageURL,
+		notification.IsRead,
+		notification.IsSent,
+		notification.SentAt,
 		notification.ScheduledFor,
 		notification.ExpiresAt,
 		notification.CreatedAt,
@@ -503,13 +507,14 @@ func (r *NotificationRepository) CanSendNotification(userID uuid.UUID, notifType
 		}
 	}
 
-	// Check daily limit
+	// Check daily limit (only count sent notifications, not scheduled or failed ones)
 	if prefs.MaxNotificationsPerDay > 0 {
 		countQuery := `
 			SELECT COUNT(*) 
 			FROM notifications 
 			WHERE user_id = $1 
 			  AND created_at >= CURRENT_DATE
+			  AND is_sent = true
 		`
 		var todayCount int
 		err := r.db.QueryRow(countQuery, userID).Scan(&todayCount)

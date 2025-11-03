@@ -447,9 +447,13 @@ func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 	notification, err := h.service.CreateNotification(&req)
 	if err != nil {
 		if err.Error() == "notification blocked by user preferences" {
-			c.JSON(http.StatusForbidden, models.ErrorResponse{
-				Error:   "blocked",
+			// Return 200 OK when blocked by preferences - this is expected behavior, not an error
+			// The notification was not created, which is the desired outcome when user blocks it
+			c.JSON(http.StatusOK, models.SuccessResponse{
 				Message: "Notification blocked by user preferences",
+				Data: map[string]interface{}{
+					"blocked": true,
+				},
 			})
 			return
 		}

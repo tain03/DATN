@@ -91,6 +91,20 @@ export function useSidebarNavItems(): SidebarNavItem[] {
     },
     {
       type: "separator",
+      label: t('ai_practice') || "AI Practice",
+    },
+    {
+      title: t('writing_practice') || "Writing Practice",
+      href: "/ai/writing",
+      icon: "FileText",
+    },
+    {
+      title: t('speaking_practice') || "Speaking Practice",
+      href: "/ai/speaking",
+      icon: "Mic",
+    },
+    {
+      type: "separator",
       label: t('study_tools') || "Study Tools",
     },
     {
