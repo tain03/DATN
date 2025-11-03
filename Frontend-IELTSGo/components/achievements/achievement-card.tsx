@@ -31,22 +31,55 @@ export function AchievementCard({ achievement, earned, earnedAt }: AchievementCa
     const type = achievement.criteria_type
     const value = achievement.criteria_value
     
-    if (type === 'exercises_completed') {
-      return t('criteria_complete_exercises', { value })
+    // Debug in development
+    if (process.env.NODE_ENV === 'development' && (!type || type === 'unknown')) {
+      console.warn('[AchievementCard] Missing or invalid criteria_type:', {
+        id: achievement.id,
+        name: achievement.name,
+        criteria_type: type,
+        criteria_value: value,
+        achievement: achievement
+      })
     }
-    if (type === 'courses_completed') {
-      return t('criteria_complete_courses', { value })
+    
+    // If no type, return default message
+    if (!type || type === 'unknown') {
+      return t('criteria_default', { type: 'unknown', value: value || 0 })
     }
-    if (type === 'study_time') {
-      return t('criteria_study_time', { value })
+    
+    // Ensure value is a number
+    const numValue = typeof value === 'number' ? value : parseInt(String(value || 0), 10)
+    
+    // Map criteria types to translation keys (case-insensitive)
+    const typeLower = String(type).toLowerCase().trim()
+    const criteriaMap: Record<string, string> = {
+      // Exercise/Course completion
+      'exercises_completed': 'criteria_complete_exercises',
+      'courses_completed': 'criteria_complete_courses',
+      'complete_exercises': 'criteria_complete_exercises',
+      'complete_courses': 'criteria_complete_courses',
+      'exercises': 'criteria_complete_exercises',
+      'courses': 'criteria_complete_courses',
+      'completion': 'criteria_completion', // Generic completion (lessons, exercises, etc.)
+      // Study time
+      'study_time': 'criteria_study_time',
+      'time': 'criteria_study_time',
+      // Streak
+      'streak': 'criteria_streak',
+      // Score
+      'score': 'criteria_score',
     }
-    if (type === 'streak') {
-      return t('criteria_streak', { value })
+    
+    const translationKey = criteriaMap[typeLower] || 'criteria_default'
+    
+    // Return translated string with value
+    if (translationKey === 'criteria_default') {
+      // For default, show type and value (human-readable)
+      const typeLabel = type ? String(type).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown'
+      return t(translationKey, { type: typeLabel, value: numValue })
     }
-    if (type === 'score') {
-      return t('criteria_score', { value })
-    }
-    return t('criteria_default', { type, value })
+    
+    return t(translationKey, { value: numValue })
   }
 
   return (

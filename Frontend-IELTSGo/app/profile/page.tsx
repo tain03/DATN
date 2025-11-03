@@ -2,13 +2,14 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
 import { Button } from "@/components/ui/button"
 import { EnhancedFormField } from "@/components/ui/enhanced-form-field"
+import { FormField } from "@/components/ui/form-field"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Label } from "@/components/ui/label"
@@ -46,8 +47,8 @@ function ProfileContent() {
     targetBandScore: user?.targetBandScore?.toString() || "",
   })
 
-  // Update form data when user changes
-  useEffect(() => {
+  // Update form data when user changes - memoized
+  const resetFormData = useCallback(() => {
     if (user) {
       setFormData({
         fullName: user.fullName || "",
@@ -57,6 +58,10 @@ function ProfileContent() {
       })
     }
   }, [user])
+
+  useEffect(() => {
+    resetFormData()
+  }, [resetFormData])
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -64,7 +69,7 @@ function ProfileContent() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const getUserInitials = () => {
+  const getUserInitials = useMemo(() => {
     if (!user?.fullName) return "U"
     return user.fullName
       .split(" ")
@@ -72,9 +77,9 @@ function ProfileContent() {
       .join("")
       .toUpperCase()
       .slice(0, 2)
-  }
+  }, [user?.fullName])
 
-  const handleProfileUpdate = async (e: React.FormEvent) => {
+  const handleProfileUpdate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
 
@@ -114,9 +119,9 @@ function ProfileContent() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [formData, updateProfile, refreshUser, toast, t])
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -169,9 +174,9 @@ function ProfileContent() {
       setErrors({ avatar: t('failed_to_process_file') })
       setIsUploadingAvatar(false)
     }
-  }
+  }, [user, refreshUser, toast, t])
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
+  const handlePasswordChange = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
 
@@ -231,7 +236,43 @@ function ProfileContent() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [passwordData, toast, t])
+
+  // Memoized form field change handlers
+  const handleFullNameChange = useCallback((value: string) => {
+    setFormData(prev => ({ ...prev, fullName: value }))
+  }, [])
+
+  const handleEmailChange = useCallback((value: string) => {
+    setFormData(prev => ({ ...prev, email: value }))
+  }, [])
+
+  const handleBioChange = useCallback((value: string) => {
+    setFormData(prev => ({ ...prev, bio: value }))
+  }, [])
+
+  const handleTargetBandScoreChange = useCallback((value: string) => {
+    setFormData(prev => ({ ...prev, targetBandScore: value }))
+  }, [])
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false)
+    resetFormData()
+    setErrors({})
+  }, [resetFormData])
+
+  // Memoized password field change handlers
+  const handleCurrentPasswordChange = useCallback((value: string) => {
+    setPasswordData(prev => ({ ...prev, currentPassword: value }))
+  }, [])
+
+  const handleNewPasswordChange = useCallback((value: string) => {
+    setPasswordData(prev => ({ ...prev, newPassword: value }))
+  }, [])
+
+  const handleConfirmPasswordChange = useCallback((value: string) => {
+    setPasswordData(prev => ({ ...prev, confirmPassword: value }))
+  }, [])
 
   return (
     <AppLayout showSidebar={false} showFooter>
@@ -279,7 +320,7 @@ function ProfileContent() {
                     <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
                       <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.fullName} />
                       <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                        {getUserInitials()}
+                        {getUserInitials}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -320,7 +361,7 @@ function ProfileContent() {
                           label={t('full_name')}
                           name="fullName"
                           value={formData.fullName}
-                          onChange={(value) => setFormData({ ...formData, fullName: value })}
+                          onChange={handleFullNameChange}
                           error={errors.fullName}
                           required
                           autoFocus
@@ -331,7 +372,7 @@ function ProfileContent() {
                           name="email"
                           type="email"
                           value={formData.email}
-                          onChange={(value) => setFormData({ ...formData, email: value })}
+                          onChange={handleEmailChange}
                           disabled
                           className="bg-muted/50"
                         />
@@ -342,7 +383,7 @@ function ProfileContent() {
                           type="textarea"
                           placeholder={t('tell_us_about_yourself')}
                           value={formData.bio}
-                          onChange={(value) => setFormData({ ...formData, bio: value })}
+                          onChange={handleBioChange}
                           rows={3}
                         />
 
@@ -350,7 +391,7 @@ function ProfileContent() {
                           <Label htmlFor="targetBandScore">{t('target_band_score')}</Label>
                           <Select
                             value={formData.targetBandScore}
-                            onValueChange={(value) => setFormData({ ...formData, targetBandScore: value })}
+                            onValueChange={handleTargetBandScoreChange}
                           >
                             <SelectTrigger id="targetBandScore">
                               <SelectValue placeholder={t('select_your_target_score')} />
@@ -373,16 +414,7 @@ function ProfileContent() {
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => {
-                              setIsEditing(false)
-                              setFormData({
-                                fullName: user?.fullName || "",
-                                email: user?.email || "",
-                                bio: user?.bio || "",
-                                targetBandScore: user?.targetBandScore?.toString() || "",
-                              })
-                              setErrors({})
-                            }}
+                            onClick={handleCancelEdit}
                             disabled={isLoading}
                             className="gap-2"
                           >
@@ -444,7 +476,7 @@ function ProfileContent() {
                       name="currentPassword"
                       type="password"
                       value={passwordData.currentPassword}
-                      onChange={(value) => setPasswordData({ ...passwordData, currentPassword: value })}
+                      onChange={handleCurrentPasswordChange}
                       error={errors.currentPassword}
                       required
                       showValidationState={!!errors.currentPassword}
@@ -455,7 +487,7 @@ function ProfileContent() {
                       name="newPassword"
                       type="password"
                       value={passwordData.newPassword}
-                      onChange={(value) => setPasswordData({ ...passwordData, newPassword: value })}
+                      onChange={handleNewPasswordChange}
                       error={errors.newPassword}
                       required
                       showValidationState={!!errors.newPassword}
@@ -466,7 +498,7 @@ function ProfileContent() {
                       name="confirmPassword"
                       type="password"
                       value={passwordData.confirmPassword}
-                      onChange={(value) => setPasswordData({ ...passwordData, confirmPassword: value })}
+                      onChange={handleConfirmPasswordChange}
                       error={errors.confirmPassword}
                       required
                       showValidationState={!!errors.confirmPassword}

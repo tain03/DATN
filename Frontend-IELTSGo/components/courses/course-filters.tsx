@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useDebounce } from "@/lib/hooks/use-debounce"
 import { Search, X, Filter, Gift, Crown, Star, Check } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"

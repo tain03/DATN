@@ -21,8 +21,6 @@ class SSEManager {
     onNotification: SSEListener,
     onError?: ErrorListener
   ): () => void {
-    console.log("[SSE-Manager] connect() called, current listeners:", this.listeners.size, "connected:", this.isConnected, "connecting:", this.isConnecting)
-    
     // Add listeners FIRST, before starting connection
     // Set doesn't allow duplicates, so we don't need to check
     this.listeners.add(onNotification)
@@ -30,29 +28,21 @@ class SSEManager {
       this.errorListeners.add(onError)
     }
 
-    console.log("[SSE-Manager] After adding listener, total listeners:", this.listeners.size)
-
     // Create unsubscribe function FIRST (before any async operations)
     const unsubscribe = () => {
-      console.log("[SSE-Manager] Unsubscribing listener, current count before:", this.listeners.size)
       this.listeners.delete(onNotification)
       if (onError) {
         this.errorListeners.delete(onError)
       }
-      console.log("[SSE-Manager] After unsubscribe, listeners:", this.listeners.size)
       
       // Only disconnect if no listeners left
       // Use longer delay to avoid race conditions when component re-renders quickly
       if (this.listeners.size === 0) {
-        console.log("[SSE-Manager] No listeners left, scheduling disconnect in 500ms...")
         // Longer delay to avoid race conditions
         setTimeout(() => {
           // Double check - maybe a new listener was added during the delay
           if (this.listeners.size === 0) {
-            console.log("[SSE-Manager] Confirmed no listeners, disconnecting...")
             this.disconnect()
-          } else {
-            console.log("[SSE-Manager] New listener added during delay, keeping connection (listeners:", this.listeners.size, ")")
           }
         }, 500)
       }
@@ -60,48 +50,36 @@ class SSEManager {
 
     // Start connection if not already connected or connecting
     // Only create ONE connection regardless of how many listeners
-    // Use much longer timeout to handle React Strict Mode double-invoke cycle completely
+    // Use timeout to handle React Strict Mode double-invoke cycle
     if (!this.isConnected && !this.isConnecting) {
-      console.log("[SSE-Manager] Scheduling connection start (listeners:", this.listeners.size, ")...")
-      // Use longer delay (1200ms) to fully handle React Strict Mode double-invoke cycle
-      // React Strict Mode: mount → unmount → mount (takes ~200-500ms, but we need more buffer)
+      // Use delay (1200ms) to fully handle React Strict Mode double-invoke cycle
       setTimeout(() => {
         // Double-check listeners before starting
         if (this.listeners.size > 0 && !this.isConnected && !this.isConnecting) {
-          console.log("[SSE-Manager] ✅ Starting connection now (listeners:", this.listeners.size, ")...")
           this.startConnection()
-        } else {
-          console.log("[SSE-Manager] ⏭️ Skipping connection start (listeners:", this.listeners.size, "connected:", this.isConnected, "connecting:", this.isConnecting, ")")
         }
       }, 1200)
-    } else {
-      console.log("[SSE-Manager] Connection already exists, adding listener to existing connection (connected:", this.isConnected, "connecting:", this.isConnecting, ")")
     }
 
     // Return unsubscribe function (ALWAYS return a function)
-    console.log("[SSE-Manager] Returning unsubscribe function, type:", typeof unsubscribe)
     return unsubscribe
   }
 
   private startConnection() {
     if (this.isConnected || this.isConnecting) {
-      console.log("[SSE-Manager] Already connected or connecting, skipping")
       return
     }
 
     // Final check - ensure we have listeners before starting
     if (this.listeners.size === 0) {
-      console.warn("[SSE-Manager] ⚠️ startConnection() called but no listeners, aborting")
       return
     }
 
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
     if (!token) {
-      console.error("[SSE-Manager] No token available")
       return
     }
 
-    console.log("[SSE-Manager] ✅ Starting connection with", this.listeners.size, "listener(s)...")
     this.shouldReconnect = true
     // Call private async connectAsync() method
     this.connectAsync()
@@ -109,31 +87,24 @@ class SSEManager {
 
   private async connectAsync() {
     if (this.isConnecting || !this.shouldReconnect) {
-      console.log("[SSE-Manager] connect() called but already connecting or shouldReconnect=false")
       return
     }
 
     // Double-check listeners before starting connection
     // If no listeners, wait for React Strict Mode to finish
-    // Instead of aborting, we retry after a delay to handle React Strict Mode
     if (this.listeners.size === 0) {
-      console.warn("[SSE-Manager] ⚠️ No listeners before starting connection, waiting 1500ms for React Strict Mode...")
       await new Promise(resolve => setTimeout(resolve, 1500))
       
       if (this.listeners.size === 0) {
-        console.warn("[SSE-Manager] ⚠️ Still no listeners after wait - will retry connection attempt later")
         this.isConnecting = false
         // Retry connection after React Strict Mode cycle completes
-        // This ensures we don't permanently abort during development
         setTimeout(() => {
           if (this.listeners.size > 0 && !this.isConnected && !this.isConnecting) {
-            console.log("[SSE-Manager] ✅ Retrying connection after React Strict Mode (listeners:", this.listeners.size, ")")
             this.startConnection()
           }
         }, 2000)
         return
       }
-      console.log("[SSE-Manager] ✅ Listeners registered after wait (count:", this.listeners.size, "), proceeding with connection")
     }
 
 
@@ -150,7 +121,6 @@ class SSEManager {
     let reconnectDelay = 1000
 
     try {
-      console.log("[SSE-Manager] Fetching SSE stream, listeners:", this.listeners.size)
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -174,14 +144,12 @@ class SSEManager {
       let buffer = ""
       this.isConnecting = false
       this.isConnected = true
-      console.log("[SSE-Manager] ✅ Connected to notification stream, listeners:", this.listeners.size)
 
       reconnectDelay = 1000
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) {
-          console.log("[SSE-Manager] ⚠️ Stream ended, reconnecting in", reconnectDelay, "ms...")
           this.isConnected = false
           this.isConnecting = false
           if (this.shouldReconnect && this.listeners.size > 0) {
@@ -224,7 +192,6 @@ class SSEManager {
             if (lowerLine.startsWith("event:")) {
               const afterColon = trimmedLine.substring(6) // After "event:"
               eventType = afterColon.trim()
-              console.log("[SSE-Manager] 🔍 Found event type:", eventType, "from line:", line.substring(0, 50))
               continue
             }
             
@@ -238,72 +205,46 @@ class SSEManager {
               } else {
                 eventData = lineData
               }
-              console.log("[SSE-Manager] 🔍 Found data line:", lineData.substring(0, 50), "...")
               continue
             }
             
             // Ignore other lines (comments starting with ":", id, retry, etc.)
           }
-          
-          // Debug: Log what we parsed
-          console.log("[SSE-Manager] 📦 Parsed SSE event:", {
-            type: eventType,
-            hasData: !!eventData,
-            dataLength: eventData.length,
-            rawLines: eventLines.length,
-            firstLine: eventLines[0]?.substring(0, 50),
-            preview: eventText.substring(0, 200),
-          })
 
           // Process event - only process if there's data
           if (!eventData) {
-            // Skip events without data (like empty heartbeats or connection messages)
-            if (eventType === "heartbeat" || eventType === "connected" || eventType === "message") {
-              console.log("[SSE-Manager] ⏭️ Skipping empty", eventType, "event (no data)")
-            } else {
-              console.log("[SSE-Manager] ⚠️ Received event with no data:", eventType)
-            }
             continue
           }
-          
-          console.log("[SSE-Manager] 📥 Processing SSE event:", { eventType, dataLength: eventData.length })
           
           if (eventType === "notification") {
             try {
               const notification = JSON.parse(eventData) as Notification
-              console.log("[SSE-Manager] 📬 Parsed notification:", {
-                id: notification.id,
-                title: notification.title,
-                message: notification.message?.substring(0, 50),
-                category: notification.category,
-              })
               reconnectDelay = 1000
               
               // Notify all listeners - use Array.from to avoid iterator issues
               const listenersToNotify = Array.from(this.listeners)
-              console.log("[SSE-Manager] 📢 Broadcasting to", listenersToNotify.length, "listener(s)")
               
               // Notify listeners synchronously to ensure immediate delivery
               listenersToNotify.forEach((listener) => {
                 try {
-                  console.log("[SSE-Manager] 📤 Calling listener with notification:", notification.id)
                   listener(notification)
-                  console.log("[SSE-Manager] ✅ Listener called successfully")
                 } catch (error) {
-                  console.error("[SSE-Manager] ❌ Error in listener:", error)
+                  // Silent error handling - log only in development
+                  if (process.env.NODE_ENV === 'development') {
+                    console.error("[SSE-Manager] Error in listener:", error)
+                  }
                 }
               })
             } catch (error) {
-              console.error("[SSE-Manager] ❌ Parse error:", error, "Event data:", eventData)
+              // Silent error handling
+              if (process.env.NODE_ENV === 'development') {
+                console.error("[SSE-Manager] Parse error:", error)
+              }
             }
           } else if (eventType === "connected") {
-            console.log("[SSE-Manager] ✅ Server confirmed connection")
             reconnectDelay = 1000
           } else if (eventType === "heartbeat") {
-            console.log("[SSE-Manager] 💓 Heartbeat received")
             reconnectDelay = 1000
-          } else {
-            console.log("[SSE-Manager] ℹ️ Unknown event type:", eventType)
           }
         }
       }
@@ -311,12 +252,15 @@ class SSEManager {
       this.isConnected = false
       this.isConnecting = false
       if (error.name !== "AbortError") {
-        console.error("[SSE-Manager] ❌ Connection error:", error)
+        // Only log errors in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error("[SSE-Manager] Connection error:", error)
+        }
         this.errorListeners.forEach((listener) => {
           try {
             listener(error)
           } catch (err) {
-            console.error("[SSE-Manager] Error in error listener:", err)
+            // Silent error handling
           }
         })
         // Auto-reconnect on error
@@ -344,8 +288,6 @@ class SSEManager {
       clearTimeout(this.reconnectTimeout)
       this.reconnectTimeout = null
     }
-    
-    console.log("[SSE-Manager] Disconnected from notification stream")
   }
 
   // Public method to manually disconnect (when user logs out, etc.)
@@ -353,7 +295,6 @@ class SSEManager {
     this.listeners.clear()
     this.errorListeners.clear()
     this.disconnect()
-    console.log("[SSE-Manager] Destroyed all connections")
   }
 
   // Check if connected

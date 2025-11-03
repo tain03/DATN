@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -17,7 +18,7 @@ interface StatCardProps {
   className?: string
 }
 
-export function StatCard({ title, value, description, icon: Icon, trend, className }: StatCardProps) {
+function StatCardComponent({ title, value, description, icon: Icon, trend, className }: StatCardProps) {
   const t = useTranslations('common')
   return (
     <Card className={cn(
@@ -51,3 +52,5 @@ export function StatCard({ title, value, description, icon: Icon, trend, classNa
     </Card>
   )
 }
+
+export const StatCard = React.memo(StatCardComponent)

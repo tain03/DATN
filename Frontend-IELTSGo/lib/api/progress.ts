@@ -1,5 +1,6 @@
 import { apiClient } from "./apiClient"
 import type { PaginatedResponse, SkillType } from "./types"
+import { apiCache, cachedFetch } from "@/lib/utils/api-cache"
 
 interface ApiResponse<T> {
   success: boolean
@@ -11,6 +12,14 @@ export const progressApi = {
   // Get user's overall progress summary
   // Uses: GET /api/v1/user/progress (User Service)
   getProgressSummary: async () => {
+    const cacheKey = apiCache.generateKey('/user/progress')
+    
+    // Check cache first
+    const cached = apiCache.get(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     const response = await apiClient.get<ApiResponse<{
       profile: any
       progress: {
@@ -38,7 +47,7 @@ export const progressApi = {
 
     // Transform to match frontend expectations
     const data = response.data.data.progress
-    return {
+    const result = {
       totalCourses: 0, // Not available in current backend
       completedCourses: 0, // Not available in current backend
       inProgressCourses: 0, // Not available in current backend
@@ -55,11 +64,23 @@ export const progressApi = {
         speaking: data.speaking_score || 0,
       }
     }
+    
+    // Cache for 30 seconds
+    apiCache.set(cacheKey, result, 30000)
+    return result
   },
 
   // Get detailed progress analytics
   // Uses: GET /api/v1/user/progress/history (User Service)
   getProgressAnalytics: async (timeRange: "7d" | "30d" | "90d" | "all" = "30d") => {
+    const cacheKey = apiCache.generateKey('/user/progress/history', { timeRange })
+    
+    // Check cache first
+    const cached = apiCache.get(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     const response = await apiClient.get<ApiResponse<{
       count: number
       sessions: Array<{
@@ -73,10 +94,7 @@ export const progressApi = {
       }>
     }>>(`/user/progress/history?page=1&page_size=100`)
 
-    console.log('[Progress API] Raw response:', response.data)
-
     const history = response.data.data.sessions || []
-    console.log('[Progress API] Sessions count:', history.length)
 
     // Transform to analytics format
     const studyTimeByDay: { [key: string]: number } = {}
@@ -139,12 +157,22 @@ export const progressApi = {
       }))
     }
 
+    // Cache for 30 seconds
+    apiCache.set(cacheKey, result, 30000)
     return result
   },
 
   // Get study history/activity log
   // Uses: GET /api/v1/user/progress/history (User Service)
   getStudyHistory: async (page = 1, pageSize = 20) => {
+    const cacheKey = apiCache.generateKey('/user/progress/history', { page, pageSize })
+    
+    // Check cache first (shorter TTL for activity log - 15 seconds)
+    const cached = apiCache.get(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     const response = await apiClient.get<ApiResponse<{
       count: number
       sessions: Array<{
@@ -160,7 +188,7 @@ export const progressApi = {
 
     const historyData = response.data.data
 
-    return {
+    const result = {
       data: historyData.sessions.map(item => ({
         id: item.id,
         type: item.session_type as "course" | "exercise" | "lesson",
@@ -177,6 +205,10 @@ export const progressApi = {
       pageSize: pageSize,
       totalPages: Math.ceil(historyData.count / pageSize)
     }
+
+    // Cache for 15 seconds (shorter for activity log)
+    apiCache.set(cacheKey, result, 15000)
+    return result
   },
 
   // Get course progress details
@@ -185,7 +217,7 @@ export const progressApi = {
   getCourseProgress: async (courseId: string) => {
     // This would need to be implemented in backend
     // For now, return mock data
-    console.warn('[Progress API] getCourseProgress not implemented in backend')
+    // getCourseProgress not implemented in backend
     return {
       courseId,
       progress: 0,
@@ -200,7 +232,7 @@ export const progressApi = {
   // Update lesson progress - DEPRECATED
   // Use coursesApi.updateLessonProgress instead
   updateLessonProgress: async (lessonId: string, progress: number) => {
-    console.warn('[Progress API] Use coursesApi.updateLessonProgress instead')
+    // Use coursesApi.updateLessonProgress instead
     const response = await apiClient.put(`/progress/lessons/${lessonId}`, {
       progress_percentage: progress,
     })
@@ -210,7 +242,7 @@ export const progressApi = {
   // Mark lesson as completed - DEPRECATED
   // Use coursesApi.completeLesson instead
   completeLesson: async (lessonId: string) => {
-    console.warn('[Progress API] Use coursesApi.completeLesson instead')
+    // Use coursesApi.completeLesson instead
     const response = await apiClient.put(`/progress/lessons/${lessonId}`, {
       is_completed: true,
     })

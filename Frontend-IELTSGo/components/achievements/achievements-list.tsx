@@ -29,6 +29,16 @@ export function AchievementsList() {
         achievementsApi.getAllAchievements(),
         achievementsApi.getEarnedAchievements(),
       ])
+      
+      // Debug: Log achievement data to check structure
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Achievements] Raw API response:', { all, earned })
+        if (all && all.length > 0) {
+          console.log('[Achievements] First achievement full object:', JSON.stringify(all[0], null, 2))
+          console.log('[Achievements] First achievement keys:', Object.keys(all[0]))
+        }
+      }
+      
       setAllAchievements(all || [])
       setEarnedAchievements(earned || [])
     } catch (error: any) {
@@ -82,13 +92,13 @@ export function AchievementsList() {
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {earned.map((achievement) => {
+            {earned.map((achievement, index) => {
               const userAchievement = earnedAchievements.find(
                 ea => (ea.achievement?.id || ea.achievement_id) === achievement.id
               )
               return (
                 <AchievementCard
-                  key={achievement.id}
+                  key={achievement.id || `earned-${index}`}
                   achievement={achievement}
                   earned={true}
                   earnedAt={userAchievement?.earned_at || userAchievement?.earned_at_flat}
@@ -108,9 +118,9 @@ export function AchievementsList() {
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {available.map((achievement) => (
+            {available.map((achievement, index) => (
               <AchievementCard
-                key={achievement.id}
+                key={achievement.id || `available-${index}`}
                 achievement={achievement}
                 earned={false}
               />

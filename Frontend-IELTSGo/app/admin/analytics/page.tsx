@@ -17,7 +17,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts"
+} from "@/components/charts/chart-wrapper"
 import { TrendingUp, Users, BookOpen, Award, DollarSign } from "lucide-react"
 import { adminApi } from "@/lib/api/admin"
 import { useTranslations } from '@/lib/i18n'

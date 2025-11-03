@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
 import { CourseCard } from "@/components/courses/course-card"
@@ -26,7 +26,8 @@ export default function CoursesPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  const fetchCourses = async () => {
+  // Memoize fetchCourses to avoid unnecessary re-renders
+  const fetchCourses = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -40,11 +41,11 @@ export default function CoursesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, page, tCourses])
 
   useEffect(() => {
     fetchCourses()
-  }, [filters, page])
+  }, [fetchCourses])
 
   const handleFiltersChange = (newFilters: CourseFilters) => {
     // Remove undefined and empty values to ensure clean filter state

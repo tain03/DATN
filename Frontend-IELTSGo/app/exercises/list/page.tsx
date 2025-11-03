@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
 import { ExerciseCard } from "@/components/exercises/exercise-card"
@@ -35,7 +35,8 @@ export default function ExercisesListPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  const fetchExercises = async () => {
+  // Memoize fetchExercises to avoid unnecessary re-renders
+  const fetchExercises = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -52,17 +53,16 @@ export default function ExercisesListPage() {
       setExercises(filteredExercises)
       setTotalPages(Math.ceil(filteredExercises.length / 12))
     } catch (error) {
-      console.error("Failed to fetch exercises:", error)
       setError(t('failed_to_load_exercises_please_try_agai'))
       setExercises([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, page, sourceFilter, t])
 
   useEffect(() => {
     fetchExercises()
-  }, [filters, page, sourceFilter])
+  }, [fetchExercises])
 
   // Pull to refresh
   const { ref: pullToRefreshRef } = usePullToRefresh(() => {

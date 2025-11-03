@@ -4,12 +4,14 @@ import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
 import { PageHeader } from "@/components/layout/page-header"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { GoalsList } from "@/components/goals/goals-list"
-import { CreateGoalDialog } from "@/components/goals/create-goal-dialog"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { useTranslations } from "@/lib/i18n"
-import { useState } from "react"
+import { useState, lazy, Suspense } from "react"
+
+// Lazy load heavy components to improve initial load time
+const GoalsList = lazy(() => import("@/components/goals/goals-list").then(m => ({ default: m.GoalsList })))
+const CreateGoalDialog = lazy(() => import("@/components/goals/create-goal-dialog").then(m => ({ default: m.CreateGoalDialog })))
 
 export default function GoalsPage() {
   return (
@@ -39,13 +41,19 @@ function GoalsContent() {
       <PageContainer>
 
         {/* Goals List */}
-        <GoalsList />
+        <Suspense fallback={<div className="flex items-center justify-center py-20">Loading goals...</div>}>
+          <GoalsList />
+        </Suspense>
 
         {/* Create Goal Dialog */}
-        <CreateGoalDialog
-          open={createDialogOpen}
-          onOpenChange={setCreateDialogOpen}
-        />
+        {createDialogOpen && (
+          <Suspense fallback={null}>
+            <CreateGoalDialog
+              open={createDialogOpen}
+              onOpenChange={setCreateDialogOpen}
+            />
+          </Suspense>
+        )}
       </PageContainer>
     </AppLayout>
   )

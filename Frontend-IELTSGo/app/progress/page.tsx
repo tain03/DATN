@@ -6,9 +6,7 @@ import { PageHeader } from "@/components/layout/page-header"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ProgressChart } from "@/components/dashboard/progress-chart"
-import { StatCard } from "@/components/dashboard/stat-card"
-import { useState, useEffect } from "react"
+import { useState, useEffect, lazy, Suspense, useCallback, useMemo } from "react"
 import { progressApi } from "@/lib/api/progress"
 import { Button } from "@/components/ui/button"
 import { Clock, Target, Flame, BarChart3, BarChart } from "lucide-react"
@@ -16,6 +14,10 @@ import { cn } from "@/lib/utils"
 import { useTranslations } from '@/lib/i18n'
 import { PageLoading } from "@/components/ui/page-loading"
 import { EmptyState } from "@/components/ui/empty-state"
+
+// Lazy load heavy components to improve initial load time
+const ProgressChart = lazy(() => import("@/components/dashboard/progress-chart").then(m => ({ default: m.ProgressChart })))
+const StatCard = lazy(() => import("@/components/dashboard/stat-card").then(m => ({ default: m.StatCard })))
 
 export default function ProgressPage() {
   return (
@@ -36,13 +38,8 @@ function ProgressContent() {
     
     const fetchAnalytics = async () => {
       try {
-        console.log('[Progress Page] Starting to fetch analytics for timeRange:', timeRange)
         setLoading(true)
         const data = await progressApi.getProgressAnalytics(timeRange)
-        console.log('[Progress Page] Analytics data received:', data)
-        console.log('[Progress Page] Study time by day:', data?.studyTimeByDay)
-        console.log('[Progress Page] Completion rate:', data?.completionRate)
-        console.log('[Progress Page] Exercises by type:', data?.exercisesByType)
         
         // Ensure data format is correct - accept empty arrays as valid
         if (data && Array.isArray(data.studyTimeByDay)) {
@@ -62,29 +59,13 @@ function ProgressContent() {
             exercisesByType: Array.isArray(data.exercisesByType) ? data.exercisesByType : [],
           }
           
-          console.log('[Progress Page] Transformed data:', {
-            studyTimeByDayCount: transformedData.studyTimeByDay.length,
-            completionRateCount: transformedData.completionRate.length,
-            exercisesByTypeCount: transformedData.exercisesByType.length,
-            studyTimeByDay: transformedData.studyTimeByDay,
-            completionRate: transformedData.completionRate,
-            exercisesByType: transformedData.exercisesByType,
-          })
-          
           if (isMounted) {
             setAnalytics(transformedData)
-            console.log('[Progress Page] Analytics set successfully, state updated')
           }
         } else {
-          console.warn('[Progress Page] Invalid or missing data structure, using mock data')
           throw new Error('Invalid data format received from API')
         }
       } catch (error) {
-        console.error("[Progress Page] Failed to fetch analytics:", error)
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        const errorDetails = (error as any)?.response?.data || errorMessage
-        console.error("[Progress Page] Error details:", errorDetails)
-        
         // Mock data for demo - use hardcoded skill names, will be translated when displayed
         if (isMounted) {
           const mockData = {
@@ -110,12 +91,10 @@ function ProgressContent() {
             ],
           }
           setAnalytics(mockData)
-          console.log('[Progress Page] Mock data set:', mockData)
         }
       } finally {
         if (isMounted) {
           setLoading(false)
-          console.log('[Progress Page] Loading set to false')
         }
       }
     }
@@ -125,10 +104,11 @@ function ProgressContent() {
     return () => {
       isMounted = false
     }
-  }, [timeRange]) // Removed 't' from dependencies to avoid unnecessary re-fetches
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeRange]) // Only depend on timeRange, t is stable
 
-  // Calculate summary stats
-  const calculateStats = () => {
+  // Calculate summary stats - Memoized
+  const stats = useMemo(() => {
     if (!analytics) return { totalMinutes: 0, totalExercises: 0, avgScore: 0, activeStreak: 0 }
     
     const totalMinutes = analytics.studyTimeByDay?.reduce((sum: number, day: any) => sum + (day.value || 0), 0) || 0
@@ -148,12 +128,10 @@ function ProgressContent() {
     }
     
     return { totalMinutes, totalExercises, avgScore, activeStreak }
-  }
+  }, [analytics])
 
-  const stats = calculateStats()
-
-  // Time range filter buttons component
-  const timeRangeFilters = (
+  // Time range filter buttons component - Memoized
+  const timeRangeFilters = useMemo(() => (
     <div className="flex items-center gap-0.5 px-1.5 py-1 bg-muted/60 rounded-lg border border-border/50">
       {(["7d", "30d", "90d", "all"] as const).map((range) => (
         <Button
@@ -175,7 +153,7 @@ function ProgressContent() {
         </Button>
       ))}
     </div>
-  )
+  ), [timeRange, t])
 
   return (
     <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
@@ -196,32 +174,40 @@ function ProgressContent() {
         ) : (
           <>
             {/* Summary Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <StatCard
-                title={t('total_study_time')}
-                value={`${Math.floor(stats.totalMinutes / 60)}h ${stats.totalMinutes % 60}m`}
-                description={t('period_label')}
-                icon={Clock}
-              />
-              <StatCard
-                title={t('exercises_completed')}
-                value={stats.totalExercises}
-                description={t('period_label')}
-                icon={BarChart3}
-              />
-              <StatCard
-                title={t('average_score')}
-                value={stats.avgScore.toFixed(1)}
-                description={t('band_score')}
-                icon={Target}
-              />
-              <StatCard
-                title={t('day_streak')}
-                value={`${stats.activeStreak} ${t('days_label')}`}
-                description={t('active_learning_streak')}
-                icon={Flame}
-              />
-            </div>
+            <Suspense fallback={
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {[1, 2, 3, 4].map(i => (
+                  <Card key={i}><CardContent className="p-6"><div className="h-[100px] flex items-center justify-center">Loading...</div></CardContent></Card>
+                ))}
+              </div>
+            }>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <StatCard
+                  title={t('total_study_time')}
+                  value={`${Math.floor(stats.totalMinutes / 60)}h ${stats.totalMinutes % 60}m`}
+                  description={t('period_label')}
+                  icon={Clock}
+                />
+                <StatCard
+                  title={t('exercises_completed')}
+                  value={stats.totalExercises}
+                  description={t('period_label')}
+                  icon={BarChart3}
+                />
+                <StatCard
+                  title={t('average_score')}
+                  value={stats.avgScore.toFixed(1)}
+                  description={t('band_score')}
+                  icon={Target}
+                />
+                <StatCard
+                  title={t('day_streak')}
+                  value={`${stats.activeStreak} ${t('days_label')}`}
+                  description={t('active_learning_streak')}
+                  icon={Flame}
+                />
+              </div>
+            </Suspense>
 
             {/* Charts */}
             <Tabs defaultValue="study-time" className="space-y-6">
@@ -232,21 +218,25 @@ function ProgressContent() {
               </TabsList>
 
               <TabsContent value="study-time" className="space-y-6">
-                <ProgressChart
-                  title={t('daily_study_time')}
-                  data={analytics?.studyTimeByDay || []}
-                  color="#ED372A"
-                  valueLabel={t('minutes')}
-                />
+                <Suspense fallback={<Card><CardContent className="p-8"><div className="h-[200px] flex items-center justify-center">Loading chart...</div></CardContent></Card>}>
+                  <ProgressChart
+                    title={t('daily_study_time')}
+                    data={analytics?.studyTimeByDay || []}
+                    color="#ED372A"
+                    valueLabel={t('minutes')}
+                  />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="completion" className="space-y-6">
-                <ProgressChart
-                  title={t('daily_completion_rate')}
-                  data={analytics?.completionRate || []}
-                  color="#10B981"
-                  valueLabel="%"
-                />
+                <Suspense fallback={<Card><CardContent className="p-8"><div className="h-[200px] flex items-center justify-center">Loading chart...</div></CardContent></Card>}>
+                  <ProgressChart
+                    title={t('daily_completion_rate')}
+                    data={analytics?.completionRate || []}
+                    color="#10B981"
+                    valueLabel="%"
+                  />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="exercises" className="space-y-6">

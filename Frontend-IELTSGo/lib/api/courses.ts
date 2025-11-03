@@ -8,6 +8,7 @@ import type {
   EnrollmentProgressResponse,
   CourseEnrollment
 } from "@/types"
+import { apiCache } from "@/lib/utils/api-cache"
 
 export interface CourseFilters {
   level?: string | string[]
@@ -37,8 +38,26 @@ interface ApiResponse<T> {
 }
 
 export const coursesApi = {
-  // Get all courses with filters
+  // Get all courses with filters - WITH CACHING
   getCourses: async (filters?: CourseFilters, page = 1, limit = 12): Promise<PaginatedResponse<Course>> => {
+    // Generate cache key including all filter params
+    const cacheParams: Record<string, any> = {
+      page,
+      limit,
+      ...(filters?.level && { level: Array.isArray(filters.level) ? filters.level.sort().join(",") : filters.level }),
+      ...(filters?.skill_type && { skill_type: Array.isArray(filters.skill_type) ? filters.skill_type.sort().join(",") : filters.skill_type }),
+      ...(filters?.enrollment_type && { enrollment_type: Array.isArray(filters.enrollment_type) ? filters.enrollment_type.sort().join(",") : filters.enrollment_type }),
+      ...(filters?.is_featured !== undefined && { is_featured: filters.is_featured }),
+      ...(filters?.search && { search: filters.search }),
+    }
+    const cacheKey = apiCache.generateKey('/courses', cacheParams)
+    
+    // Check cache first (30s TTL for course listings)
+    const cached = apiCache.get<PaginatedResponse<Course>>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     const params = new URLSearchParams()
 
     // Backend uses: skill_type, level, enrollment_type, is_featured, search, page, limit
@@ -64,13 +83,17 @@ export const coursesApi = {
     const response = await apiClient.get<ApiResponse<{ courses: Course[]; count: number }>>(`/courses?${params.toString()}`)
     
     // Transform backend response to frontend format
-    return {
+    const result: PaginatedResponse<Course> = {
       data: response.data.data.courses || [],
       total: response.data.data.count || 0,
       page: page,
       pageSize: limit,
       totalPages: Math.ceil((response.data.data.count || 0) / limit),
     }
+    
+    // Cache for 30 seconds
+    apiCache.set(cacheKey, result, 30000)
+    return result
   },
 
   // Get single course by ID with full details (modules and lessons)
@@ -141,10 +164,7 @@ export const coursesApi = {
 
   // Enroll in course
   enrollCourse: async (courseId: string): Promise<void> => {
-    console.log('[DEBUG API] Enrolling with courseId:', courseId)
-    console.log('[DEBUG API] Payload:', { course_id: courseId })
-    const response = await apiClient.post(`/enrollments`, { course_id: courseId })
-    console.log('[DEBUG API] Enrollment response:', response.data)
+    await apiClient.post(`/enrollments`, { course_id: courseId })
   },
 
   // Get user's enrolled courses
@@ -163,14 +183,26 @@ export const coursesApi = {
     course: Course
     enrollment: CourseEnrollment
   }>> => {
+    const cacheKey = apiCache.generateKey('/enrollments/my')
+    
+    // Check cache first
+    const cached = apiCache.get<Array<{ course: Course; enrollment: CourseEnrollment }>>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     const response = await apiClient.get<ApiResponse<{ enrollments: any[]; total: number }>>("/enrollments/my")
     if (!response.data.data.enrollments || !Array.isArray(response.data.data.enrollments)) {
       return []
     }
-    return response.data.data.enrollments.map((item: any) => ({
+    const result = response.data.data.enrollments.map((item: any) => ({
       course: item.course,
       enrollment: item.enrollment,
     }))
+    
+    // Cache for 30 seconds
+    apiCache.set(cacheKey, result, 30000)
+    return result
   },
 
   // Get enrollment progress (detailed progress with modules)

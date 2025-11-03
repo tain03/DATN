@@ -4,12 +4,14 @@ import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
 import { PageHeader } from "@/components/layout/page-header"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { RemindersList } from "@/components/reminders/reminders-list"
-import { CreateReminderDialog } from "@/components/reminders/create-reminder-dialog"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { useTranslations } from "@/lib/i18n"
-import { useState } from "react"
+import { useState, lazy, Suspense } from "react"
+
+// Lazy load heavy components to improve initial load time
+const RemindersList = lazy(() => import("@/components/reminders/reminders-list").then(m => ({ default: m.RemindersList })))
+const CreateReminderDialog = lazy(() => import("@/components/reminders/create-reminder-dialog").then(m => ({ default: m.CreateReminderDialog })))
 
 export default function RemindersPage() {
   return (
@@ -38,13 +40,19 @@ function RemindersContent() {
       />
       <PageContainer>
         {/* Reminders List */}
-        <RemindersList />
+        <Suspense fallback={<div className="flex items-center justify-center py-20">Loading reminders...</div>}>
+          <RemindersList />
+        </Suspense>
 
         {/* Create Reminder Dialog */}
-        <CreateReminderDialog
-          open={createDialogOpen}
-          onOpenChange={setCreateDialogOpen}
-        />
+        {createDialogOpen && (
+          <Suspense fallback={null}>
+            <CreateReminderDialog
+              open={createDialogOpen}
+              onOpenChange={setCreateDialogOpen}
+            />
+          </Suspense>
+        )}
       </PageContainer>
     </AppLayout>
   )

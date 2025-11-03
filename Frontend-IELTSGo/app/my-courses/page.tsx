@@ -1,15 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
 import { PageHeader } from "@/components/layout/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   BookOpen, 
@@ -17,8 +15,6 @@ import {
   CheckCircle,
   PlayCircle,
   Award,
-  Target,
-  Loader2,
   Star,
   Users,
   GraduationCap,
@@ -31,9 +27,10 @@ import { useTranslations } from '@/lib/i18n'
 import { usePullToRefresh } from "@/lib/hooks/use-swipe-gestures"
 import { PageLoading } from "@/components/ui/page-loading"
 import { EmptyState } from "@/components/ui/empty-state"
-import { CourseCard } from "@/components/courses/course-card"
-import { HorizontalCardLayout } from "@/components/cards/base-card-layout"
 import { formatDuration, formatNumber } from "@/lib/utils/format"
+
+// Lazy load heavy components to improve initial load time
+const HorizontalCardLayout = lazy(() => import("@/components/cards/base-card-layout").then(m => ({ default: m.HorizontalCardLayout })))
 
 interface EnrolledCourseWithProgress {
   course: Course
@@ -47,48 +44,75 @@ export default function MyCoursesPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourseWithProgress[]>([])
-  const [totalStudyMinutes, setTotalStudyMinutes] = useState(0)
   const [loading, setLoading] = useState(true)
+
+  // Memoize loadEnrolledCourses to avoid unnecessary re-renders
+  const loadEnrolledCourses = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await coursesApi.getEnrolledCoursesWithProgress()
+      setEnrolledCourses(data)
+    } catch (error) {
+      // Keep previous data on error (optimistic UI)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // 📊 Calculate total study time from COURSES ONLY (sum from enrollments)
+  // NOTE: This is different from Dashboard which shows ALL study time (lessons + exercises)
+  // Memoized to avoid recalculation on every render
+  const totalStudyMinutes = useMemo(() => {
+    return enrolledCourses.reduce(
+      (sum, item) => sum + (item.enrollment.total_time_spent_minutes || 0), 
+      0
+    )
+  }, [enrolledCourses])
 
   useEffect(() => {
     if (user) {
       loadEnrolledCourses()
     }
-  }, [user])
+  }, [user, loadEnrolledCourses])
 
-  // Calculate total study time when enrolledCourses changes
-  useEffect(() => {
-    calculateTotalStudyTime()
+  // Pull to refresh - memoized callback
+  const { ref: pullToRefreshRef } = usePullToRefresh(loadEnrolledCourses, true)
+
+  // Memoize filtered courses to avoid recalculation
+  // MUST be before conditional return to maintain hook order
+  const { inProgressCourses, completedCourses } = useMemo(() => {
+    const inProgress = enrolledCourses.filter(
+      item => item.enrollment.progress_percentage > 0 && item.enrollment.progress_percentage < 100
+    )
+    const completed = enrolledCourses.filter(
+      item => item.enrollment.progress_percentage >= 100
+    )
+    return { inProgressCourses: inProgress, completedCourses: completed }
   }, [enrolledCourses])
 
-  const loadEnrolledCourses = async () => {
-    try {
-      setLoading(true)
-      const data = await coursesApi.getEnrolledCoursesWithProgress()
-      setEnrolledCourses(data)
-      console.log('[My Courses] Loaded with progress:', data)
-    } catch (error) {
-      console.error('[My Courses] Error:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // ✅ Format total study time (from all sessions: lessons + exercises)
+  // Memoized to avoid recalculation
+  // MUST be before conditional return to maintain hook order
+  const { totalStudyHours, totalStudyMins } = useMemo(() => {
+    const hours = Math.floor(totalStudyMinutes / 60)
+    const mins = totalStudyMinutes % 60
+    return { totalStudyHours: hours, totalStudyMins: mins }
+  }, [totalStudyMinutes])
 
-  // 📊 Calculate total study time from COURSES ONLY (sum from enrollments)
-  // NOTE: This is different from Dashboard which shows ALL study time (lessons + exercises)
-  const calculateTotalStudyTime = () => {
-    // Sum up time_spent from all course enrollments
-    const total = enrolledCourses.reduce(
-      (sum, item) => sum + (item.enrollment.total_time_spent_minutes || 0), 
-      0
-    )
-    setTotalStudyMinutes(total)
-  }
+  // Memoize color maps to avoid recreation
+  const skillColors = useMemo(() => ({
+    listening: "bg-blue-500",
+    reading: "bg-green-500",
+    writing: "bg-orange-500",
+    speaking: "bg-purple-500",
+    general: "bg-gray-500",
+  }), [])
 
-  // Pull to refresh
-  const { ref: pullToRefreshRef } = usePullToRefresh(() => {
-    loadEnrolledCourses()
-  }, true)
+  const levelColors = useMemo(() => ({
+    beginner: "bg-emerald-500",
+    intermediate: "bg-yellow-500",
+    advanced: "bg-red-500",
+  }), [])
 
   if (!user) {
     return (
@@ -119,18 +143,6 @@ export default function MyCoursesPage() {
       </AppLayout>
     )
   }
-
-  // ✅ Filter by progress
-  const inProgressCourses = enrolledCourses.filter(
-    item => item.enrollment.progress_percentage > 0 && item.enrollment.progress_percentage < 100
-  )
-  const completedCourses = enrolledCourses.filter(
-    item => item.enrollment.progress_percentage >= 100
-  )
-
-  // ✅ Format total study time (from all sessions: lessons + exercises)
-  const totalStudyHours = Math.floor(totalStudyMinutes / 60)
-  const totalStudyMins = totalStudyMinutes % 60
 
   return (
     <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
@@ -220,26 +232,21 @@ export default function MyCoursesPage() {
                 actionOnClick={() => router.push('/courses')}
               />
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {enrolledCourses.map(({ course, enrollment }) => {
-                  const progressPct = Math.round(enrollment.progress_percentage || 0)
-                  const level = course.level || 'beginner'
-                  const skillType = course.skill_type?.toLowerCase() || 'general'
-                  const skillColors: Record<string, string> = {
-                    listening: "bg-blue-500",
-                    reading: "bg-green-500",
-                    writing: "bg-orange-500",
-                    speaking: "bg-purple-500",
-                    general: "bg-gray-500",
-                  }
-                  const levelColors: Record<string, string> = {
-                    beginner: "bg-emerald-500",
-                    intermediate: "bg-yellow-500",
-                    advanced: "bg-red-500",
-                  }
-                  
-                  return (
-                    <HorizontalCardLayout
+              <Suspense fallback={
+                <div className="grid grid-cols-1 gap-4">
+                  {[1, 2, 3].map(i => (
+                    <Card key={i}><CardContent className="p-6"><div className="h-[200px] flex items-center justify-center">Loading...</div></CardContent></Card>
+                  ))}
+                </div>
+              }>
+                <div className="grid grid-cols-1 gap-4">
+                  {enrolledCourses.map(({ course, enrollment }) => {
+                    const progressPct = Math.round(enrollment.progress_percentage || 0)
+                    const level = course.level || 'beginner'
+                    const skillType = course.skill_type?.toLowerCase() || 'general'
+                    
+                    return (
+                      <HorizontalCardLayout
                       key={course.id}
                       variant="interactive"
                       onClick={() => router.push(`/courses/${course.id}`)}
@@ -334,10 +341,11 @@ export default function MyCoursesPage() {
                         },
                         variant: enrollment.progress_percentage >= 100 ? 'outline' : 'default',
                       }}
-                    />
-                  )
-                })}
-              </div>
+                      />
+                    )
+                  })}
+                </div>
+              </Suspense>
             )}
           </TabsContent>
 
@@ -353,27 +361,22 @@ export default function MyCoursesPage() {
                 actionOnClick={() => router.push('/courses')}
               />
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {inProgressCourses.map((item) => {
-                  const { course, enrollment } = item
-                  const progressPct = Math.round(enrollment.progress_percentage || 0)
-                  const skillType = course.skill_type?.toLowerCase() || 'general'
-                  const level = course.level || 'beginner'
-                  const skillColors: Record<string, string> = {
-                    listening: "bg-blue-500",
-                    reading: "bg-green-500",
-                    writing: "bg-orange-500",
-                    speaking: "bg-purple-500",
-                    general: "bg-gray-500",
-                  }
-                  const levelColors: Record<string, string> = {
-                    beginner: "bg-emerald-500",
-                    intermediate: "bg-yellow-500",
-                    advanced: "bg-red-500",
-                  }
-                  
-                  return (
-                    <HorizontalCardLayout
+              <Suspense fallback={
+                <div className="grid grid-cols-1 gap-4">
+                  {[1, 2, 3].map(i => (
+                    <Card key={i}><CardContent className="p-6"><div className="h-[200px] flex items-center justify-center">Loading...</div></CardContent></Card>
+                  ))}
+                </div>
+              }>
+                <div className="grid grid-cols-1 gap-4">
+                  {inProgressCourses.map((item) => {
+                    const { course, enrollment } = item
+                    const progressPct = Math.round(enrollment.progress_percentage || 0)
+                    const skillType = course.skill_type?.toLowerCase() || 'general'
+                    const level = course.level || 'beginner'
+                    
+                    return (
+                      <HorizontalCardLayout
                       key={course.id}
                       variant="interactive"
                       onClick={() => router.push(`/courses/${course.id}`)}
@@ -456,10 +459,11 @@ export default function MyCoursesPage() {
                           router.push(`/courses/${course.id}`)
                         },
                       }}
-                    />
-                  )
-                })}
-              </div>
+                      />
+                    )
+                  })}
+                </div>
+              </Suspense>
             )}
           </TabsContent>
 
@@ -474,26 +478,21 @@ export default function MyCoursesPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {completedCourses.map((item) => {
-                  const { course, enrollment } = item
-                  const skillType = course.skill_type?.toLowerCase() || 'general'
-                  const level = course.level || 'beginner'
-                  const skillColors: Record<string, string> = {
-                    listening: "bg-blue-500",
-                    reading: "bg-green-500",
-                    writing: "bg-orange-500",
-                    speaking: "bg-purple-500",
-                    general: "bg-gray-500",
-                  }
-                  const levelColors: Record<string, string> = {
-                    beginner: "bg-emerald-500",
-                    intermediate: "bg-yellow-500",
-                    advanced: "bg-red-500",
-                  }
-                  
-                  return (
-                    <HorizontalCardLayout
+              <Suspense fallback={
+                <div className="grid grid-cols-1 gap-4">
+                  {[1, 2, 3].map(i => (
+                    <Card key={i}><CardContent className="p-6"><div className="h-[200px] flex items-center justify-center">Loading...</div></CardContent></Card>
+                  ))}
+                </div>
+              }>
+                <div className="grid grid-cols-1 gap-4">
+                  {completedCourses.map((item) => {
+                    const { course, enrollment } = item
+                    const skillType = course.skill_type?.toLowerCase() || 'general'
+                    const level = course.level || 'beginner'
+                    
+                    return (
+                      <HorizontalCardLayout
                       key={course.id}
                       variant="interactive"
                       onClick={() => router.push(`/courses/${course.id}`)}
@@ -571,10 +570,11 @@ export default function MyCoursesPage() {
                         },
                         variant: "outline",
                       }}
-                    />
-                  )
-                })}
-              </div>
+                      />
+                    )
+                  })}
+                </div>
+              </Suspense>
             )}
           </TabsContent>
         </Tabs>

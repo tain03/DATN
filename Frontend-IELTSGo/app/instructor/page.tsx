@@ -12,7 +12,7 @@ import type { Course, Exercise } from "@/types"
 import { formatDate } from "@/lib/utils/date"
 import { BookOpen, PenTool, Users, TrendingUp, Plus, Star, Target, ArrowRight, Edit, BarChart3 } from "lucide-react"
 import Link from "next/link"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "@/components/charts/chart-wrapper"
 import { useTranslations } from '@/lib/i18n'
 
 export default function InstructorDashboardPage() {

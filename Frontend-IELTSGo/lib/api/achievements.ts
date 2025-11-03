@@ -23,6 +23,15 @@ export interface Achievement {
   created_at: string
 }
 
+// Backend returns AchievementWithProgress structure
+export interface AchievementWithProgress {
+  achievement: Achievement
+  is_earned: boolean
+  earned_at?: string
+  progress: number
+  progress_percentage: number
+}
+
 export interface UserAchievement {
   id: number
   user_id: string
@@ -43,14 +52,26 @@ export interface AchievementsResponse {
 export const achievementsApi = {
   // Get all available achievements
   getAllAchievements: async (): Promise<Achievement[]> => {
-    const response = await apiClient.get<ApiResponse<Achievement[] | AchievementsResponse>>("/user/achievements")
+    const response = await apiClient.get<ApiResponse<AchievementsResponse | AchievementWithProgress[]>>("/user/achievements")
     const data = response.data.data
     
-    // Handle both array and object response
-    if (Array.isArray(data)) {
-      return data
+    // Backend returns {achievements: AchievementWithProgress[], count: number}
+    if (data && typeof data === 'object' && 'achievements' in data) {
+      const achievementsWithProgress = (data as AchievementsResponse).achievements as AchievementWithProgress[]
+      // Flatten: extract achievement from AchievementWithProgress
+      return achievementsWithProgress.map(item => 
+        'achievement' in item ? item.achievement : item as unknown as Achievement
+      )
     }
-    return (data as AchievementsResponse).achievements || []
+    
+    // Handle array response (if backend returns array directly)
+    if (Array.isArray(data)) {
+      return data.map(item => 
+        'achievement' in item ? item.achievement : item as unknown as Achievement
+      )
+    }
+    
+    return []
   },
 
   // Get earned achievements

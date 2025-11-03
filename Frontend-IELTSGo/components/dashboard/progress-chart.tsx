@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useMemo } from "react"
 import { EmptyState } from "./empty-state"
@@ -16,7 +17,7 @@ interface ProgressChartProps {
   valueLabel?: string
 }
 
-export function ProgressChart({ title, data, color = "#ED372A", valueLabel = "Value" }: ProgressChartProps) {
+function ProgressChartComponent({ title, data, color = "#ED372A", valueLabel = "Value" }: ProgressChartProps) {
   const maxValue = useMemo(() => {
     if (!data || data.length === 0) return 100
     const values = data.map((d) => d.value).filter(v => typeof v === 'number' && !isNaN(v))
@@ -122,3 +123,5 @@ export function ProgressChart({ title, data, color = "#ED372A", valueLabel = "Va
     </Card>
   )
 }
+
+export const ProgressChart = React.memo(ProgressChartComponent)

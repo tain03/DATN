@@ -1,4 +1,5 @@
 import { apiClient } from "./apiClient"
+import { apiCache } from "@/lib/utils/api-cache"
 import type { Exercise, ExerciseSubmission, ExerciseResult } from "@/types"
 
 export interface ExerciseFilters {
@@ -31,6 +32,24 @@ interface BackendExerciseResponse {
 export const exercisesApi = {
   // Get all exercises with filters
   getExercises: async (filters?: ExerciseFilters, page = 1, pageSize = 12): Promise<PaginatedResponse<Exercise>> => {
+    // Generate cache key
+    const cacheParams: Record<string, any> = {
+      page,
+      limit: pageSize,
+      ...(filters?.skill?.length && { skill_type: filters.skill.sort().join(",") }),
+      ...(filters?.type?.length && { exercise_type: filters.type.sort().join(",") }),
+      ...(filters?.difficulty?.length && { difficulty: filters.difficulty.sort().join(",") }),
+      ...(filters?.search && { search: filters.search }),
+      ...(filters?.sort && { sort: filters.sort }),
+    }
+    const cacheKey = apiCache.generateKey('/exercises', cacheParams)
+
+    // Check cache
+    const cached = apiCache.get<PaginatedResponse<Exercise>>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     const params = new URLSearchParams()
 
     if (filters?.skill?.length) params.append("skill_type", filters.skill.join(","))
@@ -48,13 +67,17 @@ export const exercisesApi = {
     const backendData = response.data.data
     const totalPages = Math.ceil(backendData.total / pageSize)
     
-    return {
+    const result: PaginatedResponse<Exercise> = {
       data: backendData.exercises || [],
       total: backendData.total || 0,
       page: backendData.page || 1,
       pageSize: backendData.limit || pageSize,
       totalPages
     }
+
+    // Cache for 30 seconds
+    apiCache.set(cacheKey, result, 30000)
+    return result
   },
 
   // Get single exercise by ID with sections and questions

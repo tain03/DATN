@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { Clock, Users, Star, BookOpen, GraduationCap } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { VerticalCardLayout } from "@/components/cards/base-card-layout"
@@ -15,7 +16,7 @@ interface CourseCardProps {
   priority?: boolean // For above-fold images
 }
 
-export function CourseCard({ course, showProgress, progress, priority = false }: CourseCardProps) {
+function CourseCardComponent({ course, showProgress, progress, priority = false }: CourseCardProps) {
   const t = useTranslations('common')
   const tCourses = useTranslations('courses')
 
@@ -158,3 +159,5 @@ export function CourseCard({ course, showProgress, progress, priority = false }:
     />
   )
 }
+
+export const CourseCard = React.memo(CourseCardComponent)

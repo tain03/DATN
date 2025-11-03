@@ -184,18 +184,21 @@ export function ReviewList({ courseId, refreshTrigger }: ReviewListProps) {
     })
   }
 
-  // Calculate review statistics - before conditional returns
-  const totalReviews = reviews.length
-  const averageRating = reviews.length > 0 
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews 
-    : 0
-  const ratingDistribution = [5, 4, 3, 2, 1].map(rating => ({
-    rating,
-    count: reviews.filter(r => r.rating === rating).length,
-    percentage: reviews.length > 0 
-      ? (reviews.filter(r => r.rating === rating).length / totalReviews) * 100 
+  // Calculate review statistics - Memoized
+  const { totalReviews, averageRating, ratingDistribution } = useMemo(() => {
+    const total = reviews.length
+    const avg = total > 0 
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / total 
       : 0
-  }))
+    const distribution = [5, 4, 3, 2, 1].map(rating => ({
+      rating,
+      count: reviews.filter(r => r.rating === rating).length,
+      percentage: total > 0 
+        ? (reviews.filter(r => r.rating === rating).length / total) * 100 
+        : 0
+    }))
+    return { totalReviews: total, averageRating: avg, ratingDistribution: distribution }
+  }, [reviews])
 
   // Now safe to have conditional returns
   if (loading) {

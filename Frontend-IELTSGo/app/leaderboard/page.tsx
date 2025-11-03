@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
 import { leaderboardApi } from "@/lib/api/notifications"
@@ -54,11 +54,8 @@ export default function LeaderboardPage() {
     total_pages: 1,
   })
 
-  useEffect(() => {
-    loadLeaderboard()
-  }, [period, page, user])
-
-  const loadLeaderboard = async () => {
+  // Memoize loadLeaderboard to avoid unnecessary re-renders
+  const loadLeaderboard = useCallback(async () => {
     try {
       setLoading(true)
       const response = await leaderboardApi.getLeaderboard(period, page, 50)
@@ -70,22 +67,27 @@ export default function LeaderboardPage() {
           const rank = await leaderboardApi.getUserRank()
           setUserRank(rank)
         } catch (error) {
-          console.error("Failed to load user rank:", error)
+          // Silent fail for user rank
         }
       }
     } catch (error) {
-      console.error("Failed to load leaderboard:", error)
+      // Silent fail - keep previous data
     } finally {
       setLoading(false)
     }
-  }
+  }, [period, page, user])
+
+  useEffect(() => {
+    loadLeaderboard()
+  }, [loadLeaderboard])
 
   const handlePeriodChange = (newPeriod: Period) => {
     setPeriod(newPeriod)
     setPage(1)
   }
 
-  const formatStudyHours = (hours: number) => {
+  // Memoize formatStudyHours
+  const formatStudyHours = useCallback((hours: number) => {
     if (hours === 0) return "0h"
     if (hours < 1) {
       const minutes = Math.round(hours * 60)
@@ -93,11 +95,12 @@ export default function LeaderboardPage() {
     }
     if (hours < 10) return `${hours.toFixed(1)}h`
     return `${Math.round(hours)}h`
-  }
+  }, [])
 
-  const isCurrentUser = (entry: BackendLeaderboardEntry) => {
+  // Memoize isCurrentUser
+  const isCurrentUser = useCallback((entry: BackendLeaderboardEntry) => {
     return user && entry.user_id === user.id
-  }
+  }, [user])
 
   const getPeriodLabel = (p: Period) => {
     switch (p) {
@@ -266,7 +269,7 @@ export default function LeaderboardPage() {
               </div>
             ) : leaderboard.length === 0 ? (
               <EmptyState
-                icon={<Trophy className="h-12 w-12 text-muted-foreground" />}
+                icon={Trophy}
                 title={t('no_data_yet')}
                 description={t('start_learning_to_see_rank')}
                 className="py-20"

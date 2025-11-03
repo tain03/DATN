@@ -8,7 +8,7 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000,
+  timeout: 15000, // Reduce timeout from 30s to 15s for faster failure
 })
 
 // Request interceptor - Add JWT token
@@ -19,10 +19,7 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // Log request in development
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Request]", config.method?.toUpperCase(), config.url)
-    }
+    // No logging for cleaner console
 
     return config
   },
@@ -34,10 +31,7 @@ apiClient.interceptors.request.use(
 // Response interceptor - Handle errors and token refresh
 apiClient.interceptors.response.use(
   (response) => {
-    // Log response in development
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Response]", response.status, response.config.url)
-    }
+    // No logging for cleaner console
     return response
   },
   async (error: AxiosError) => {

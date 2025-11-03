@@ -106,7 +106,7 @@ export default function ExerciseDetailPage() {
       <AppLayout>
         <PageContainer>
           <EmptyState
-            icon={<FileText className="h-12 w-12 text-muted-foreground" />}
+            icon={FileText}
             title={t('exercise_not_found')}
             description={t('exercise_not_found_description') || "This exercise may have been removed or does not exist"}
             action={{

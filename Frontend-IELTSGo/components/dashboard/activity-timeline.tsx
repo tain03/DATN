@@ -1,3 +1,4 @@
+import React, { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, FileText, GraduationCap } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
@@ -36,27 +37,30 @@ const activityConfig = {
   },
 }
 
-export function ActivityTimeline({ activities }: ActivityTimelineProps) {
+function ActivityTimelineComponent({ activities }: ActivityTimelineProps) {
   const t = useTranslations('common')
   
-  // Group activities by type+title, keep only latest, count attempts
-  const grouped: Record<string, { activity: Activity; count: number }> = {}
-  activities.forEach((activity) => {
-    if (activity.type === "exercise") {
-      const key = `${activity.type}-${activity.title}`
-      if (!grouped[key] || new Date(activity.completedAt) > new Date(grouped[key].activity.completedAt)) {
-        grouped[key] = { activity, count: 1 }
+  // Memoize grouping and sorting to avoid recalculating on every render
+  const sorted = useMemo(() => {
+    // Group activities by type+title, keep only latest, count attempts
+    const grouped: Record<string, { activity: Activity; count: number }> = {}
+    activities.forEach((activity) => {
+      if (activity.type === "exercise") {
+        const key = `${activity.type}-${activity.title}`
+        if (!grouped[key] || new Date(activity.completedAt) > new Date(grouped[key].activity.completedAt)) {
+          grouped[key] = { activity, count: 1 }
+        } else {
+          grouped[key].count += 1
+        }
       } else {
-        grouped[key].count += 1
+        // For course/lesson, just show all
+        const key = `${activity.type}-${activity.id}`
+        if (!grouped[key]) grouped[key] = { activity, count: 1 }
       }
-    } else {
-      // For course/lesson, just show all
-      const key = `${activity.type}-${activity.id}`
-      if (!grouped[key]) grouped[key] = { activity, count: 1 }
-    }
-  })
-  // Sort by completedAt desc
-  const sorted = Object.values(grouped).sort((a, b) => new Date(b.activity.completedAt).getTime() - new Date(a.activity.completedAt).getTime())
+    })
+    // Sort by completedAt desc
+    return Object.values(grouped).sort((a, b) => new Date(b.activity.completedAt).getTime() - new Date(a.activity.completedAt).getTime())
+  }, [activities])
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-3">
@@ -115,3 +119,5 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
     </Card>
   )
 }
+
+export const ActivityTimeline = React.memo(ActivityTimelineComponent)

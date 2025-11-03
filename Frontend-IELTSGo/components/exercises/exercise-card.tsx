@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { Clock, Target, TrendingUp, GraduationCap, Zap, BookOpen } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { VerticalCardLayout } from "@/components/cards/base-card-layout"
@@ -11,7 +12,7 @@ interface ExerciseCardProps {
   showCourseLink?: boolean
 }
 
-export function ExerciseCard({ exercise, showCourseLink = true }: ExerciseCardProps) {
+function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCardProps) {
   const t = useTranslations('common')
   const tExercises = useTranslations('exercises')
 
@@ -153,3 +154,5 @@ export function ExerciseCard({ exercise, showCourseLink = true }: ExerciseCardPr
     />
   )
 }
+
+export const ExerciseCard = React.memo(ExerciseCardComponent)

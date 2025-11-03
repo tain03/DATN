@@ -33,8 +33,8 @@ export function NotificationList({ onMarkAllAsRead, onNotificationRead, newNotif
     // SSE connection is handled by NotificationBell to avoid duplicates
     loadNotifications()
 
-    // Fallback: Refresh every 30 seconds
-    const interval = setInterval(loadNotifications, 30000)
+    // Fallback: Refresh every 60 seconds (increased from 30s since SSE handles real-time updates)
+    const interval = setInterval(loadNotifications, 60000)
 
     return () => {
       clearInterval(interval)
@@ -44,18 +44,14 @@ export function NotificationList({ onMarkAllAsRead, onNotificationRead, newNotif
   // Handle new notification from SSE (sent from NotificationBell)
   useEffect(() => {
     if (newNotification && newNotification.id) {
-      console.log("[NotificationList] 🔔 Adding new notification from SSE:", newNotification.title, newNotification.id, "current list length:", notifications.length)
-      
       // Update notifications list immediately, avoid duplicates
       setNotifications((prev) => {
         // Check if notification already exists
         const exists = prev.some(n => n.id === newNotification.id)
         if (exists) {
-          console.log("[NotificationList] ⚠️ Notification already exists, skipping duplicate")
           return prev
         }
         
-        console.log("[NotificationList] ✅ Adding new notification, new list length will be:", prev.length + 1)
         // Add to beginning of list
         return [newNotification, ...prev]
       })

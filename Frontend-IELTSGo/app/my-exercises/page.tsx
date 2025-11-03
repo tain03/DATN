@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
@@ -36,18 +36,19 @@ export default function MyExercisesPage() {
   const [totalSubmissions, setTotalSubmissions] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  const loadSubmissions = async () => {
+  // Memoize loadSubmissions to avoid unnecessary re-renders
+  const loadSubmissions = useCallback(async () => {
     try {
       setLoading(true)
       const data = await exercisesApi.getMySubmissions(1, 100) // Load all for stats calculation
       setSubmissions(data.submissions || [])
       setTotalSubmissions(data.total || 0)
     } catch (error) {
-      console.error('[My Exercises] Error:', error)
+      // Silent fail - keep previous data
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Pull to refresh - must be called before useEffect (Rules of Hooks)
   const { ref: pullToRefreshRef } = usePullToRefresh(() => {
@@ -60,7 +61,55 @@ export default function MyExercisesPage() {
     if (user) {
       loadSubmissions()
     }
-  }, [user])
+  }, [user, loadSubmissions])
+
+  // Memoize filtered submissions - MUST be before conditional return
+  const { completedSubmissions, inProgressSubmissions } = useMemo(() => {
+    const completed = submissions.filter(item => item.submission.status === 'completed')
+    const inProgress = submissions.filter(item => item.submission.status === 'in_progress')
+    return { completedSubmissions: completed, inProgressSubmissions: inProgress }
+  }, [submissions])
+
+  // Calculate average score - Memoized - MUST be before conditional return
+  const calculateScore = useCallback((submission: SubmissionWithExercise['submission']): number => {
+    if (submission.score !== undefined && submission.score !== null && submission.score > 0) {
+      return submission.score
+    }
+    // Calculate percentage from correct answers
+    if (submission.total_questions > 0 && submission.correct_answers !== undefined) {
+      return (submission.correct_answers / submission.total_questions) * 100
+    }
+    return 0
+  }, [])
+
+  const { averageScore, totalTimeMinutes } = useMemo(() => {
+    const completedWithScore = completedSubmissions.filter(
+      item => item.submission.total_questions > 0
+    )
+    const avgScore = completedWithScore.length > 0
+      ? completedWithScore.reduce((sum, item) => sum + calculateScore(item.submission), 0) / completedWithScore.length
+      : 0
+    
+    const totalTimeSeconds = submissions.reduce(
+      (sum, item) => sum + (item.submission.time_spent_seconds || 0),
+      0
+    )
+    const totalMins = Math.floor(totalTimeSeconds / 60)
+    
+    return { averageScore: avgScore, totalTimeMinutes: totalMins }
+  }, [completedSubmissions, submissions, calculateScore])
+
+  // Memoize format functions
+  const formatTime = useCallback((minutes: number) => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+  }, [])
+
+  const formatScore = useCallback((score?: number) => {
+    if (score === undefined || score === null) return t('not_available')
+    return `${score.toFixed(1)}%`
+  }, [t])
 
   if (!user) {
     return (
@@ -78,51 +127,6 @@ export default function MyExercisesPage() {
     )
   }
 
-  // Filter by status
-  const completedSubmissions = submissions.filter(
-    item => item.submission.status === 'completed'
-  )
-  const inProgressSubmissions = submissions.filter(
-    item => item.submission.status === 'in_progress'
-  )
-
-  // Calculate average score (only for completed)
-  // If score is not available, calculate from correct_answers / total_questions
-  const calculateScore = (submission: SubmissionWithExercise['submission']): number => {
-    if (submission.score !== undefined && submission.score !== null && submission.score > 0) {
-      return submission.score
-    }
-    // Calculate percentage from correct answers
-    if (submission.total_questions > 0 && submission.correct_answers !== undefined) {
-      return (submission.correct_answers / submission.total_questions) * 100
-    }
-    return 0
-  }
-
-  const completedWithScore = completedSubmissions.filter(
-    item => item.submission.total_questions > 0
-  )
-  const averageScore = completedWithScore.length > 0
-    ? completedWithScore.reduce((sum, item) => sum + calculateScore(item.submission), 0) / completedWithScore.length
-    : 0
-
-  // Calculate total time spent (all submissions)
-  const totalTimeSeconds = submissions.reduce(
-    (sum, item) => sum + (item.submission.time_spent_seconds || 0),
-    0
-  )
-  const totalTimeMinutes = Math.floor(totalTimeSeconds / 60)
-
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
-  }
-
-  const formatScore = (score?: number) => {
-    if (score === undefined || score === null) return t('not_available')
-    return `${score.toFixed(1)}%`
-  }
 
   return (
     <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
@@ -177,7 +181,7 @@ export default function MyExercisesPage() {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{t('average_score')}</p>
                   <p className="text-3xl font-bold">
-                    {completedWithScore.length > 0 ? formatScore(averageScore) : "N/A"}
+                    {completedSubmissions.length > 0 && averageScore > 0 ? formatScore(averageScore) : "N/A"}
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-purple-500" />

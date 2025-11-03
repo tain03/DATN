@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/layout/app-layout"
 import { PageContainer } from "@/components/layout/page-container"
@@ -30,24 +30,26 @@ export default function ExerciseHistoryPage() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
 
-  useEffect(() => {
-    fetchSubmissions()
-  }, [page])
-
-  const fetchSubmissions = async () => {
+  // Memoize fetchSubmissions to avoid unnecessary re-renders
+  const fetchSubmissions = useCallback(async () => {
     try {
       setLoading(true)
       const data = await exercisesApi.getMySubmissions(page, 20)
       setSubmissions(data.submissions || [])
       setTotal(data.total || 0)
     } catch (error) {
-      console.error("Failed to fetch submissions:", error)
+      // Silent fail - keep previous data
     } finally {
       setLoading(false)
     }
-  }
+  }, [page])
 
-  const getStatusColor = (status: string) => {
+  useEffect(() => {
+    fetchSubmissions()
+  }, [fetchSubmissions])
+
+  // Memoize utility functions
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case "completed":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
@@ -58,15 +60,15 @@ export default function ExerciseHistoryPage() {
       default:
         return "bg-gray-100 text-gray-800"
     }
-  }
+  }, [])
 
-  const getScoreColor = (percentage: number) => {
+  const getScoreColor = useCallback((percentage: number) => {
     if (percentage >= 80) return "text-green-600"
     if (percentage >= 60) return "text-yellow-600"
     return "text-red-600"
-  }
+  }, [])
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("en-US", {
       year: "numeric",
@@ -75,13 +77,13 @@ export default function ExerciseHistoryPage() {
       hour: "2-digit",
       minute: "2-digit",
     })
-  }
+  }, [])
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const minutes = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${minutes}m ${secs}s`
-  }
+  }, [])
 
   return (
     <AppLayout>

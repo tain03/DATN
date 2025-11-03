@@ -1,4 +1,5 @@
 import { apiClient } from "./apiClient"
+import { apiCache } from "@/lib/utils/api-cache"
 import type { Notification, PaginatedResponse } from "@/types"
 import { sseManager } from "./sse-manager"
 
@@ -50,32 +51,22 @@ export const notificationsApi = {
     onNotification: (notification: Notification) => void,
     onError?: (error: Event | Error) => void,
   ): (() => void) => {
-    // Use singleton SSE manager to avoid duplicate connections
-    // Always returns a function, never null
-    try {
-      // sseManager.connect() ALWAYS returns a function (guaranteed by implementation)
-      const unsubscribe = sseManager.connect(onNotification, onError)
-      
-      // Debug: Log what we got
-      console.log("[Notifications API] connectSSE: sseManager.connect() returned:", typeof unsubscribe, unsubscribe)
-      
-      // Type guard to ensure we always return a function
-      if (typeof unsubscribe !== 'function') {
-        console.error("[Notifications API] connectSSE: sseManager.connect() returned non-function:", typeof unsubscribe, unsubscribe)
-        // Return no-op function as fallback
-        return () => {
-          console.warn("[Notifications API] No-op unsubscribe called (sseManager.connect() returned non-function)")
+      // Use singleton SSE manager to avoid duplicate connections
+      // Always returns a function, never null
+      try {
+        const unsubscribe = sseManager.connect(onNotification, onError)
+        
+        // Type guard to ensure we always return a function
+        if (typeof unsubscribe !== 'function') {
+          // Return no-op function as fallback
+          return () => {}
         }
+        
+        return unsubscribe
+      } catch (error) {
+        // Return no-op function on error
+        return () => {}
       }
-      
-      return unsubscribe
-    } catch (error) {
-      console.error("[Notifications API] Error connecting SSE:", error)
-      // Return no-op function on error
-      return () => {
-        console.warn("[Notifications API] No-op unsubscribe called due to error:", error)
-      }
-    }
   },
 
   // Legacy implementation (kept for reference, not used)
@@ -127,15 +118,12 @@ export const notificationsApi = {
 
         let buffer = ""
 
-        console.log("[SSE] ✅ Connected to notification stream")
-
         // Reset reconnect delay on successful connection
         reconnectDelay = 1000
         
         while (true) {
           const { done, value } = await reader.read()
           if (done) {
-            console.log("[SSE] ⚠️ Stream ended, reconnecting in", reconnectDelay, "ms...")
             isConnecting = false
             if (shouldReconnect) {
               reconnectTimeout = setTimeout(() => {
@@ -183,7 +171,6 @@ export const notificationsApi = {
               if (eventType === "notification") {
                 try {
                   const notification = JSON.parse(eventData) as Notification
-                  console.log("[SSE] 📬 Received notification:", notification.title, notification.id)
                   // Reset reconnect delay on successful message
                   reconnectDelay = 1000
                   onNotification(notification)
@@ -191,7 +178,6 @@ export const notificationsApi = {
                   console.error("[SSE] ❌ Parse error:", error, eventData)
                 }
               } else if (eventType === "connected") {
-                console.log("[SSE] ✅ Connected to notification stream")
                 reconnectDelay = 1000
               } else if (eventType === "heartbeat") {
                 // Ignore heartbeat, just keep connection alive
@@ -261,6 +247,24 @@ export const leaderboardApi = {
       total_pages: number
     }
   }> => {
+    // Generate cache key
+    const cacheParams = { period, page, limit }
+    const cacheKey = apiCache.generateKey('/user/leaderboard', cacheParams)
+
+    // Check cache
+    const cached = apiCache.get<{
+      leaderboard: any[]
+      pagination: {
+        total: number
+        page: number
+        limit: number
+        total_pages: number
+      }
+    }>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     const response = await apiClient.get<{
       success: boolean
       data: {
@@ -273,16 +277,34 @@ export const leaderboardApi = {
         }
       }
     }>(`/user/leaderboard?period=${period}&page=${page}&limit=${limit}`)
-    return response.data.data
+    
+    const result = response.data.data
+    
+    // Cache for 30 seconds (leaderboard updates frequently)
+    apiCache.set(cacheKey, result, 30000)
+    return result
   },
 
   // Get current user rank (backend: GET /user/leaderboard/rank)
   getUserRank: async (): Promise<any> => {
+    const cacheKey = apiCache.generateKey('/user/leaderboard/rank')
+    
+    // Check cache
+    const cached = apiCache.get<any>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
     const response = await apiClient.get<{
       success: boolean
       data: any
     }>(`/user/leaderboard/rank`)
-    return response.data.data
+    
+    const result = response.data.data
+    
+    // Cache for 30 seconds
+    apiCache.set(cacheKey, result, 30000)
+    return result
   },
 }
 
@@ -370,9 +392,7 @@ export const socialApi = {
   // BE Response: { success: true, message: "User followed successfully" }
   // BE Error: { success: false, error: { code: "CANNOT_FOLLOW_SELF", message: "..." } }
   followUser: async (userId: string): Promise<void> => {
-    console.log("[Social API] Following user:", userId)
     const response = await apiClient.post<ApiResponse<void>>(`/users/${userId}/follow`)
-    console.log("[Social API] Follow response:", response.data)
     
     if (!response.data.success) {
       const errorCode = response.data.error?.code || "FOLLOW_FAILED"
@@ -400,16 +420,13 @@ export const socialApi = {
       error.response = { data: { error: { code: errorCode, message: errorMsg } } }
       throw error
     }
-    console.log("[Social API] Follow successful")
   },
 
   // Unfollow user
   // BE Response: { success: true, message: "User unfollowed successfully" }
   // BE Error: { success: false, error: { code: "NOT_FOLLOWING", message: "..." } } (404)
   unfollowUser: async (userId: string): Promise<void> => {
-    console.log("[Social API] Unfollowing user:", userId)
     const response = await apiClient.delete<ApiResponse<void>>(`/users/${userId}/follow`)
-    console.log("[Social API] Unfollow response:", response.data)
     
     if (!response.data.success) {
       const errorCode = response.data.error?.code || "UNFOLLOW_FAILED"
@@ -427,7 +444,6 @@ export const socialApi = {
       error.response = { data: { error: { code: errorCode, message: errorMsg } } }
       throw error
     }
-    console.log("[Social API] Unfollow successful")
   },
 
   // Get followers
@@ -458,9 +474,7 @@ export const socialApi = {
   // BE Response: { success: true, message: "Follower removed successfully" }
   // BE Error: { success: false, error: { code: "FOLLOWER_NOT_FOUND", message: "..." } }
   removeFollower: async (followerId: string): Promise<void> => {
-    console.log("[Social API] Removing follower:", followerId)
     const response = await apiClient.delete<ApiResponse<void>>(`/user/followers/${followerId}`)
-    console.log("[Social API] Remove follower response:", response.data)
     
     if (!response.data.success) {
       const errorCode = response.data.error?.code || "REMOVE_FOLLOWER_FAILED"
@@ -483,6 +497,5 @@ export const socialApi = {
       error.response = { data: { error: { code: errorCode, message: errorMsg } } }
       throw error
     }
-    console.log("[Social API] Remove follower successful")
   },
 }

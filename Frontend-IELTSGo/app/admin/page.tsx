@@ -16,7 +16,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-} from "recharts"
+} from "@/components/charts/chart-wrapper"
 import { formatDistanceToNow } from "@/lib/utils/date"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"

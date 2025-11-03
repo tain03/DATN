@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useDebounce } from "@/lib/hooks/use-debounce"
 import { Search, X, Filter, Check, GraduationCap, Link2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -46,11 +47,21 @@ export function ExerciseFiltersComponent({ filters, onFiltersChange, onSearch }:
 
   const [searchValue, setSearchValue] = useState(filters.search || "")
   const [isOpen, setIsOpen] = useState(false)
+  
+  // Debounce search input to reduce API calls
+  const debouncedSearch = useDebounce(searchValue, 500)
 
   // Sync searchValue when filters.search changes externally
   useEffect(() => {
     setSearchValue(filters.search || "")
   }, [filters.search])
+
+  // Auto-search when debounced value changes (after 500ms of no typing)
+  useEffect(() => {
+    if (debouncedSearch !== (filters.search || "")) {
+      onSearch(debouncedSearch)
+    }
+  }, [debouncedSearch]) // Only depend on debouncedSearch to avoid infinite loop
 
   const handleSkillChange = (skill: string) => {
     const currentSkills = filters.skill || []

@@ -5,13 +5,9 @@ import { PageContainer } from "@/components/layout/page-container"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { usePreferences } from "@/lib/contexts/preferences-context"
-import { StatCard } from "@/components/dashboard/stat-card"
-import { ProgressChart } from "@/components/dashboard/progress-chart"
-import { SkillProgressCard } from "@/components/dashboard/skill-progress-card"
-import { ActivityTimeline } from "@/components/dashboard/activity-timeline"
 import { PageHeader } from "@/components/layout/page-header"
 import { BookOpen, CheckCircle, Clock, TrendingUp, Flame, BarChart3, Target, ArrowRight } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from "react"
 import { useRouter } from "next/navigation"
 import { progressApi } from "@/lib/api/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -22,6 +18,12 @@ import { cn } from "@/lib/utils"
 import { useTranslations } from "@/lib/i18n"
 import { PageLoading } from "@/components/ui/page-loading"
 import { usePullToRefresh } from "@/lib/hooks/use-swipe-gestures"
+
+// Lazy load heavy components to improve initial load time
+const ProgressChart = lazy(() => import("@/components/dashboard/progress-chart").then(m => ({ default: m.ProgressChart })))
+const SkillProgressCard = lazy(() => import("@/components/dashboard/skill-progress-card").then(m => ({ default: m.SkillProgressCard })))
+const ActivityTimeline = lazy(() => import("@/components/dashboard/activity-timeline").then(m => ({ default: m.ActivityTimeline })))
+const StatCard = lazy(() => import("@/components/dashboard/stat-card").then(m => ({ default: m.StatCard })))
 
 export default function DashboardPage() {
   return (
@@ -44,9 +46,10 @@ function DashboardContent() {
   const [history, setHistory] = useState<any[]>([])
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "all">("30d")
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true)
     try {
+      // Use cached fetch for faster initial load
       const [summaryData, analyticsData, historyData] = await Promise.all([
         progressApi.getProgressSummary(),
         progressApi.getProgressAnalytics(timeRange),
@@ -55,41 +58,35 @@ function DashboardContent() {
       setSummary(summaryData)
       setAnalytics(analyticsData)
       setHistory(historyData.data || [])
+    } catch (error) {
+      console.error('[Dashboard] Error fetching data:', error)
+      // Keep previous data on error if available (optimistic UI)
     } finally {
       setLoading(false)
     }
-  }
+  }, [timeRange])
 
   useEffect(() => {
     fetchDashboardData()
-  }, [timeRange])
+  }, [fetchDashboardData])
 
   // Pull to refresh
   const { ref: pullToRefreshRef } = usePullToRefresh(() => {
     fetchDashboardData()
   }, true)
 
-  if (loading) {
-    return (
-      <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
-        <PageHeader
-          title={user?.fullName ? `Chào mừng trở lại, ${user.fullName.split(' ')[0]}!` : t('welcome')}
-          subtitle={t('track_your_journey')}
-        />
-        <PageContainer>
-          <PageLoading translationKey="loading" />
-        </PageContainer>
-      </AppLayout>
-    )
-  }
+  // Count unique exercises completed from history - Memoized
+  // MUST be before conditional return to maintain hook order
+  const { uniqueExercises, totalAttempts } = useMemo(() => {
+    const exerciseAttempts = history.filter(a => a.type === "exercise")
+    const unique = new Set(exerciseAttempts.map(a => a.title)).size
+    const total = exerciseAttempts.length
+    return { uniqueExercises: unique, totalAttempts: total }
+  }, [history])
 
-  // Count unique exercises completed from history
-  const exerciseAttempts = history.filter(a => a.type === "exercise")
-  const uniqueExercises = new Set(exerciseAttempts.map(a => a.title)).size
-  const totalAttempts = exerciseAttempts.length
-
-  // Calculate analytics stats
-  const calculateStats = () => {
+  // Calculate analytics stats - Memoized
+  // MUST be before conditional return to maintain hook order
+  const stats = useMemo(() => {
     if (!analytics) return { 
       totalMinutes: 0, 
       totalExercises: 0, 
@@ -123,24 +120,30 @@ function DashboardContent() {
     }
     
     return { totalMinutes, totalExercises, avgScore, activeStreak, skillScores }
-  }
-
-  const stats = calculateStats()
+  }, [analytics])
   
-  // Get exercise counts by skill
-  const getSkillExerciseCount = (skill: string) => {
+  // Get exercise counts by skill - Memoized callback
+  // MUST be before conditional return to maintain hook order
+  const getSkillExerciseCount = useCallback((skill: string) => {
     return analytics?.exercisesByType?.find((t: any) => t.type.toLowerCase() === skill.toLowerCase())?.count || 0
-  }
+  }, [analytics])
 
-  // Time range filter buttons component
-  const timeRangeFilters = (
+  // Time range filter handler - Memoized
+  // MUST be before conditional return to maintain hook order
+  const handleTimeRangeChange = useCallback((range: "7d" | "30d" | "90d" | "all") => {
+    setTimeRange(range)
+  }, [])
+
+  // Time range filter buttons component - Memoized
+  // MUST be before conditional return to maintain hook order
+  const timeRangeFilters = useMemo(() => (
     <div className="flex items-center gap-0.5 px-1.5 py-1 bg-muted/60 rounded-lg border border-border/50">
       {(["7d", "30d", "90d", "all"] as const).map((range) => (
         <Button
           key={range}
           variant="ghost"
           size="sm"
-          onClick={() => setTimeRange(range)}
+          onClick={() => handleTimeRangeChange(range)}
           className={cn(
             "px-3 text-xs font-medium transition-all rounded-md",
             timeRange === range
@@ -155,7 +158,22 @@ function DashboardContent() {
         </Button>
       ))}
     </div>
-  )
+  ), [timeRange, handleTimeRangeChange, t])
+
+  // Conditional return AFTER all hooks
+  if (loading) {
+    return (
+      <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
+        <PageHeader
+          title={user?.fullName ? `Chào mừng trở lại, ${user.fullName.split(' ')[0]}!` : t('welcome')}
+          subtitle={t('track_your_journey')}
+        />
+        <PageContainer>
+          <PageLoading translationKey="loading" />
+        </PageContainer>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
@@ -239,38 +257,46 @@ function DashboardContent() {
 
         {/* Stats Grid - Only show if user preference allows */}
         {showStats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            <StatCard
-              title={t('stats.coursesInProgress')}
-              value={summary?.inProgressCourses || 0}
-              description={t('stats.coursesCompleted', { count: summary?.completedCourses || 0 })}
-              icon={BookOpen}
-            />
-            <StatCard
-              title={t('stats.exercisesCompleted')}
-              value={uniqueExercises}
-              description={t('stats.exercisesDescription', { exercises: uniqueExercises, attempts: totalAttempts })}
-              icon={CheckCircle}
-            />
-            <StatCard
-              title={t('stats.studyTime')}
-              value={`${Math.floor(stats.totalMinutes / 60)}h ${stats.totalMinutes % 60}m`}
-              description={t('stats.studyTimeDescription', { period: t(`timeRange.${timeRange}`) })}
-              icon={Clock}
-            />
-            <StatCard
-              title={t('stats.averageScore')}
-              value={stats.avgScore > 0 ? stats.avgScore.toFixed(1) : (summary?.averageScore?.toFixed(1) || "0.0")}
-              description={t('stats.bandScore')}
-              icon={Target}
-            />
-            <StatCard
-              title={t('stats.currentStreak')}
-              value={t('stats.days', { count: stats.activeStreak || summary?.currentStreak || 0 })}
-              description={t('stats.longestStreak', { count: summary?.longestStreak || 0 })}
-              icon={Flame}
-            />
-          </div>
+          <Suspense fallback={
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              {[1, 2, 3, 4, 5].map(i => (
+                <Card key={i}><CardContent className="p-6"><div className="h-[100px] flex items-center justify-center">Loading...</div></CardContent></Card>
+              ))}
+            </div>
+          }>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              <StatCard
+                title={t('stats.coursesInProgress')}
+                value={summary?.inProgressCourses || 0}
+                description={t('stats.coursesCompleted', { count: summary?.completedCourses || 0 })}
+                icon={BookOpen}
+              />
+              <StatCard
+                title={t('stats.exercisesCompleted')}
+                value={uniqueExercises}
+                description={t('stats.exercisesDescription', { exercises: uniqueExercises, attempts: totalAttempts })}
+                icon={CheckCircle}
+              />
+              <StatCard
+                title={t('stats.studyTime')}
+                value={`${Math.floor(stats.totalMinutes / 60)}h ${stats.totalMinutes % 60}m`}
+                description={t('stats.studyTimeDescription', { period: t(`timeRange.${timeRange}`) })}
+                icon={Clock}
+              />
+              <StatCard
+                title={t('stats.averageScore')}
+                value={stats.avgScore > 0 ? stats.avgScore.toFixed(1) : (summary?.averageScore?.toFixed(1) || "0.0")}
+                description={t('stats.bandScore')}
+                icon={Target}
+              />
+              <StatCard
+                title={t('stats.currentStreak')}
+                value={t('stats.days', { count: stats.activeStreak || summary?.currentStreak || 0 })}
+                description={t('stats.longestStreak', { count: summary?.longestStreak || 0 })}
+                icon={Flame}
+              />
+            </div>
+          </Suspense>
         )}
 
         {/* Tabs for different views */}
@@ -306,34 +332,40 @@ function DashboardContent() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6 mt-6">
             {showStats && (
-              <>
+              <Suspense fallback={<Card><CardContent className="p-8"><div className="h-[200px] flex items-center justify-center">Loading chart...</div></CardContent></Card>}>
                 <ProgressChart
                   title={t('charts.studyTime', { period: t(`timeRange.${timeRange}`) })}
                   data={analytics?.studyTimeByDay || []}
                   color="#ED372A"
                   valueLabel={t('charts.minutes')}
                 />
-              </>
+              </Suspense>
             )}
-            <ActivityTimeline activities={history} />
+            <Suspense fallback={<Card><CardContent className="p-8"><div className="h-[200px] flex items-center justify-center">Loading timeline...</div></CardContent></Card>}>
+              <ActivityTimeline activities={history} />
+            </Suspense>
           </TabsContent>
 
           {/* Analytics Tab - Only show if user preference allows */}
           {showStats && (
             <TabsContent value="analytics" className="space-y-6">
               <div className="grid gap-6">
-                <ProgressChart
-                  title={t('charts.dailyStudyTime', { period: t(`timeRange.${timeRange}`) })}
-                  data={analytics?.studyTimeByDay || []}
-                  color="#ED372A"
-                  valueLabel={t('charts.minutes')}
-                />
-                <ProgressChart
-                  title={t('charts.completionRate', { period: t(`timeRange.${timeRange}`) })}
-                  data={analytics?.completionRate || []}
-                  color="#10B981"
-                  valueLabel="%"
-                />
+                <Suspense fallback={<Card><CardContent className="p-8"><div className="h-[200px] flex items-center justify-center">Loading chart...</div></CardContent></Card>}>
+                  <ProgressChart
+                    title={t('charts.dailyStudyTime', { period: t(`timeRange.${timeRange}`) })}
+                    data={analytics?.studyTimeByDay || []}
+                    color="#ED372A"
+                    valueLabel={t('charts.minutes')}
+                  />
+                </Suspense>
+                <Suspense fallback={<Card><CardContent className="p-8"><div className="h-[200px] flex items-center justify-center">Loading chart...</div></CardContent></Card>}>
+                  <ProgressChart
+                    title={t('charts.completionRate', { period: t(`timeRange.${timeRange}`) })}
+                    data={analytics?.completionRate || []}
+                    color="#10B981"
+                    valueLabel="%"
+                  />
+                </Suspense>
                 <div>
                   <h3 className="text-lg font-semibold mb-4">{t('exerciseBreakdown')}</h3>
                   {analytics?.exercisesByType?.length > 0 ? (
@@ -375,32 +407,40 @@ function DashboardContent() {
           {/* Skills Tab - Only show if user preference allows */}
           {showStats && (
             <TabsContent value="skills" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <SkillProgressCard
-                  skill="LISTENING"
-                  currentScore={stats.skillScores.listening}
-                  targetScore={user?.targetBandScore || 9}
-                  exercisesCompleted={getSkillExerciseCount('listening')}
-                />
-                <SkillProgressCard
-                  skill="READING"
-                  currentScore={stats.skillScores.reading}
-                  targetScore={user?.targetBandScore || 9}
-                  exercisesCompleted={getSkillExerciseCount('reading')}
-                />
-                <SkillProgressCard
-                  skill="WRITING"
-                  currentScore={stats.skillScores.writing}
-                  targetScore={user?.targetBandScore || 9}
-                  exercisesCompleted={getSkillExerciseCount('writing')}
-                />
-                <SkillProgressCard
-                  skill="SPEAKING"
-                  currentScore={stats.skillScores.speaking}
-                  targetScore={user?.targetBandScore || 9}
-                  exercisesCompleted={getSkillExerciseCount('speaking')}
-                />
-              </div>
+              <Suspense fallback={
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[1, 2, 3, 4].map(i => (
+                    <Card key={i}><CardContent className="p-8"><div className="h-[150px] flex items-center justify-center">Loading...</div></CardContent></Card>
+                  ))}
+                </div>
+              }>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <SkillProgressCard
+                    skill="LISTENING"
+                    currentScore={stats.skillScores.listening}
+                    targetScore={user?.targetBandScore || 9}
+                    exercisesCompleted={getSkillExerciseCount('listening')}
+                  />
+                  <SkillProgressCard
+                    skill="READING"
+                    currentScore={stats.skillScores.reading}
+                    targetScore={user?.targetBandScore || 9}
+                    exercisesCompleted={getSkillExerciseCount('reading')}
+                  />
+                  <SkillProgressCard
+                    skill="WRITING"
+                    currentScore={stats.skillScores.writing}
+                    targetScore={user?.targetBandScore || 9}
+                    exercisesCompleted={getSkillExerciseCount('writing')}
+                  />
+                  <SkillProgressCard
+                    skill="SPEAKING"
+                    currentScore={stats.skillScores.speaking}
+                    targetScore={user?.targetBandScore || 9}
+                    exercisesCompleted={getSkillExerciseCount('speaking')}
+                  />
+                </div>
+              </Suspense>
             </TabsContent>
           )}
         </Tabs>
