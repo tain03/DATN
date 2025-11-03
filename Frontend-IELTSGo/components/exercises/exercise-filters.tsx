@@ -61,6 +61,7 @@ export function ExerciseFiltersComponent({ filters, onFiltersChange, onSearch }:
     if (debouncedSearch !== (filters.search || "")) {
       onSearch(debouncedSearch)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]) // Only depend on debouncedSearch to avoid infinite loop
 
   const handleSkillChange = (skill: string) => {

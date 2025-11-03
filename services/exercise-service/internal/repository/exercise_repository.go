@@ -124,16 +124,23 @@ func (r *ExerciseRepository) GetExercises(query *models.ExerciseListQuery) ([]mo
 	offsetArg := argCount
 
 	selectQuery := fmt.Sprintf(`
-		SELECT id, title, slug, description, exercise_type, skill_type, difficulty,
-			ielts_level, total_questions, total_sections, time_limit_minutes,
-			thumbnail_url, audio_url, audio_duration_seconds, audio_transcript,
-			passage_count, course_id, module_id, passing_score, total_points,
-			is_free, is_published, total_attempts, average_score,
-			average_completion_time, display_order, created_by, published_at,
-			created_at, updated_at
-		FROM exercises 
+		SELECT 
+			e.id, e.title, e.slug, e.description, e.exercise_type, e.skill_type, e.difficulty,
+			e.ielts_level, 
+			COALESCE((
+				SELECT COUNT(*) FROM questions q 
+				INNER JOIN exercise_sections es ON q.section_id = es.id 
+				WHERE es.exercise_id = e.id
+			), 0) as total_questions,
+			e.total_sections, e.time_limit_minutes,
+			e.thumbnail_url, e.audio_url, e.audio_duration_seconds, e.audio_transcript,
+			e.passage_count, e.course_id, e.module_id, e.passing_score, e.total_points,
+			e.is_free, e.is_published, e.total_attempts, e.average_score,
+			e.average_completion_time, e.display_order, e.created_by, e.published_at,
+			e.created_at, e.updated_at
+		FROM exercises e
 		WHERE %s 
-		ORDER BY display_order, created_at DESC 
+		ORDER BY e.display_order, e.created_at DESC 
 		LIMIT $%d OFFSET $%d
 	`, whereClause, limitArg, offsetArg)
 
@@ -171,14 +178,22 @@ func (r *ExerciseRepository) GetExerciseByID(id uuid.UUID) (*models.ExerciseDeta
 	// Get exercise
 	var exercise models.Exercise
 	err := r.db.QueryRow(`
-		SELECT id, title, slug, description, exercise_type, skill_type, difficulty,
-			ielts_level, total_questions, total_sections, time_limit_minutes,
-			thumbnail_url, audio_url, audio_duration_seconds, audio_transcript,
-			passage_count, course_id, module_id, passing_score, total_points,
-			is_free, is_published, total_attempts, average_score,
-			average_completion_time, display_order, created_by, published_at,
-			created_at, updated_at
-		FROM exercises WHERE id = $1 AND is_published = true
+		SELECT 
+			e.id, e.title, e.slug, e.description, e.exercise_type, e.skill_type, e.difficulty,
+			e.ielts_level, 
+			COALESCE((
+				SELECT COUNT(*) FROM questions q 
+				INNER JOIN exercise_sections es ON q.section_id = es.id 
+				WHERE es.exercise_id = e.id
+			), 0) as total_questions,
+			e.total_sections, e.time_limit_minutes,
+			e.thumbnail_url, e.audio_url, e.audio_duration_seconds, e.audio_transcript,
+			e.passage_count, e.course_id, e.module_id, e.passing_score, e.total_points,
+			e.is_free, e.is_published, e.total_attempts, e.average_score,
+			e.average_completion_time, e.display_order, e.created_by, e.published_at,
+			e.created_at, e.updated_at
+		FROM exercises e
+		WHERE e.id = $1 AND e.is_published = true
 	`, id).Scan(
 		&exercise.ID, &exercise.Title, &exercise.Slug, &exercise.Description,
 		&exercise.ExerciseType, &exercise.SkillType, &exercise.Difficulty,

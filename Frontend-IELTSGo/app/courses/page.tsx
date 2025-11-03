@@ -26,8 +26,53 @@ export default function CoursesPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  // Memoize fetchCourses to avoid unnecessary re-renders
-  const fetchCourses = useCallback(async () => {
+  // Use stable filter key to trigger refetch only when filters actually change
+  const filterKey = useMemo(() => {
+    return JSON.stringify({
+      search: filters.search || '',
+      skill_type: filters.skill_type || '',
+      level: filters.level || '',
+      enrollment_type: filters.enrollment_type || '',
+      is_featured: filters.is_featured !== undefined ? filters.is_featured : '',
+    })
+  }, [filters.search, filters.skill_type, filters.level, filters.enrollment_type, filters.is_featured])
+
+  // Fetch courses when filters or page changes
+  useEffect(() => {
+    let isMounted = true
+    
+    const fetchCourses = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await coursesApi.getCourses(filters, page, 12)
+
+        if (!isMounted) return
+
+        setCourses(Array.isArray(response.data) ? response.data : [])
+        setTotalPages(response.totalPages || 1)
+      } catch (error) {
+        if (!isMounted) return
+        console.error("[v0] Failed to fetch courses:", error)
+        setError(tCourses('failed_to_load_courses_please_try_again_'))
+        setCourses([])
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchCourses()
+
+    return () => {
+      isMounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey, page]) // filterKey is stable string, page is primitive
+
+  // Refetch function for error retry
+  const refetchCourses = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -42,10 +87,6 @@ export default function CoursesPage() {
       setLoading(false)
     }
   }, [filters, page, tCourses])
-
-  useEffect(() => {
-    fetchCourses()
-  }, [fetchCourses])
 
   const handleFiltersChange = (newFilters: CourseFilters) => {
     // Remove undefined and empty values to ensure clean filter state
@@ -97,7 +138,7 @@ export default function CoursesPage() {
             title={error}
             description={t('please_try_again_later') || "Please try again later"}
             actionLabel={t('try_again') || "Try Again"}
-            actionOnClick={fetchCourses}
+            actionOnClick={refetchCourses}
             className="mt-8"
           />
         ) : courses.length === 0 ? (

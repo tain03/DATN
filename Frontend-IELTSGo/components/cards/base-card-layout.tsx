@@ -105,7 +105,11 @@ export function VerticalCardLayout({
                 sizes={imageConfig.sizes}
                 priority={image.priority}
               />
-              {image.overlay}
+              {image.overlay && (
+                <div className="absolute inset-0 z-10">
+                  {image.overlay}
+                </div>
+              )}
             </>
           ) : (
             <div className={CARD_CONFIG.image.placeholder.className}>

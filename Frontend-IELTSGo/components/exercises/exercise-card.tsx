@@ -45,7 +45,7 @@ function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCard
   // Build image overlay with badges
   const imageOverlay = (
     <>
-      <div className="absolute top-3 left-3 flex gap-2">
+      <div className="absolute top-3 left-3 flex gap-2 z-20">
         <Badge 
           className={skillColors[skillType.toLowerCase()] || "bg-gray-500"}
           aria-label={t(skillType.toLowerCase() || 'reading')}
@@ -60,7 +60,7 @@ function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCard
           {t(difficulty.toLowerCase() || 'medium').toUpperCase()}
         </Badge>
       </div>
-      <div className="absolute top-3 right-3">
+      <div className="absolute top-3 right-3 z-20">
         {isFromCourse ? (
           <Badge 
             variant="outline" 
@@ -84,7 +84,7 @@ function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCard
     </>
   )
 
-  // Build content section with stats
+  // Build content section with stats (matching Course Card style)
   const contentSection = (
     <>
       {/* Questions and Time Limit */}

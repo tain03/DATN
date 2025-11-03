@@ -46,11 +46,22 @@ export function CourseFiltersComponent({ filters, onFiltersChange, onSearch }: C
 
   const [searchValue, setSearchValue] = useState(filters.search || "")
   const [isOpen, setIsOpen] = useState(false)
+  
+  // Debounce search input to reduce API calls
+  const debouncedSearch = useDebounce(searchValue, 500)
 
   // Sync searchValue when filters.search changes externally
   useEffect(() => {
     setSearchValue(filters.search || "")
   }, [filters.search])
+
+  // Auto-search when debounced value changes (after 500ms of no typing)
+  useEffect(() => {
+    if (debouncedSearch !== (filters.search || "")) {
+      onSearch(debouncedSearch)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]) // Only depend on debouncedSearch to avoid infinite loop
 
   const handleSkillChange = (skill: string) => {
     const currentSkills = Array.isArray(filters.skill_type) ? filters.skill_type : (filters.skill_type ? [filters.skill_type] : [])

@@ -35,8 +35,64 @@ export default function ExercisesListPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  // Memoize fetchExercises to avoid unnecessary re-renders
-  const fetchExercises = useCallback(async () => {
+  // Use stable filter key to trigger refetch only when filters actually change
+  const filterKey = useMemo(() => {
+    return JSON.stringify({
+      skill: filters.skill?.sort().join(',') || '',
+      type: filters.type?.sort().join(',') || '',
+      difficulty: filters.difficulty?.sort().join(',') || '',
+      search: filters.search || '',
+      sort: filters.sort || '',
+    })
+  }, [filters.skill, filters.type, filters.difficulty, filters.search, filters.sort])
+
+  // Fetch exercises when filters, page, or sourceFilter changes
+  useEffect(() => {
+    let isMounted = true
+    
+    const fetchExercises = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await exercisesApi.getExercises(filters, page, 12)
+
+        if (!isMounted) return
+
+        // Filter by source (course-linked vs standalone)
+        let filteredExercises = response.data
+        if (sourceFilter === "course") {
+          filteredExercises = response.data.filter(ex => ex.module_id !== null && ex.module_id !== undefined)
+        } else if (sourceFilter === "standalone") {
+          filteredExercises = response.data.filter(ex => ex.module_id === null || ex.module_id === undefined)
+        }
+
+        setExercises(filteredExercises)
+        // Use totalPages from API response, not from filtered results
+        // Note: If sourceFilter is applied, we need to recalculate based on filtered count
+        // But for now, use API totalPages for better UX (shows total available)
+        setTotalPages(response.totalPages)
+      } catch (error) {
+        if (!isMounted) return
+        console.error('[Exercises List] Failed to fetch:', error)
+        setError(t('failed_to_load_exercises_please_try_agai'))
+        setExercises([])
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchExercises()
+
+    return () => {
+      isMounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey, page, sourceFilter]) // filterKey is stable string, page and sourceFilter are primitives
+
+  // Refetch function for pull to refresh
+  const refetchExercises = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -51,11 +107,9 @@ export default function ExercisesListPage() {
       }
 
       setExercises(filteredExercises)
-      // Use totalPages from API response, not from filtered results
-      // Note: If sourceFilter is applied, we need to recalculate based on filtered count
-      // But for now, use API totalPages for better UX (shows total available)
       setTotalPages(response.totalPages)
     } catch (error) {
+      console.error('[Exercises List] Failed to fetch:', error)
       setError(t('failed_to_load_exercises_please_try_agai'))
       setExercises([])
     } finally {
@@ -63,13 +117,9 @@ export default function ExercisesListPage() {
     }
   }, [filters, page, sourceFilter, t])
 
-  useEffect(() => {
-    fetchExercises()
-  }, [fetchExercises])
-
   // Pull to refresh
   const { ref: pullToRefreshRef } = usePullToRefresh(() => {
-    fetchExercises()
+    refetchExercises()
   }, true)
 
   const handleFiltersChange = (newFilters: ExerciseFilters) => {
@@ -123,7 +173,7 @@ export default function ExercisesListPage() {
             title={error}
             description={tCommon('please_try_again_later') || "Please try again later"}
             actionLabel={tCommon('try_again') || "Try Again"}
-            actionOnClick={fetchExercises}
+            actionOnClick={refetchExercises}
             className="mt-8"
           />
         ) : exercises.length === 0 ? (
