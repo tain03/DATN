@@ -121,7 +121,8 @@ services:
       - USER_SERVICE_URL=http://user-service:8082
       - COURSE_SERVICE_URL=http://course-service:8083
       - EXERCISE_SERVICE_URL=http://exercise-service:8084
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8086
+      - AI_SERVICE_URL=http://ai-service:8085
       - RATE_LIMIT_RPM=100
       - RATE_LIMIT_ENABLED=true
     ports:
@@ -172,7 +173,8 @@ services:
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@ieltsplatform.com}
       - SMTP_FROM_NAME=${SMTP_FROM_NAME}
       - USER_SERVICE_URL=http://user-service:8082
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8086
+      - AI_SERVICE_URL=http://ai-service:8085
       - INTERNAL_API_KEY=internal_secret_key_ielts_2025_change_in_production
     volumes:
       - ./database/schemas:/schemas:ro
@@ -243,7 +245,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       # Service-to-Service Communication
       - USER_SERVICE_URL=http://user-service:8082
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8086
+      - AI_SERVICE_URL=http://ai-service:8085
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-internal_secret_key_ielts_2025_change_in_production}
       # YouTube Data API
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
@@ -288,7 +291,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       # Service-to-Service Communication
       - USER_SERVICE_URL=http://user-service:8082
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8086
+      - AI_SERVICE_URL=http://ai-service:8085
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-internal_secret_key_ielts_2025_change_in_production}
     volumes:
       - ./database/schemas:/schemas:ro
@@ -372,13 +376,54 @@ services:
       dockerfile: ./services/notification-service/Dockerfile
     container_name: ielts_notification_service
     environment:
-      - SERVER_PORT=8085
+      - SERVER_PORT=8086
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=${POSTGRES_USER}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_NAME=notification_db
       - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./database/schemas:/schemas:ro
+      - ./scripts:/scripts:ro
+    ports:
+      - "8086:8086"
+    networks:
+      - ielts_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================
+  # AI Service
+  # ============================================
+  ai-service:
+    build:
+      context: .
+      dockerfile: ./services/ai-service/Dockerfile
+    container_name: ielts_ai_service
+    environment:
+      - SERVER_PORT=8085
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=ai_db
+      - JWT_SECRET=${JWT_SECRET}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - USER_SERVICE_URL=http://user-service:8082
+      - EXERCISE_SERVICE_URL=http://exercise-service:8083
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8086
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-internal_secret_key_ielts_2025_change_in_production}
     volumes:
       - ./database/schemas:/schemas:ro
       - ./scripts:/scripts:ro

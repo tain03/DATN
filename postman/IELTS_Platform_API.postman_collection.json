@@ -7113,6 +7113,737 @@
         }
       ],
       "description": "Notification Service APIs for managing user notifications, preferences, and device tokens"
+    },
+    {
+      "name": "AI Service",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Check AI Service health status"
+          },
+          "response": []
+        },
+        {
+          "name": "Writing",
+          "item": [
+            {
+              "name": "Submit Writing",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"task_type\": \"task2\",\n  \"task_prompt_text\": \"Some people think that technology has made our lives more complicated. Others believe it has made life easier and more convenient.\\n\\nDiscuss both views and give your own opinion.\",\n  \"essay_text\": \"Technology has undoubtedly transformed our daily lives in profound ways. On one hand, it has simplified many tasks through automation and digital tools. On the other hand, the complexity of managing multiple devices and platforms can be overwhelming. In my opinion, while technology presents challenges, its benefits significantly outweigh the drawbacks.\",\n  \"task_prompt_id\": null\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/writing/submit",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "writing",
+                    "submit"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function() {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test('Response has submission', function() {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.expect(jsonData).to.have.property('submission');",
+                      "    pm.expect(jsonData.submission).to.have.property('id');",
+                      "    ",
+                      "    // Auto-save submission ID",
+                      "    if (jsonData.submission && jsonData.submission.id) {",
+                      "        pm.environment.set('test_writing_submission_id', jsonData.submission.id);",
+                      "    }",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "Get Writing Submissions",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/writing/submissions?limit=10&offset=0",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "writing",
+                    "submissions"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Writing Submission By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/writing/submissions/{{test_writing_submission_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "writing",
+                    "submissions",
+                    "{{test_writing_submission_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Writing Prompts",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/writing/prompts?limit=10&offset=0&is_published=true",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "writing",
+                    "prompts"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    },
+                    {
+                      "key": "is_published",
+                      "value": "true",
+                      "description": "Filter published prompts"
+                    },
+                    {
+                      "key": "task_type",
+                      "value": "",
+                      "description": "Optional: task1 or task2"
+                    },
+                    {
+                      "key": "difficulty",
+                      "value": "",
+                      "description": "Optional: easy, medium, hard"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function() {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test('Response has prompts array', function() {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.expect(jsonData).to.have.property('prompts');",
+                      "    pm.expect(jsonData.prompts).to.be.an('array');",
+                      "    ",
+                      "    // Auto-save first prompt ID",
+                      "    if (jsonData.prompts && jsonData.prompts.length > 0) {",
+                      "        pm.environment.set('test_writing_prompt_id', jsonData.prompts[0].id);",
+                      "    }",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "Get Writing Prompt By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/writing/prompts/{{test_writing_prompt_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "writing",
+                    "prompts",
+                    "{{test_writing_prompt_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Speaking",
+          "item": [
+            {
+              "name": "Submit Speaking (JSON)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"part_number\": 2,\n  \"task_prompt_text\": \"Describe a memorable journey you have taken\",\n  \"audio_url\": \"https://example.com/audio.mp3\",\n  \"task_prompt_id\": null\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/speaking/submit",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "speaking",
+                    "submit"
+                  ]
+                },
+                "description": "Submit speaking test with audio URL (use multipart for file upload)"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200 or 201', function() {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                      "});",
+                      "",
+                      "const jsonData = pm.response.json();",
+                      "if (jsonData.submission && jsonData.submission.id) {",
+                      "    pm.environment.set('test_speaking_submission_id', jsonData.submission.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "Get Speaking Submissions",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/speaking/submissions?limit=10&offset=0",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "speaking",
+                    "submissions"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Speaking Submission By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/speaking/submissions/{{test_speaking_submission_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "speaking",
+                    "submissions",
+                    "{{test_speaking_submission_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Speaking Prompts",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/speaking/prompts?limit=10&offset=0&is_published=true",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "speaking",
+                    "prompts"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    },
+                    {
+                      "key": "is_published",
+                      "value": "true",
+                      "description": "Filter published prompts"
+                    },
+                    {
+                      "key": "part_number",
+                      "value": "",
+                      "description": "Optional: 1, 2, or 3"
+                    },
+                    {
+                      "key": "difficulty",
+                      "value": "",
+                      "description": "Optional: easy, medium, hard"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function() {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const jsonData = pm.response.json();",
+                      "pm.expect(jsonData).to.have.property('prompts');",
+                      "",
+                      "if (jsonData.prompts && jsonData.prompts.length > 0) {",
+                      "    pm.environment.set('test_speaking_prompt_id', jsonData.prompts[0].id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "Get Speaking Prompt By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/ai/speaking/prompts/{{test_speaking_prompt_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "speaking",
+                    "prompts",
+                    "{{test_speaking_prompt_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Admin - Writing Prompts",
+          "item": [
+            {
+              "name": "Create Writing Prompt",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"task_type\": \"task2\",\n  \"prompt_text\": \"Some people believe that universities should only accept students with high marks. Others believe that universities should accept students of all ages, regardless of their marks. Discuss both views and give your opinion.\",\n  \"topic\": \"Education\",\n  \"difficulty\": \"medium\",\n  \"visual_type\": null,\n  \"visual_url\": null,\n  \"has_sample_answer\": false,\n  \"sample_answer_text\": null,\n  \"sample_answer_band_score\": null,\n  \"is_published\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/ai/writing/prompts",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "ai",
+                    "writing",
+                    "prompts"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 201', function() {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "const jsonData = pm.response.json();",
+                      "if (jsonData.id) {",
+                      "    pm.environment.set('test_admin_writing_prompt_id', jsonData.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "Update Writing Prompt",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"task_type\": \"task2\",\n  \"prompt_text\": \"Updated: Some people believe that universities should only accept students with high marks. Others believe that universities should accept students of all ages, regardless of their marks. Discuss both views and give your opinion.\",\n  \"topic\": \"Education\",\n  \"difficulty\": \"hard\",\n  \"visual_type\": null,\n  \"visual_url\": null,\n  \"has_sample_answer\": true,\n  \"sample_answer_text\": \"Sample answer text here...\",\n  \"sample_answer_band_score\": 7.5,\n  \"is_published\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/ai/writing/prompts/{{test_admin_writing_prompt_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "ai",
+                    "writing",
+                    "prompts",
+                    "{{test_admin_writing_prompt_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Writing Prompt",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/ai/writing/prompts/{{test_admin_writing_prompt_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "ai",
+                    "writing",
+                    "prompts",
+                    "{{test_admin_writing_prompt_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Admin - Speaking Prompts",
+          "item": [
+            {
+              "name": "Create Speaking Prompt",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"part_number\": 2,\n  \"prompt_text\": \"Describe a useful skill you learned\",\n  \"cue_card_topic\": \"Describe a useful skill you learned\",\n  \"cue_card_points\": [\n    \"What the skill was\",\n    \"How you learned it\",\n    \"How long it took to learn\",\n    \"And explain why this skill is useful to you\"\n  ],\n  \"preparation_time_seconds\": 60,\n  \"speaking_time_seconds\": 120,\n  \"follow_up_questions\": [\n    \"How has education changed in recent years?\",\n    \"What role should technology play in education?\"\n  ],\n  \"topic_category\": \"Education & Skills\",\n  \"difficulty\": \"medium\",\n  \"has_sample_answer\": false,\n  \"sample_answer_text\": null,\n  \"sample_answer_audio_url\": null,\n  \"sample_answer_band_score\": null,\n  \"is_published\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/ai/speaking/prompts",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "ai",
+                    "speaking",
+                    "prompts"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 201', function() {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "const jsonData = pm.response.json();",
+                      "if (jsonData.id) {",
+                      "    pm.environment.set('test_admin_speaking_prompt_id', jsonData.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "response": []
+            },
+            {
+              "name": "Update Speaking Prompt",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"part_number\": 2,\n  \"prompt_text\": \"Updated: Describe a useful skill you learned\",\n  \"cue_card_topic\": \"Describe a useful skill you learned\",\n  \"cue_card_points\": [\n    \"What the skill was\",\n    \"How you learned it\",\n    \"How long it took to learn\",\n    \"And explain why this skill is useful to you\"\n  ],\n  \"preparation_time_seconds\": 60,\n  \"speaking_time_seconds\": 120,\n  \"follow_up_questions\": [\n    \"How has education changed in recent years?\",\n    \"What role should technology play in education?\"\n  ],\n  \"topic_category\": \"Education & Skills\",\n  \"difficulty\": \"hard\",\n  \"has_sample_answer\": true,\n  \"sample_answer_text\": \"Sample speaking answer...\",\n  \"sample_answer_audio_url\": \"https://example.com/sample.mp3\",\n  \"sample_answer_band_score\": 8.0,\n  \"is_published\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/ai/speaking/prompts/{{test_admin_speaking_prompt_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "ai",
+                    "speaking",
+                    "prompts",
+                    "{{test_admin_speaking_prompt_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Speaking Prompt",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/ai/speaking/prompts/{{test_admin_speaking_prompt_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "ai",
+                    "speaking",
+                    "prompts",
+                    "{{test_admin_speaking_prompt_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ],
+      "description": "AI Service APIs for Writing and Speaking evaluation using OpenAI GPT-4 and Whisper"
     }
   ]
 }

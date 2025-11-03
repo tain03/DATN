@@ -18,6 +18,7 @@ type ServiceURLs struct {
 	CourseService       string
 	ExerciseService     string
 	NotificationService string
+	AIService          string
 }
 
 type RateLimitConfig struct {
@@ -34,7 +35,8 @@ func LoadConfig() (*Config, error) {
 			UserService:         getEnv("USER_SERVICE_URL", "http://user-service:8082"),
 			CourseService:       getEnv("COURSE_SERVICE_URL", "http://course-service:8083"),
 			ExerciseService:     getEnv("EXERCISE_SERVICE_URL", "http://exercise-service:8084"),
-			NotificationService: getEnv("NOTIFICATION_SERVICE_URL", "http://notification-service:8085"),
+			NotificationService: getEnv("NOTIFICATION_SERVICE_URL", "http://notification-service:8086"),
+			AIService:          getEnv("AI_SERVICE_URL", "http://ai-service:8085"),
 		},
 		RateLimit: RateLimitConfig{
 			RequestsPerMinute: getEnvAsInt("RATE_LIMIT_RPM", 100),

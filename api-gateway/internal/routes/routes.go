@@ -40,6 +40,7 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config, authMiddleware *middleware.A
 				"submissions":   "/api/v1/submissions/* (submit answers, get results)",
 				"tags":          "/api/v1/tags (exercise tags)",
 				"notifications": "/api/v1/notifications/* (notifications, preferences, timezone, scheduled)",
+				"ai":            "/api/v1/ai/* (writing/speaking evaluation)",
 				"admin":         "/api/v1/admin/* (course/exercise/notification management)",
 			},
 			"documentation": "See README.md for detailed API documentation",
@@ -335,6 +336,45 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config, authMiddleware *middleware.A
 		// Notification management
 		adminGroup.POST("/notifications", proxy.ReverseProxy(cfg.Services.NotificationService))
 		adminGroup.POST("/notifications/bulk", proxy.ReverseProxy(cfg.Services.NotificationService))
+	}
+
+	// ============================================
+	// AI SERVICE - Protected (auth required)
+	// ============================================
+	aiGroup := v1.Group("/ai")
+	aiGroup.Use(authMiddleware.ValidateToken())
+	{
+		// Writing endpoints
+		aiGroup.POST("/writing/submit", proxy.ReverseProxy(cfg.Services.AIService))
+		aiGroup.GET("/writing/submissions", proxy.ReverseProxy(cfg.Services.AIService))
+		aiGroup.GET("/writing/submissions/:id", proxy.ReverseProxy(cfg.Services.AIService))
+		aiGroup.GET("/writing/prompts", proxy.ReverseProxy(cfg.Services.AIService))
+		aiGroup.GET("/writing/prompts/:id", proxy.ReverseProxy(cfg.Services.AIService))
+
+		// Speaking endpoints
+		aiGroup.POST("/speaking/submit", proxy.ReverseProxy(cfg.Services.AIService))
+		aiGroup.GET("/speaking/submissions", proxy.ReverseProxy(cfg.Services.AIService))
+		aiGroup.GET("/speaking/submissions/:id", proxy.ReverseProxy(cfg.Services.AIService))
+		aiGroup.GET("/speaking/prompts", proxy.ReverseProxy(cfg.Services.AIService))
+		aiGroup.GET("/speaking/prompts/:id", proxy.ReverseProxy(cfg.Services.AIService))
+	}
+
+	// ============================================
+	// ADMIN AI ROUTES - Require admin role
+	// ============================================
+	adminAIGroup := v1.Group("/admin/ai")
+	adminAIGroup.Use(authMiddleware.ValidateToken())
+	adminAIGroup.Use(authMiddleware.RequireRole("admin"))
+	{
+		// Writing prompts management
+		adminAIGroup.POST("/writing/prompts", proxy.ReverseProxy(cfg.Services.AIService))
+		adminAIGroup.PUT("/writing/prompts/:id", proxy.ReverseProxy(cfg.Services.AIService))
+		adminAIGroup.DELETE("/writing/prompts/:id", proxy.ReverseProxy(cfg.Services.AIService))
+
+		// Speaking prompts management
+		adminAIGroup.POST("/speaking/prompts", proxy.ReverseProxy(cfg.Services.AIService))
+		adminAIGroup.PUT("/speaking/prompts/:id", proxy.ReverseProxy(cfg.Services.AIService))
+		adminAIGroup.DELETE("/speaking/prompts/:id", proxy.ReverseProxy(cfg.Services.AIService))
 	}
 
 	// ============================================
