@@ -201,7 +201,11 @@ func (s *UserService) GetProgressStats(userID uuid.UUID) (*models.ProgressStatsR
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	// Get recent sessions
+=======
+	// Get recent sessions (just 10 most recent for dashboard, page 1)
+>>>>>>> 6a32a112f8ff26d85e520211e0a7a105b768d951
 	recentSessions, _, err := s.repo.GetRecentSessions(userID, 1, 10)
 	if err != nil {
 		log.Printf("⚠️  Warning: Failed to get recent sessions: %v", err)

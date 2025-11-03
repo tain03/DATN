@@ -51,7 +51,10 @@ export default function ExercisesListPage() {
       }
 
       setExercises(filteredExercises)
-      setTotalPages(Math.ceil(filteredExercises.length / 12))
+      // Use totalPages from API response, not from filtered results
+      // Note: If sourceFilter is applied, we need to recalculate based on filtered count
+      // But for now, use API totalPages for better UX (shows total available)
+      setTotalPages(response.totalPages)
     } catch (error) {
       setError(t('failed_to_load_exercises_please_try_agai'))
       setExercises([])

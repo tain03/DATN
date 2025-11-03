@@ -62,6 +62,8 @@ export function ReviewList({ courseId, refreshTrigger }: ReviewListProps) {
   const { toast } = useToast()
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "highest" | "lowest">("newest")
   const [filterRating, setFilterRating] = useState<number | null>(null)
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
@@ -73,9 +75,10 @@ export function ReviewList({ courseId, refreshTrigger }: ReviewListProps) {
     const fetchReviews = async () => {
       try {
         setLoading(true)
-        const response = await coursesApi.getCourseReviews(courseId)
-        // Backend returns null for empty, handle gracefully
-        setReviews(response?.data || [])
+        const response = await coursesApi.getCourseReviews(courseId, page, 10)
+        // Backend returns { reviews: [], total, page, limit, total_pages }
+        setReviews(response?.reviews || [])
+        setTotalPages(response?.totalPages || 1)
       } catch (error) {
         console.error("[ReviewList] Failed to fetch reviews:", error)
         setReviews([])
@@ -85,7 +88,7 @@ export function ReviewList({ courseId, refreshTrigger }: ReviewListProps) {
     }
 
     fetchReviews()
-  }, [courseId, refreshTrigger])
+  }, [courseId, refreshTrigger, page])
 
   // Filter and sort reviews - MUST be called before any conditional returns
   const filteredAndSortedReviews = useMemo(() => {
@@ -533,6 +536,31 @@ export function ReviewList({ courseId, refreshTrigger }: ReviewListProps) {
               </Card>
             )
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === 1 || loading}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            {t('previous') || "Trước"}
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {t('page_of', { page: page.toString(), totalPages: totalPages.toString() }) || `Trang ${page}/${totalPages}`}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages || loading}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            {t('next') || "Sau"}
+          </Button>
         </div>
       )}
     </div>

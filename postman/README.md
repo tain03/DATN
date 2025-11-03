@@ -55,6 +55,50 @@ student_1234@test.com
 instructor_5678@test.com
 ```
 
+## 📊 Pagination Testing
+
+### All List Endpoints Support Pagination
+
+**Query Parameters:**
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20, max: 100)
+- `pageSize` - Alternative to limit (followers/following endpoints)
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [...],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 100,
+      "total_pages": 5
+    }
+  }
+}
+```
+
+**Endpoints với Pagination:**
+- ✅ `GET /api/v1/courses?page=1&limit=20`
+- ✅ `GET /api/v1/exercises?page=1&limit=20`
+- ✅ `GET /api/v1/courses/:id/reviews?page=1&limit=20`
+- ✅ `GET /api/v1/courses/my-courses?page=1&limit=20`
+- ✅ `GET /api/v1/videos/history?page=1&limit=20`
+- ✅ `GET /api/v1/users/me/history?page=1&limit=20`
+- ✅ `GET /api/v1/notifications?page=1&limit=20`
+- ✅ `GET /api/v1/leaderboard?page=1&limit=50`
+- ✅ `GET /api/v1/users/:id/followers?page=1&pageSize=20`
+- ✅ `GET /api/v1/users/:id/following?page=1&pageSize=20`
+
+**Auto-Validation Tests:**
+All pagination endpoints include automatic tests for:
+- ✅ Pagination object exists
+- ✅ Contains: page, limit, total, total_pages
+- ✅ Values are correct types (numbers)
+- ✅ Page >= 1, Limit <= max
+
 ## 📋 Collection Structure
 
 ### Auth Service (15 endpoints)
@@ -102,13 +146,15 @@ Comprehensive test scenarios based on verified test results:
 ### Course Service (16 endpoints)
 
 #### Public APIs (3 endpoints)
-1. **Get All Courses** - List courses with filters (no auth required)
+1. **Get All Courses** - List courses with filters and pagination (no auth required)
+   - Params: `page`, `limit`, `skill_type`, `level`, `enrollment_type`, `is_featured`, `search`
+   - Response: includes `pagination` object with `total_pages`
 2. **Get Course Detail** - View course with modules/lessons (no auth required)
 3. **Get Lesson Detail** - View lesson with videos/materials (no auth required)
 
 #### Student APIs (4 endpoints)
 4. **Enroll in Course** - Enroll in a course (requires auth)
-5. **Get My Enrollments** - List user's enrolled courses
+5. **Get My Enrollments** - List user's enrolled courses with pagination (`page`, `limit`)
 6. **Get Enrollment Progress** - View detailed progress per module
 7. **Update Lesson Progress** - Track lesson completion and time spent
 
@@ -347,9 +393,9 @@ As new microservices are implemented, add folders:
 - ✅ Auth Service (Completed)
 - ✅ User Service (Completed)
 - ✅ Course Service (Completed)
-- Exercise Service (Coming soon)
+- ✅ Exercise Service (Completed with pagination)
+- ✅ Notification Service (Completed with pagination)
 - AI Service (Coming soon)
-- Notification Service (Coming soon)
 
 ### Environment Setup
 Create additional environments:

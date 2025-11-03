@@ -52,8 +52,8 @@ export function ReviewForm({ courseId, onSuccess }: ReviewFormProps) {
 
       try {
         setLoadingReview(true)
-        const response = await coursesApi.getCourseReviews(courseId)
-        const reviews: Review[] = response?.data || []
+        const response = await coursesApi.getCourseReviews(courseId, 1, 100) // Get first 100 to find user's review
+        const reviews: Review[] = response?.reviews || []
         
         // Find current user's review
         const userReview = reviews.find((r) => r.user_id === user.id)

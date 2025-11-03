@@ -23,9 +23,12 @@ interface BackendExerciseResponse {
   success: boolean
   data: {
     exercises: Exercise[]
-    total: number
-    page: number
-    limit: number
+    pagination: {
+      page: number
+      limit: number
+      total: number
+      total_pages: number
+    }
   }
 }
 
@@ -65,14 +68,14 @@ export const exercisesApi = {
     
     // Transform backend response to match frontend expectation
     const backendData = response.data.data
-    const totalPages = Math.ceil(backendData.total / pageSize)
+    const pagination = backendData.pagination || { page, limit: pageSize, total: 0, total_pages: 0 }
     
     const result: PaginatedResponse<Exercise> = {
       data: backendData.exercises || [],
-      total: backendData.total || 0,
-      page: backendData.page || 1,
-      pageSize: backendData.limit || pageSize,
-      totalPages
+      total: pagination.total || 0,
+      page: pagination.page || page,
+      pageSize: pagination.limit || pageSize,
+      totalPages: pagination.total_pages || 0,
     }
 
     // Cache for 30 seconds
