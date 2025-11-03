@@ -50,8 +50,8 @@ export default function MyCoursesPage() {
   const loadEnrolledCourses = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await coursesApi.getEnrolledCoursesWithProgress()
-      setEnrolledCourses(data)
+      const response = await coursesApi.getEnrolledCoursesWithProgress(1, 100) // Load all enrolled courses
+      setEnrolledCourses(response.data)
     } catch (error) {
       // Keep previous data on error (optimistic UI)
     } finally {

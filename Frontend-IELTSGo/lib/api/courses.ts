@@ -80,15 +80,19 @@ export const coursesApi = {
     params.append("page", page.toString())
     params.append("limit", limit.toString())
 
-    const response = await apiClient.get<ApiResponse<{ courses: Course[]; count: number }>>(`/courses?${params.toString()}`)
+    const response = await apiClient.get<ApiResponse<{ 
+      courses: Course[]; 
+      pagination: { page: number; limit: number; total: number; total_pages: number }
+    }>>(`/courses?${params.toString()}`)
     
     // Transform backend response to frontend format
+    const pagination = response.data.data.pagination || { page, limit, total: 0, total_pages: 0 }
     const result: PaginatedResponse<Course> = {
       data: response.data.data.courses || [],
-      total: response.data.data.count || 0,
-      page: page,
-      pageSize: limit,
-      totalPages: Math.ceil((response.data.data.count || 0) / limit),
+      total: pagination.total || 0,
+      page: pagination.page || page,
+      pageSize: pagination.limit || limit,
+      totalPages: pagination.total_pages || 0,
     }
     
     // Cache for 30 seconds
@@ -182,38 +186,86 @@ export const coursesApi = {
     await apiClient.post(`/enrollments`, { course_id: courseId })
   },
 
-  // Get user's enrolled courses
-  getEnrolledCourses: async (): Promise<Course[]> => {
-    const response = await apiClient.get<ApiResponse<{ enrollments: any[]; total: number }>>("/enrollments/my")
-    // Backend returns { enrollments: [...], total: number }
+  // Get user's enrolled courses (with pagination support)
+  getEnrolledCourses: async (page = 1, limit = 20): Promise<PaginatedResponse<Course>> => {
+    const response = await apiClient.get<ApiResponse<{ 
+      enrollments: any[];
+      pagination: { page: number; limit: number; total: number; total_pages: number }
+    }>>(`/enrollments/my?page=${page}&limit=${limit}`)
+    
+    // Backend returns { enrollments: [...], pagination: {...} }
     // Each enrollment has { enrollment: {...}, course: {...} }
     if (!response.data.data.enrollments || !Array.isArray(response.data.data.enrollments)) {
-      return []
+      const pagination = response.data.data.pagination || { page, limit, total: 0, total_pages: 0 }
+      return {
+        data: [],
+        total: pagination.total || 0,
+        page: pagination.page || page,
+        pageSize: pagination.limit || limit,
+        totalPages: pagination.total_pages || 0,
+      }
     }
-    return response.data.data.enrollments.map((item: any) => item.course)
+    
+    const pagination = response.data.data.pagination || { page, limit, total: 0, total_pages: 0 }
+    return {
+      data: response.data.data.enrollments.map((item: any) => item.course),
+      total: pagination.total || 0,
+      page: pagination.page || page,
+      pageSize: pagination.limit || limit,
+      totalPages: pagination.total_pages || 0,
+    }
   },
 
-  // ✅ NEW: Get enrolled courses WITH progress data
-  getEnrolledCoursesWithProgress: async (): Promise<Array<{
-    course: Course
-    enrollment: CourseEnrollment
-  }>> => {
-    const cacheKey = apiCache.generateKey('/enrollments/my')
+  // ✅ NEW: Get enrolled courses WITH progress data (with pagination)
+  getEnrolledCoursesWithProgress: async (page = 1, limit = 20): Promise<{
+    data: Array<{ course: Course; enrollment: CourseEnrollment }>
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+  }> => {
+    const cacheParams = { page, limit }
+    const cacheKey = apiCache.generateKey('/enrollments/my', cacheParams)
     
     // Check cache first
-    const cached = apiCache.get<Array<{ course: Course; enrollment: CourseEnrollment }>>(cacheKey)
+    const cached = apiCache.get<{
+      data: Array<{ course: Course; enrollment: CourseEnrollment }>
+      total: number
+      page: number
+      pageSize: number
+      totalPages: number
+    }>(cacheKey)
     if (cached) {
       return cached
     }
 
-    const response = await apiClient.get<ApiResponse<{ enrollments: any[]; total: number }>>("/enrollments/my")
+    const response = await apiClient.get<ApiResponse<{ 
+      enrollments: any[];
+      pagination: { page: number; limit: number; total: number; total_pages: number }
+    }>>(`/enrollments/my?page=${page}&limit=${limit}`)
+    
     if (!response.data.data.enrollments || !Array.isArray(response.data.data.enrollments)) {
-      return []
+      const pagination = response.data.data.pagination || { page, limit, total: 0, total_pages: 0 }
+      return {
+        data: [],
+        total: pagination.total || 0,
+        page: pagination.page || page,
+        pageSize: pagination.limit || limit,
+        totalPages: pagination.total_pages || 0,
+      }
     }
-    const result = response.data.data.enrollments.map((item: any) => ({
-      course: item.course,
-      enrollment: item.enrollment,
-    }))
+    
+    const pagination = response.data.data.pagination || { page, limit, total: 0, total_pages: 0 }
+    const result = {
+      data: response.data.data.enrollments.map((item: any) => ({
+        course: item.course,
+        enrollment: item.enrollment,
+      })),
+      total: pagination.total || 0,
+      page: pagination.page || page,
+      pageSize: pagination.limit || limit,
+      totalPages: pagination.total_pages || 0,
+    }
     
     // Cache for 30 seconds
     apiCache.set(cacheKey, result, 30000)
@@ -304,10 +356,48 @@ export const coursesApi = {
   // COURSE REVIEWS & RATINGS
   // ============================================
   
-  // Get course reviews
-  getCourseReviews: async (courseId: string): Promise<any> => {
-    const response = await apiClient.get(`/courses/${courseId}/reviews`)
-    return response.data
+  // Get course reviews (with pagination)
+  getCourseReviews: async (courseId: string, page = 1, limit = 10): Promise<{
+    reviews: any[]
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }> => {
+    const cacheKey = apiCache.generateKey(`/courses/${courseId}/reviews`, { page, limit })
+    
+    // Check cache first
+    const cached = apiCache.get<{
+      reviews: any[]
+      total: number
+      page: number
+      limit: number
+      totalPages: number
+    }>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    const response = await apiClient.get<ApiResponse<{
+      reviews: any[]
+      total: number
+      page: number
+      limit: number
+      total_pages: number
+    }>>(`/courses/${courseId}/reviews?page=${page}&limit=${limit}`)
+    
+    const data = response.data.data
+    const result = {
+      reviews: data.reviews || [],
+      total: data.total || 0,
+      page: data.page || page,
+      limit: data.limit || limit,
+      totalPages: data.total_pages || 0,
+    }
+    
+    // Cache for 30 seconds
+    apiCache.set(cacheKey, result, 30000)
+    return result
   },
 
   // Create course review

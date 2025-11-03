@@ -174,7 +174,6 @@ export const progressApi = {
     }
 
     const response = await apiClient.get<ApiResponse<{
-      count: number
       sessions: Array<{
         id: string
         session_type: string
@@ -184,9 +183,11 @@ export const progressApi = {
         score?: number
         created_at: string
       }>
-    }>>(`/user/progress/history?page=${page}&page_size=${pageSize}`)
+      pagination: { page: number; limit: number; total: number; total_pages: number }
+    }>>(`/user/progress/history?page=${page}&limit=${pageSize}`)
 
     const historyData = response.data.data
+    const pagination = historyData.pagination || { page, limit: pageSize, total: 0, total_pages: 0 }
 
     const result = {
       data: historyData.sessions.map(item => ({
@@ -200,10 +201,10 @@ export const progressApi = {
         score: item.score,
         skillType: item.skill_type as SkillType | undefined
       })),
-      total: historyData.count,
-      page: page,
-      pageSize: pageSize,
-      totalPages: Math.ceil(historyData.count / pageSize)
+      total: pagination.total || 0,
+      page: pagination.page || page,
+      pageSize: pagination.limit || pageSize,
+      totalPages: pagination.total_pages || 0,
     }
 
     // Cache for 15 seconds (shorter for activity log)

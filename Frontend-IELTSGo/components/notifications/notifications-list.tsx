@@ -34,9 +34,9 @@ export function NotificationsList() {
         page === 1 ? newNotifications : [...prev, ...newNotifications]
       )
       
-      const total = response.pagination?.total || 0
-      const limit = response.pagination?.limit || 20
-      setHasMore(page * limit < total)
+      // Use total_pages from backend response
+      const totalPages = response.pagination?.total_pages || 0
+      setHasMore(page < totalPages)
     } catch (error: any) {
       console.error('[Notifications] Error loading notifications:', error)
       toast({
