@@ -143,11 +143,19 @@ export default function ExerciseDetailPage() {
         )}
 
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <Badge className="capitalize">
               {getSkillLabel(exercise.skill_type)}
             </Badge>
             <Badge variant="outline" className="capitalize">{exercise.difficulty_level}</Badge>
+            {/* Show test type badge for Reading exercises */}
+            {exercise.skill_type?.toLowerCase() === 'reading' && exercise.ielts_test_type && (
+              <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300">
+                {exercise.ielts_test_type === 'academic' 
+                  ? tCommon('academic') 
+                  : tCommon('general_training')}
+              </Badge>
+            )}
             {exercise.is_official && (
               <Badge variant="secondary">
                 <Award className="w-3 h-3 mr-1" />
@@ -345,7 +353,7 @@ export default function ExerciseDetailPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">{t('average_score')}</span>
                       <span className="font-semibold text-primary">
-                        {exercise.average_score.toFixed(1)}/{exercise.total_points || totalQuestions}
+                        {exercise.average_score.toFixed(1)}% {/* average_score is percentage (0-100) */}
                       </span>
                     </div>
                   )}
@@ -370,6 +378,17 @@ export default function ExerciseDetailPage() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('band_score_label')}</span>
                     <span className="font-medium">{exercise.target_band_score}</span>
+                  </div>
+                )}
+                {/* Show test type for Reading exercises */}
+                {exercise.skill_type?.toLowerCase() === 'reading' && exercise.ielts_test_type && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{tCommon('test_type')}</span>
+                    <Badge variant="outline" className="capitalize">
+                      {exercise.ielts_test_type === 'academic' 
+                        ? tCommon('academic') 
+                        : tCommon('general_training')}
+                    </Badge>
                   </div>
                 )}
                 <div className="flex justify-between">

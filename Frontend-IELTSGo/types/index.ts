@@ -238,6 +238,7 @@ export interface Exercise {
   // Backend uses snake_case
   exercise_type?: string  // practice, mock_test, full_test
   skill_type?: string     // listening, reading, writing, speaking
+  ielts_test_type?: string // academic, general_training (only for Reading exercises)
   difficulty?: string     // easy, medium, hard
   difficulty_level?: string  // alias for difficulty
   ielts_level?: string

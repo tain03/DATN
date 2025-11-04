@@ -23,8 +23,9 @@ function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCard
   const questionCount = exercise.total_questions || exercise.questionCount || 0
   const timeLimit = exercise.time_limit_minutes || exercise.timeLimit || 0
   const isFromCourse = !!(exercise.module_id && exercise.course_id)
-  const averageScore = exercise.average_score
+  const averageScore = exercise.average_score // Percentage (0-100)
   const totalAttempts = exercise.total_attempts || 0
+  const ieltsTestType = exercise.ielts_test_type // academic or general_training (only for Reading)
   
   // Skill and difficulty color mappings (matching Course Card)
   const skillColors: Record<string, string> = {
@@ -47,7 +48,7 @@ function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCard
   // Build image overlay with badges (matching Course Card style)
   const imageOverlay = (
     <>
-      <div className="absolute top-3 left-3 flex gap-2 z-20">
+      <div className="absolute top-3 left-3 flex gap-2 z-20 flex-wrap">
         <Badge 
           className={cn(skillColors[skillType.toLowerCase()] || skillColors.general || "bg-gray-500")}
           aria-label={t(skillType.toLowerCase() || 'reading')}
@@ -61,6 +62,18 @@ function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCard
         >
           {t(difficulty.toLowerCase() || 'medium').toUpperCase()}
         </Badge>
+        {/* Show test type badge for Reading exercises */}
+        {skillType.toLowerCase() === 'reading' && ieltsTestType && (
+          <Badge 
+            className="bg-indigo-500 text-white"
+            variant="secondary"
+            aria-label={t(ieltsTestType) || ieltsTestType}
+          >
+            {ieltsTestType === 'academic' 
+              ? t('academic') || 'Academic'
+              : t('general_training') || 'General Training'}
+          </Badge>
+        )}
       </div>
       <div className="absolute top-3 right-3 z-20">
         {isFromCourse ? (
