@@ -34,8 +34,10 @@ export default function CoursesPage() {
       level: filters.level || '',
       enrollment_type: filters.enrollment_type || '',
       is_featured: filters.is_featured !== undefined ? filters.is_featured : '',
+      sort: filters.sort || '',
+      sort_order: filters.sort_order || '',
     })
-  }, [filters.search, filters.skill_type, filters.level, filters.enrollment_type, filters.is_featured])
+  }, [filters.search, filters.skill_type, filters.level, filters.enrollment_type, filters.is_featured, filters.sort, filters.sort_order])
 
   // Fetch courses when filters or page changes
   useEffect(() => {
@@ -103,8 +105,13 @@ export default function CoursesPage() {
     if (newFilters.enrollment_type) {
       cleanFilters.enrollment_type = newFilters.enrollment_type
     }
-    if (newFilters.is_featured !== undefined && newFilters.is_featured !== false) {
+    if (newFilters.is_featured !== undefined) {
       cleanFilters.is_featured = newFilters.is_featured
+    }
+    if (newFilters.sort) {
+      cleanFilters.sort = newFilters.sort
+      // Always include sort_order when sort is set
+      cleanFilters.sort_order = newFilters.sort_order || "desc"
     }
     // Always set to clean object (even if empty) to clear all filters
     setFilters(cleanFilters)

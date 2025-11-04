@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useDebounce } from "@/lib/hooks/use-debounce"
-import { Search, X, Filter, Check, GraduationCap, Link2 } from "lucide-react"
+import { Search, X, Filter, Check, GraduationCap, Link2, ArrowUpDown } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import type { ExerciseFilters } from "@/lib/api/exercises"
 import { useTranslations } from '@/lib/i18n'
@@ -27,12 +28,12 @@ const SKILL_OPTIONS = [
   { value: "speaking", color: "bg-purple-500" },
 ]
 
+// Exercise types (not question types) - matches backend exercise_type field
 const TYPE_OPTIONS = [
-  { value: "multiple_choice", color: "bg-blue-500" },
-  { value: "fill_in_blanks", color: "bg-green-500" },
-  { value: "true_false", color: "bg-orange-500" },
-  { value: "matching", color: "bg-purple-500" },
-  { value: "essay", color: "bg-pink-500" },
+  { value: "practice", color: "bg-blue-500" },
+  { value: "mock_test", color: "bg-green-500" },
+  { value: "full_test", color: "bg-orange-500" },
+  { value: "mini_test", color: "bg-purple-500" },
 ]
 
 const DIFFICULTY_OPTIONS = [
@@ -99,6 +100,7 @@ export function ExerciseFiltersComponent({ filters, onFiltersChange, onSearch }:
       type: undefined,
       difficulty: undefined,
       sort: undefined,
+      sort_order: undefined,
     })
     // Close sheet if open
     if (isOpen) {
@@ -110,10 +112,55 @@ export function ExerciseFiltersComponent({ filters, onFiltersChange, onSearch }:
     (filters.search ? 1 : 0) +
     (filters.skill?.length || 0) + 
     (filters.type?.length || 0) + 
-    (filters.difficulty?.length || 0)
+    (filters.difficulty?.length || 0) +
+    (filters.sort ? 1 : 0)
 
   return (
     <div className="space-y-5">
+      {/* Quick Sort Bar - Always visible for easy access */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <ArrowUpDown className="w-4 h-4" />
+          <span>{t('sort_by')}:</span>
+        </div>
+        <div className="flex gap-3 flex-1 w-full sm:w-auto">
+          <Select
+            value={filters.sort || "newest"}
+            onValueChange={(value) => {
+              const newFilters = { ...filters, sort: value as "newest" | "popular" | "difficulty" | "title" }
+              // Always set sort_order when sort is changed
+              if (!newFilters.sort_order) {
+                newFilters.sort_order = "desc"
+              }
+              onFiltersChange(newFilters)
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-[180px] h-11 border-2">
+              <SelectValue placeholder={t('select_sort_option')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">{t('newest')}</SelectItem>
+              <SelectItem value="popular">{t('popular')}</SelectItem>
+              <SelectItem value="difficulty">{t('difficulty')}</SelectItem>
+              <SelectItem value="title">{t('title')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={filters.sort_order || "desc"}
+            onValueChange={(value) => onFiltersChange({ ...filters, sort_order: value as "asc" | "desc" })}
+            disabled={!filters.sort}
+          >
+            <SelectTrigger className="w-full sm:w-[150px] h-11 border-2" disabled={!filters.sort}>
+              <SelectValue placeholder={t('sort_order')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="desc">{t('descending')}</SelectItem>
+              <SelectItem value="asc">{t('ascending')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Search Bar */}
       <div className="flex gap-3">
         <div className="relative flex-1 group">
@@ -158,7 +205,7 @@ export function ExerciseFiltersComponent({ filters, onFiltersChange, onSearch }:
               <SheetHeader>
                 <SheetTitle className="text-2xl font-bold tracking-tight">{t('filter_exercises')}</SheetTitle>
                 <p className="text-sm text-muted-foreground mt-1.5">
-                  {t('filter_description')}
+                  {t('filter_exercises_description')}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 italic">
                   {t('filter_tip')}
@@ -167,6 +214,52 @@ export function ExerciseFiltersComponent({ filters, onFiltersChange, onSearch }:
             </div>
 
             <div className="px-6 py-6 space-y-8">
+              {/* Sort - Moved to top for better UX */}
+              <div className="space-y-4 bg-muted/30 p-4 rounded-lg border-2 border-dashed">
+                <div>
+                  <Label className="text-base font-semibold text-foreground">{t('sort_by')}</Label>
+                  <p className="text-xs text-muted-foreground mt-1">{t('choose_sort_option')}</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Select
+                    value={filters.sort || "newest"}
+                    onValueChange={(value) => {
+                      const newFilters = { ...filters, sort: value as "newest" | "popular" | "difficulty" | "title" }
+                      // Always set sort_order when sort is changed
+                      if (!newFilters.sort_order) {
+                        newFilters.sort_order = "desc"
+                      }
+                      onFiltersChange(newFilters)
+                    }}
+                  >
+                    <SelectTrigger className="w-full h-11">
+                      <SelectValue placeholder={t('select_sort_option')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">{t('newest')}</SelectItem>
+                      <SelectItem value="popular">{t('popular')}</SelectItem>
+                      <SelectItem value="difficulty">{t('difficulty')}</SelectItem>
+                      <SelectItem value="title">{t('title')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filters.sort_order || "desc"}
+                    onValueChange={(value) => onFiltersChange({ ...filters, sort_order: value as "asc" | "desc" })}
+                    disabled={!filters.sort}
+                  >
+                    <SelectTrigger className="w-full h-11" disabled={!filters.sort}>
+                      <SelectValue placeholder={t('sort_order')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="desc">{t('descending')}</SelectItem>
+                      <SelectItem value="asc">{t('ascending')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Separator className="my-6" />
+
               {/* Skill Type */}
               <div className="space-y-4">
                 <div>
@@ -292,6 +385,7 @@ export function ExerciseFiltersComponent({ filters, onFiltersChange, onSearch }:
                   })}
                 </div>
               </div>
+
             </div>
 
             {/* Footer Actions */}
@@ -405,6 +499,27 @@ export function ExerciseFiltersComponent({ filters, onFiltersChange, onSearch }:
               </Badge>
             ) : null
           })}
+          {filters.sort && (
+            <Badge 
+              variant="secondary" 
+              className="gap-1.5 px-3 py-1.5 text-sm font-medium border shadow-sm hover:shadow-md transition-shadow"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              <span>{t(filters.sort)}</span>
+              {filters.sort_order && (
+                <span className="text-muted-foreground">
+                  ({filters.sort_order === "asc" ? t('ascending') : t('descending')})
+                </span>
+              )}
+              <button
+                onClick={() => onFiltersChange({ ...filters, sort: undefined, sort_order: undefined })}
+                className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5 transition-colors"
+                aria-label={t('remove_sort_filter')}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </Badge>
+          )}
           <Button 
             variant="ghost" 
             size="sm" 

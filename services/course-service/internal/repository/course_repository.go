@@ -93,7 +93,7 @@ func (r *CourseRepository) GetCourses(query *models.CourseListQuery) ([]models.C
 
 	if query.Search != "" {
 		args = append(args, "%"+query.Search+"%")
-		conditions = append(conditions, fmt.Sprintf("(title ILIKE $%d OR description ILIKE $%d)", len(args), len(args)))
+		conditions = append(conditions, fmt.Sprintf("(title ILIKE $%d OR description ILIKE $%d OR instructor_name ILIKE $%d)", len(args), len(args), len(args)))
 	}
 
 	if len(conditions) > 0 {
@@ -111,7 +111,29 @@ func (r *CourseRepository) GetCourses(query *models.CourseListQuery) ([]models.C
 		return nil, 0, err
 	}
 
-	baseQuery += " ORDER BY display_order ASC, created_at DESC"
+	// Build ORDER BY clause based on sort_by and sort_order
+	orderBy := "c.display_order ASC, c.created_at DESC" // Default fallback
+	if query.SortBy != "" {
+		sortOrder := "DESC"
+		if query.SortOrder == "asc" {
+			sortOrder = "ASC"
+		}
+		
+		switch query.SortBy {
+		case "newest":
+			orderBy = fmt.Sprintf("c.created_at %s", sortOrder)
+		case "popular":
+			orderBy = fmt.Sprintf("c.total_enrollments %s, c.created_at DESC", sortOrder)
+		case "rating":
+			orderBy = fmt.Sprintf("c.average_rating %s NULLS LAST, c.total_reviews DESC, c.created_at DESC", sortOrder)
+		case "title":
+			orderBy = fmt.Sprintf("c.title %s", sortOrder)
+		default:
+			// Keep default fallback
+		}
+	}
+
+	baseQuery += fmt.Sprintf(" ORDER BY %s", orderBy)
 
 	// Pagination
 	limit := 20

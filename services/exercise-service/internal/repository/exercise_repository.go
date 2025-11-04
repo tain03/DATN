@@ -117,6 +117,36 @@ func (r *ExerciseRepository) GetExercises(query *models.ExerciseListQuery) ([]mo
 		return nil, 0, err
 	}
 
+	// Build ORDER BY clause based on sort_by and sort_order
+	orderBy := "e.display_order ASC, e.created_at DESC" // Default fallback
+	if query.SortBy != "" {
+		sortOrder := "DESC"
+		if query.SortOrder == "asc" {
+			sortOrder = "ASC"
+		}
+		
+		switch query.SortBy {
+		case "newest":
+			orderBy = fmt.Sprintf("e.created_at %s", sortOrder)
+		case "popular":
+			orderBy = fmt.Sprintf("e.total_attempts %s, e.created_at DESC", sortOrder)
+		case "difficulty":
+			// Map difficulty to numeric value for proper sorting
+			orderBy = fmt.Sprintf(`
+				CASE e.difficulty 
+					WHEN 'easy' THEN 1 
+					WHEN 'medium' THEN 2 
+					WHEN 'hard' THEN 3 
+					ELSE 0 
+				END %s, e.created_at DESC
+			`, sortOrder)
+		case "title":
+			orderBy = fmt.Sprintf("e.title %s", sortOrder)
+		default:
+			// Keep default fallback
+		}
+	}
+
 	// Get paginated results
 	offset := (query.Page - 1) * query.Limit
 	argCount++
@@ -141,9 +171,9 @@ func (r *ExerciseRepository) GetExercises(query *models.ExerciseListQuery) ([]mo
 			e.created_at, e.updated_at
 		FROM exercises e
 		WHERE %s 
-		ORDER BY e.display_order, e.created_at DESC 
+		ORDER BY %s
 		LIMIT $%d OFFSET $%d
-	`, whereClause, limitArg, offsetArg)
+	`, whereClause, orderBy, limitArg, offsetArg)
 
 	args = append(args, query.Limit, offset)
 

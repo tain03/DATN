@@ -16,6 +16,8 @@ export interface CourseFilters {
   enrollment_type?: string | string[]
   is_featured?: boolean
   search?: string
+  sort?: "newest" | "popular" | "title" | "rating"
+  sort_order?: "asc" | "desc"
 }
 
 export interface PaginatedResponse<T> {
@@ -49,6 +51,8 @@ export const coursesApi = {
       ...(filters?.enrollment_type && { enrollment_type: Array.isArray(filters.enrollment_type) ? filters.enrollment_type.sort().join(",") : filters.enrollment_type }),
       ...(filters?.is_featured !== undefined && { is_featured: filters.is_featured }),
       ...(filters?.search && { search: filters.search }),
+      ...(filters?.sort && { sort_by: filters.sort }),
+      ...(filters?.sort_order && { sort_order: filters.sort_order }),
     }
     const cacheKey = apiCache.generateKey('/courses', cacheParams)
     
@@ -76,6 +80,8 @@ export const coursesApi = {
     }
     if (filters?.is_featured !== undefined) params.append("is_featured", String(filters.is_featured))
     if (filters?.search) params.append("search", filters.search)
+    if (filters?.sort) params.append("sort_by", filters.sort)
+    if (filters?.sort_order) params.append("sort_order", filters.sort_order)
 
     params.append("page", page.toString())
     params.append("limit", limit.toString())

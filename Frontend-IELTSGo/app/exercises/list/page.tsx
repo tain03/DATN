@@ -43,8 +43,9 @@ export default function ExercisesListPage() {
       difficulty: filters.difficulty?.sort().join(',') || '',
       search: filters.search || '',
       sort: filters.sort || '',
+      sort_order: filters.sort_order || '',
     })
-  }, [filters.skill, filters.type, filters.difficulty, filters.search, filters.sort])
+  }, [filters.skill, filters.type, filters.difficulty, filters.search, filters.sort, filters.sort_order])
 
   // Fetch exercises when filters, page, or sourceFilter changes
   useEffect(() => {
@@ -139,6 +140,8 @@ export default function ExercisesListPage() {
     }
     if (newFilters.sort) {
       cleanFilters.sort = newFilters.sort
+      // Always include sort_order when sort is set
+      cleanFilters.sort_order = newFilters.sort_order || "desc"
     }
     // Always set to clean object (even if empty) to clear all filters
     setFilters(cleanFilters)

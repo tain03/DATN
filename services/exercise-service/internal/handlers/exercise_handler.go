@@ -52,6 +52,10 @@ func (h *ExerciseHandler) GetExercises(c *gin.Context) {
 		query.ExerciseType = exerciseTypeParam // Will be parsed in repository
 	}
 	query.Search = c.Query("search")
+	
+	// Sort parameters
+	query.SortBy = c.DefaultQuery("sort_by", "newest") // newest, popular, difficulty, title
+	query.SortOrder = c.DefaultQuery("sort_order", "desc") // asc, desc
 
 	if isFree := c.Query("is_free"); isFree != "" {
 		isFreeVal := isFree == "true"

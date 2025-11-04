@@ -13,6 +13,8 @@ type ExerciseListQuery struct {
 	CourseID     *uuid.UUID `form:"course_id"`
 	ModuleID     *uuid.UUID `form:"module_id"`
 	Search       string     `form:"search"`
+	SortBy       string     `form:"sort_by"`       // newest, popular, difficulty, title
+	SortOrder    string     `form:"sort_order"`    // asc, desc
 }
 
 // ExerciseDetailResponse includes exercise with sections and questions

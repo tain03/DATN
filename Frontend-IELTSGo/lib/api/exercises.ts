@@ -7,7 +7,8 @@ export interface ExerciseFilters {
   type?: string[]
   difficulty?: string[]
   search?: string
-  sort?: "newest" | "popular" | "difficulty"
+  sort?: "newest" | "popular" | "difficulty" | "title"
+  sort_order?: "asc" | "desc"
 }
 
 export interface PaginatedResponse<T> {
@@ -43,7 +44,8 @@ export const exercisesApi = {
       ...(filters?.type?.length && { exercise_type: filters.type.sort().join(",") }),
       ...(filters?.difficulty?.length && { difficulty: filters.difficulty.sort().join(",") }),
       ...(filters?.search && { search: filters.search }),
-      ...(filters?.sort && { sort: filters.sort }),
+      ...(filters?.sort && { sort_by: filters.sort }),
+      ...(filters?.sort_order && { sort_order: filters.sort_order }),
     }
     const cacheKey = apiCache.generateKey('/exercises', cacheParams)
 
@@ -59,7 +61,8 @@ export const exercisesApi = {
     if (filters?.type?.length) params.append("exercise_type", filters.type.join(","))
     if (filters?.difficulty?.length) params.append("difficulty", filters.difficulty.join(","))
     if (filters?.search) params.append("search", filters.search)
-    if (filters?.sort) params.append("sort", filters.sort)
+    if (filters?.sort) params.append("sort_by", filters.sort)
+    if (filters?.sort_order) params.append("sort_order", filters.sort_order)
 
     params.append("page", page.toString())
     params.append("limit", pageSize.toString())

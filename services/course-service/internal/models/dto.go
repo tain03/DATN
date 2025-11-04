@@ -60,9 +60,11 @@ type CourseListQuery struct {
 	Level          string `form:"level"`           // beginner, intermediate, advanced
 	EnrollmentType string `form:"enrollment_type"` // free, premium
 	IsFeatured     *bool  `form:"is_featured"`
-	Search         string `form:"search"` // Search in title, description
+	Search         string `form:"search"` // Search in title, description, instructor_name
 	Page           int    `form:"page"`
 	Limit          int    `form:"limit"`
+	SortBy         string `form:"sort_by"`       // newest, popular, title, rating
+	SortOrder      string `form:"sort_order"`    // asc, desc
 }
 
 // CourseDetailResponse represents detailed course with modules and lessons
