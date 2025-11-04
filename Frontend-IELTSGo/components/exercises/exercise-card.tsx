@@ -20,7 +20,9 @@ function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCard
   // Support both snake_case (backend) and camelCase (legacy)
   const skillType = exercise.skill_type || exercise.skillType || 'reading'
   const difficulty = exercise.difficulty || 'medium'
-  const questionCount = exercise.total_questions || exercise.questionCount || 0
+  // For Writing/Speaking, total_questions might be 0 or null (they don't have questions)
+  // Use null instead of 0 to distinguish "not set" from "actually 0"
+  const questionCount = exercise.total_questions ?? exercise.questionCount ?? null
   const timeLimit = exercise.time_limit_minutes || exercise.timeLimit || 0
   const isFromCourse = !!(exercise.module_id && exercise.course_id)
   const averageScore = exercise.average_score // Percentage (0-100)
@@ -103,31 +105,35 @@ function ExerciseCardComponent({ exercise, showCourseLink = true }: ExerciseCard
   const contentSection = (
     <>
       {/* Questions and Time Limit */}
-      <div 
-        className="flex items-center gap-4 text-sm text-muted-foreground" 
-        role="group" 
-        aria-label={t('exercise_details') || 'Exercise details'}
-      >
-        {questionCount > 0 && (
-          <div className="flex items-center gap-1">
-            <Target className="w-4 h-4 text-blue-600" aria-hidden="true" />
-            <span>
-              {questionCount} {t('questions')}
-            </span>
-          </div>
-        )}
-        {timeLimit > 0 && (
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <span>
-              {timeLimit} {t('minutes')}
-            </span>
-          </div>
-        )}
-      </div>
+      {/* Only render container if there's something to show (avoid rendering empty div that might show "0") */}
+      {((questionCount !== null && questionCount > 0) || timeLimit > 0) && (
+        <div 
+          className="flex items-center gap-4 text-sm text-muted-foreground" 
+          role="group" 
+          aria-label={t('exercise_details') || 'Exercise details'}
+        >
+          {questionCount !== null && questionCount > 0 && (
+            <div className="flex items-center gap-1">
+              <Target className="w-4 h-4 text-blue-600" aria-hidden="true" />
+              <span>
+                {questionCount} {t('questions')}
+              </span>
+            </div>
+          )}
+          {timeLimit > 0 && (
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <span>
+                {timeLimit} {t('minutes')}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Average Score */}
-      {averageScore && totalAttempts > 0 && (
+      {/* Only show if averageScore exists, is > 0, and there are attempts */}
+      {averageScore !== null && averageScore !== undefined && averageScore > 0 && totalAttempts > 0 && (
         <div 
           className="flex items-center gap-1 mt-3 text-sm text-muted-foreground"
           aria-label={t('average_score') || 'Average score'}
