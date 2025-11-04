@@ -174,7 +174,8 @@ if [ -n "$YOUTUBE_API_KEY" ]; then
             # Note: Seed files may already have durations hardcoded, so this is optional
             if [ -f "$SCRIPT_DIR/youtube_durations.json" ]; then
                 echo -e "${YELLOW}→ Updating seed files with accurate durations...${NC}"
-                if python3 "$SCRIPT_DIR/update_seed_with_durations.py" 2>&1 | grep -v "^🔄\|^✓\|^⚠\|^📝\|^✅" | grep -q "Updated"; then
+                UPDATE_OUTPUT=$(python3 "$SCRIPT_DIR/update_seed_with_durations.py" 2>&1)
+                if echo "$UPDATE_OUTPUT" | grep -q "Updated.*seed file"; then
                     echo -e "${GREEN}✓ Seed files updated with accurate durations${NC}"
                 else
                     echo -e "${GREEN}✓ Seed files already have durations (skipped update)${NC}"

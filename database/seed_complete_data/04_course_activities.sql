@@ -116,7 +116,7 @@ SELECT
     END,
     CASE WHEN l.content_type = 'video' AND status_val != 'not_started' AND random() > 0.3 THEN
         (random() * 600 + 60)::INTEGER
-    ELSE NULL END,
+    ELSE 0 END,
     CASE WHEN l.content_type = 'video' THEN
         (l.duration_minutes * 60)::INTEGER
     ELSE NULL END,

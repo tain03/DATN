@@ -379,7 +379,7 @@ func (r *CourseRepository) GetModuleByID(moduleID uuid.UUID) (*models.Module, er
 // GetVideosByLessonID retrieves videos for a lesson
 func (r *CourseRepository) GetVideosByLessonID(lessonID uuid.UUID) ([]models.LessonVideo, error) {
 	query := `
-		SELECT id, lesson_id, title, video_url, video_provider, video_id,
+		SELECT id, lesson_id, COALESCE(title, '') as title, video_url, video_provider, video_id,
 			   duration_seconds, thumbnail_url, display_order,
 			   created_at, updated_at
 		FROM lesson_videos
@@ -389,6 +389,7 @@ func (r *CourseRepository) GetVideosByLessonID(lessonID uuid.UUID) ([]models.Les
 
 	rows, err := r.db.Query(query, lessonID)
 	if err != nil {
+		log.Printf("Error querying videos for lesson %s: %v", lessonID, err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -396,6 +397,8 @@ func (r *CourseRepository) GetVideosByLessonID(lessonID uuid.UUID) ([]models.Les
 	var videos []models.LessonVideo
 	for rows.Next() {
 		var video models.LessonVideo
+		// Quality field doesn't exist in DB, set default empty string
+		video.Quality = ""
 		err := rows.Scan(
 			&video.ID, &video.LessonID, &video.Title, &video.VideoURL,
 			&video.VideoProvider, &video.VideoID, &video.DurationSeconds,
@@ -403,11 +406,14 @@ func (r *CourseRepository) GetVideosByLessonID(lessonID uuid.UUID) ([]models.Les
 			&video.CreatedAt, &video.UpdatedAt,
 		)
 		if err != nil {
+			log.Printf("Error scanning video row for lesson %s: %v", lessonID, err)
 			continue
 		}
+		log.Printf("Successfully loaded video: ID=%s, Title=%s, VideoURL=%s, VideoID=%v", video.ID, video.Title, video.VideoURL, video.VideoID)
 		videos = append(videos, video)
 	}
 
+	log.Printf("Loaded %d videos for lesson %s", len(videos), lessonID)
 	return videos, nil
 }
 

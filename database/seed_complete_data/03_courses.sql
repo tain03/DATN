@@ -656,22 +656,96 @@ INSERT INTO modules (
 SELECT 
     uuid_generate_v4(),
     c.id,
-    'Module ' || module_num || ': ' ||
+    -- Diverse module titles based on course skill type and module number
+    COALESCE(
     CASE module_num
-        WHEN 1 THEN 'Introduction & Fundamentals'
-        WHEN 2 THEN 'Core Concepts & Techniques'
-        WHEN 3 THEN 'Practice & Application'
-        WHEN 4 THEN 'Advanced Strategies'
-        WHEN 5 THEN 'Review & Mastery'
-        ELSE 'Additional Practice'
+        WHEN 1 THEN 
+            CASE c.skill_type
+                WHEN 'listening' THEN (ARRAY['Module 1: Listening Fundamentals', 'Getting Started with IELTS Listening', 'Foundation: Understanding the Test', 'Introduction to Listening Skills'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'reading' THEN (ARRAY['Module 1: Reading Fundamentals', 'Getting Started with IELTS Reading', 'Foundation: Understanding Passages', 'Introduction to Reading Skills'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'writing' THEN (ARRAY['Module 1: Writing Fundamentals', 'Getting Started with IELTS Writing', 'Foundation: Understanding Tasks', 'Introduction to Writing Skills'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'speaking' THEN (ARRAY['Module 1: Speaking Fundamentals', 'Getting Started with IELTS Speaking', 'Foundation: Understanding the Test', 'Introduction to Speaking Skills'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                ELSE 'Module 1: Introduction & Fundamentals'
+            END
+        WHEN 2 THEN
+            CASE c.skill_type
+                WHEN 'listening' THEN (ARRAY['Module 2: Core Listening Strategies', 'Essential Techniques & Methods', 'Mastering Question Types', 'Advanced Listening Skills'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'reading' THEN (ARRAY['Module 2: Core Reading Strategies', 'Essential Techniques & Methods', 'Mastering Question Types', 'Advanced Reading Skills'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'writing' THEN (ARRAY['Module 2: Core Writing Strategies', 'Essential Techniques & Methods', 'Mastering Task Requirements', 'Advanced Writing Skills'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'speaking' THEN (ARRAY['Module 2: Core Speaking Strategies', 'Essential Techniques & Methods', 'Mastering All Parts', 'Advanced Speaking Skills'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                ELSE 'Module 2: Core Concepts & Techniques'
+            END
+        WHEN 3 THEN
+            CASE c.skill_type
+                WHEN 'listening' THEN (ARRAY['Module 3: Practice & Application', 'Hands-On Listening Practice', 'Real Test Scenarios', 'Interactive Exercises'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'reading' THEN (ARRAY['Module 3: Practice & Application', 'Hands-On Reading Practice', 'Real Test Scenarios', 'Interactive Exercises'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'writing' THEN (ARRAY['Module 3: Practice & Application', 'Hands-On Writing Practice', 'Real Test Scenarios', 'Interactive Exercises'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'speaking' THEN (ARRAY['Module 3: Practice & Application', 'Hands-On Speaking Practice', 'Real Test Scenarios', 'Interactive Exercises'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                ELSE 'Module 3: Practice & Application'
+            END
+        WHEN 4 THEN
+            CASE c.skill_type
+                WHEN 'listening' THEN (ARRAY['Module 4: Advanced Strategies', 'Expert Techniques', 'Band 7+ Mastery', 'High-Score Strategies'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'reading' THEN (ARRAY['Module 4: Advanced Strategies', 'Expert Techniques', 'Band 7+ Mastery', 'High-Score Strategies'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'writing' THEN (ARRAY['Module 4: Advanced Strategies', 'Expert Techniques', 'Band 7+ Mastery', 'High-Score Strategies'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'speaking' THEN (ARRAY['Module 4: Advanced Strategies', 'Expert Techniques', 'Band 7+ Mastery', 'High-Score Strategies'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                ELSE 'Module 4: Advanced Strategies'
+            END
+        WHEN 5 THEN
+            CASE c.skill_type
+                WHEN 'listening' THEN (ARRAY['Module 5: Review & Mastery', 'Final Preparation', 'Consolidation & Practice', 'Test Day Ready'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'reading' THEN (ARRAY['Module 5: Review & Mastery', 'Final Preparation', 'Consolidation & Practice', 'Test Day Ready'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'writing' THEN (ARRAY['Module 5: Review & Mastery', 'Final Preparation', 'Consolidation & Practice', 'Test Day Ready'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                WHEN 'speaking' THEN (ARRAY['Module 5: Review & Mastery', 'Final Preparation', 'Consolidation & Practice', 'Test Day Ready'])[1 + (hashtext(c.id::text || module_num::text) % 4)]
+                ELSE 'Module 5: Review & Mastery'
+            END
+        ELSE COALESCE('Module ' || module_num || ': Additional Practice', 'Module ' || module_num || ': Learning Module')
     END,
+    'Module ' || COALESCE(module_num::text, '0') || ': Learning Module'
+    ) as title,
+    -- Detailed module descriptions
     CASE module_num
-        WHEN 1 THEN 'Get started with ' || c.skill_type || ' fundamentals'
-        WHEN 2 THEN 'Master core ' || c.skill_type || ' concepts'
-        WHEN 3 THEN 'Practice with real ' || c.skill_type || ' materials'
-        WHEN 4 THEN 'Advanced techniques for higher scores'
-        WHEN 5 THEN 'Review and consolidate your learning'
-        ELSE 'Extra practice materials'
+        WHEN 1 THEN 
+            CASE c.skill_type
+                WHEN 'listening' THEN 'This foundational module introduces you to IELTS Listening test structure, question types, and essential strategies. Learn the basics of effective listening, understand test format, and develop core skills needed for success. Perfect for beginners starting their IELTS Listening journey.'
+                WHEN 'reading' THEN 'This foundational module introduces you to IELTS Reading test structure, passage types, and essential strategies. Learn the basics of effective reading, understand test format, and develop core skills needed for success. Perfect for beginners starting their IELTS Reading journey.'
+                WHEN 'writing' THEN 'This foundational module introduces you to IELTS Writing test structure, task types, and essential strategies. Learn the basics of effective writing, understand assessment criteria, and develop core skills needed for success. Perfect for beginners starting their IELTS Writing journey.'
+                WHEN 'speaking' THEN 'This foundational module introduces you to IELTS Speaking test structure, all three parts, and essential strategies. Learn the basics of effective speaking, understand assessment criteria, and develop core skills needed for success. Perfect for beginners starting their IELTS Speaking journey.'
+                ELSE 'This foundational module introduces you to IELTS test structure and essential strategies. Learn the basics and develop core skills needed for success.'
+            END
+        WHEN 2 THEN
+            CASE c.skill_type
+                WHEN 'listening' THEN 'Master core listening strategies and techniques in this comprehensive module. Learn effective prediction methods, note-taking skills, keyword recognition, and time management. Practice with various question types and develop advanced listening abilities to improve your accuracy and speed.'
+                WHEN 'reading' THEN 'Master core reading strategies and techniques in this comprehensive module. Learn effective skimming and scanning methods, vocabulary building, question analysis, and time management. Practice with various question types and develop advanced reading abilities to improve your comprehension and speed.'
+                WHEN 'writing' THEN 'Master core writing strategies and techniques in this comprehensive module. Learn effective planning methods, essay structure, language use, and coherence techniques. Practice with various task types and develop advanced writing abilities to improve your task response and language accuracy.'
+                WHEN 'speaking' THEN 'Master core speaking strategies and techniques in this comprehensive module. Learn effective fluency methods, vocabulary building, pronunciation tips, and coherence techniques. Practice with various topics and develop advanced speaking abilities to improve your communication and confidence.'
+                ELSE 'Master core strategies and techniques in this comprehensive module. Learn effective methods and develop advanced abilities.'
+            END
+        WHEN 3 THEN
+            CASE c.skill_type
+                WHEN 'listening' THEN 'Apply your learning through extensive practice exercises and real test scenarios. Work through authentic IELTS Listening materials, practice with different question types, and receive detailed feedback on your performance. Build confidence and improve your test-taking skills through hands-on practice.'
+                WHEN 'reading' THEN 'Apply your learning through extensive practice exercises and real test scenarios. Work through authentic IELTS Reading passages, practice with different question types, and receive detailed feedback on your performance. Build confidence and improve your test-taking skills through hands-on practice.'
+                WHEN 'writing' THEN 'Apply your learning through extensive practice exercises and real test scenarios. Write responses to authentic IELTS Writing tasks, practice with different question types, and receive detailed feedback on your performance. Build confidence and improve your writing skills through hands-on practice.'
+                WHEN 'speaking' THEN 'Apply your learning through extensive practice exercises and real test scenarios. Practice speaking on authentic IELTS topics, work through all three parts, and receive detailed feedback on your performance. Build confidence and improve your speaking skills through hands-on practice.'
+                ELSE 'Apply your learning through extensive practice exercises and real test scenarios. Build confidence and improve your skills through hands-on practice.'
+            END
+        WHEN 4 THEN
+            CASE c.skill_type
+                WHEN 'listening' THEN 'Explore advanced techniques and expert strategies for achieving Band 7+ scores. Learn sophisticated listening methods, master complex question types, develop advanced vocabulary recognition, and refine your test-taking approach. Perfect for students aiming for high band scores.'
+                WHEN 'reading' THEN 'Explore advanced techniques and expert strategies for achieving Band 7+ scores. Learn sophisticated reading methods, master complex question types, develop advanced vocabulary skills, and refine your test-taking approach. Perfect for students aiming for high band scores.'
+                WHEN 'writing' THEN 'Explore advanced techniques and expert strategies for achieving Band 7+ scores. Learn sophisticated writing methods, master complex language use, develop advanced vocabulary, and refine your essay structure. Perfect for students aiming for high band scores.'
+                WHEN 'speaking' THEN 'Explore advanced techniques and expert strategies for achieving Band 7+ scores. Learn sophisticated speaking methods, master complex language use, develop advanced vocabulary, and refine your fluency and pronunciation. Perfect for students aiming for high band scores.'
+                ELSE 'Explore advanced techniques and expert strategies for achieving Band 7+ scores. Perfect for students aiming for high band scores.'
+            END
+        WHEN 5 THEN
+            CASE c.skill_type
+                WHEN 'listening' THEN 'Consolidate your learning and prepare for test day in this final module. Review key strategies, practice with full test simulations, receive final tips and advice, and build confidence for your IELTS Listening test. Ensure you are fully prepared and ready to achieve your target band score.'
+                WHEN 'reading' THEN 'Consolidate your learning and prepare for test day in this final module. Review key strategies, practice with full test simulations, receive final tips and advice, and build confidence for your IELTS Reading test. Ensure you are fully prepared and ready to achieve your target band score.'
+                WHEN 'writing' THEN 'Consolidate your learning and prepare for test day in this final module. Review key strategies, practice with full test simulations, receive final tips and advice, and build confidence for your IELTS Writing test. Ensure you are fully prepared and ready to achieve your target band score.'
+                WHEN 'speaking' THEN 'Consolidate your learning and prepare for test day in this final module. Review key strategies, practice with full test simulations, receive final tips and advice, and build confidence for your IELTS Speaking test. Ensure you are fully prepared and ready to achieve your target band score.'
+                ELSE 'Consolidate your learning and prepare for test day. Review key strategies and build confidence for your IELTS test.'
+            END
+        ELSE 'Additional practice materials and exercises to reinforce your learning and improve your performance.'
     END,
     module_num,
     c.duration_hours / (CASE WHEN c.total_lessons > 20 THEN 5 ELSE 3 END),
@@ -702,27 +776,200 @@ SELECT
     uuid_generate_v4(),
     m.id,
     m.course_id,
-    CASE lesson_num
-        WHEN 1 THEN 'Introduction to ' || c.skill_type
-        WHEN 2 THEN 'Understanding ' || c.skill_type || ' Format'
-        WHEN 3 THEN 'Key Strategies for ' || c.skill_type
-        WHEN 4 THEN 'Common Question Types'
-        WHEN 5 THEN 'Practice Exercise 1'
-        WHEN 6 THEN 'Practice Exercise 2'
-        WHEN 7 THEN 'Advanced Techniques'
-        WHEN 8 THEN 'Review & Tips'
-        ELSE 'Lesson ' || lesson_num || ': ' || c.skill_type || ' Practice'
+    -- Diverse lesson titles based on skill type and lesson number
+    COALESCE(
+    CASE c.skill_type
+        WHEN 'listening' THEN
+            CASE lesson_num
+                WHEN 1 THEN (ARRAY['Introduction to IELTS Listening', 'Getting Started with Listening Skills', 'IELTS Listening Overview', 'Understanding the Listening Test'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 2 THEN (ARRAY['Listening Test Format Explained', 'Understanding Question Types', 'Test Structure & Timing', 'How the Listening Test Works'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 3 THEN (ARRAY['Essential Listening Strategies', 'Key Skills for Success', 'Mastering Listening Techniques', 'Proven Listening Methods'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 4 THEN (ARRAY['Common Question Types', 'All Question Formats', 'Question Type Mastery', 'Understanding Different Questions'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 5 THEN (ARRAY['Practice Exercise 1: Part 1', 'Practice Test: Form Completion', 'Exercise: Basic Information', 'Practice: Introduction Section'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 6 THEN (ARRAY['Practice Exercise 2: Part 2', 'Practice Test: Multiple Choice', 'Exercise: Detailed Understanding', 'Practice: Conversation Section'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 7 THEN (ARRAY['Advanced Listening Techniques', 'Expert Strategies', 'Band 7+ Techniques', 'Advanced Skills Mastery'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 8 THEN (ARRAY['Review & Final Tips', 'Test Day Preparation', 'Summary & Key Points', 'Last-Minute Strategies'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                ELSE 
+                    CASE 
+                        WHEN lesson_num % 3 = 0 THEN (ARRAY['Advanced Listening Practice', 'Expert Listening Techniques', 'Listening Mastery Session', 'Advanced Listening Skills'])[1 + ((lesson_num - 9) % 4)]
+                        WHEN lesson_num % 3 = 1 THEN (ARRAY['Listening Strategy Deep Dive', 'Technique Mastery: Listening', 'Skill Building: Listening', 'Listening Method Enhancement'])[1 + ((lesson_num - 9) % 4)]
+                        ELSE (ARRAY['Comprehensive Listening Review', 'Listening Consolidation Practice', 'Integrated Listening Practice', 'Full Listening Test Preparation'])[1 + ((lesson_num - 9) % 4)]
+                    END || ': ' || (ARRAY['Note-Taking', 'Predicting Answers', 'Dealing with Distractors', 'Time Management'])[1 + ((lesson_num - 9) % 4)]
+            END
+        WHEN 'reading' THEN
+            CASE lesson_num
+                WHEN 1 THEN (ARRAY['Introduction to IELTS Reading', 'Reading Test Overview', 'Understanding Reading Skills', 'Getting Started with Reading'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 2 THEN (ARRAY['Reading Test Format', 'Understanding Passage Types', 'Test Structure Explained', 'Reading Test Components'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 3 THEN (ARRAY['Essential Reading Strategies', 'Key Techniques for Success', 'Mastering Reading Skills', 'Core Reading Methods'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 4 THEN (ARRAY['All Question Types Covered', 'Question Formats Explained', 'Understanding Question Types', 'Mastering Question Formats'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 5 THEN (ARRAY['Practice Exercise 1: Passage 1', 'Practice Test: Matching Headings', 'Exercise: Skimming & Scanning', 'Practice: Basic Comprehension'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 6 THEN (ARRAY['Practice Exercise 2: Passage 2', 'Practice Test: True/False/Not Given', 'Exercise: Detailed Analysis', 'Practice: Inference Skills'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 7 THEN (ARRAY['Advanced Reading Techniques', 'Expert Strategies', 'Band 7+ Methods', 'Advanced Comprehension'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 8 THEN (ARRAY['Review & Test Tips', 'Final Preparation', 'Key Points Summary', 'Last-Minute Advice'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                ELSE 
+                    CASE 
+                        WHEN lesson_num % 3 = 0 THEN (ARRAY['Advanced Reading Practice', 'Expert Reading Techniques', 'Reading Mastery Session', 'Advanced Reading Skills'])[1 + ((lesson_num - 9) % 4)]
+                        WHEN lesson_num % 3 = 1 THEN (ARRAY['Reading Strategy Deep Dive', 'Technique Mastery: Reading', 'Skill Building: Reading', 'Reading Method Enhancement'])[1 + ((lesson_num - 9) % 4)]
+                        ELSE (ARRAY['Comprehensive Reading Review', 'Reading Consolidation Practice', 'Integrated Reading Practice', 'Full Reading Test Preparation'])[1 + ((lesson_num - 9) % 4)]
+                    END || ': ' || (ARRAY['Vocabulary in Context', 'Complex Sentences', 'Speed Reading', 'Answer Location'])[1 + ((lesson_num - 9) % 4)]
+            END
+        WHEN 'writing' THEN
+            CASE lesson_num
+                WHEN 1 THEN (ARRAY['Introduction to IELTS Writing', 'Writing Test Overview', 'Understanding Writing Tasks', 'Getting Started with Writing'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 2 THEN (ARRAY['Writing Test Format', 'Task Types Explained', 'Understanding Assessment Criteria', 'Writing Test Structure'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 3 THEN (ARRAY['Essential Writing Strategies', 'Key Techniques for High Scores', 'Mastering Writing Skills', 'Core Writing Methods'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 4 THEN (ARRAY['Task 1 vs Task 2', 'Understanding Both Tasks', 'Task Requirements', 'Task Differences'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 5 THEN (ARRAY['Practice Exercise 1: Task 1', 'Practice: Describing Data', 'Exercise: Charts & Graphs', 'Practice: Visual Information'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 6 THEN (ARRAY['Practice Exercise 2: Task 2', 'Practice: Essay Writing', 'Exercise: Argument Development', 'Practice: Opinion Essays'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 7 THEN (ARRAY['Advanced Writing Techniques', 'Expert Strategies', 'Band 7+ Writing', 'Advanced Language Use'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 8 THEN (ARRAY['Review & Writing Tips', 'Final Preparation', 'Key Points Summary', 'Last-Minute Strategies'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                ELSE 
+                    CASE 
+                        WHEN lesson_num % 3 = 0 THEN (ARRAY['Advanced Writing Practice', 'Expert Writing Techniques', 'Writing Mastery Session', 'Advanced Writing Skills'])[1 + ((lesson_num - 9) % 4)]
+                        WHEN lesson_num % 3 = 1 THEN (ARRAY['Writing Strategy Deep Dive', 'Technique Mastery: Writing', 'Skill Building: Writing', 'Writing Method Enhancement'])[1 + ((lesson_num - 9) % 4)]
+                        ELSE (ARRAY['Comprehensive Writing Review', 'Writing Consolidation Practice', 'Integrated Writing Practice', 'Full Writing Test Preparation'])[1 + ((lesson_num - 9) % 4)]
+                    END || ': ' || (ARRAY['Grammar & Accuracy', 'Coherence & Cohesion', 'Lexical Resource', 'Task Achievement'])[1 + ((lesson_num - 9) % 4)]
+            END
+        WHEN 'speaking' THEN
+            CASE lesson_num
+                WHEN 1 THEN (ARRAY['Introduction to IELTS Speaking', 'Speaking Test Overview', 'Understanding Speaking Skills', 'Getting Started with Speaking'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 2 THEN (ARRAY['Speaking Test Format', 'All Three Parts Explained', 'Understanding the Test Structure', 'Speaking Test Components'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 3 THEN (ARRAY['Essential Speaking Strategies', 'Key Techniques for Fluency', 'Mastering Speaking Skills', 'Core Communication Methods'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 4 THEN (ARRAY['Common Topics & Questions', 'Popular Speaking Topics', 'Question Types Explained', 'Understanding Topics'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 5 THEN (ARRAY['Practice Exercise 1: Part 1', 'Practice: Personal Questions', 'Exercise: Introduction & Interview', 'Practice: Familiar Topics'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 6 THEN (ARRAY['Practice Exercise 2: Part 2', 'Practice: Long Turn', 'Exercise: Individual Presentation', 'Practice: Cue Card Topics'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 7 THEN (ARRAY['Advanced Speaking Techniques', 'Expert Strategies', 'Band 7+ Speaking', 'Advanced Fluency'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 8 THEN (ARRAY['Review & Speaking Tips', 'Final Preparation', 'Key Points Summary', 'Last-Minute Advice'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                ELSE 
+                    CASE 
+                        WHEN lesson_num % 3 = 0 THEN (ARRAY['Advanced Speaking Practice', 'Expert Speaking Techniques', 'Speaking Mastery Session', 'Advanced Speaking Skills'])[1 + ((lesson_num - 9) % 4)]
+                        WHEN lesson_num % 3 = 1 THEN (ARRAY['Speaking Strategy Deep Dive', 'Technique Mastery: Speaking', 'Skill Building: Speaking', 'Speaking Method Enhancement'])[1 + ((lesson_num - 9) % 4)]
+                        ELSE (ARRAY['Comprehensive Speaking Review', 'Speaking Consolidation Practice', 'Integrated Speaking Practice', 'Full Speaking Test Preparation'])[1 + ((lesson_num - 9) % 4)]
+                    END || ': ' || (ARRAY['Pronunciation & Intonation', 'Grammar & Vocabulary', 'Fluency & Coherence', 'Lexical Resource'])[1 + ((lesson_num - 9) % 4)]
+            END
+        WHEN 'general' THEN
+            CASE lesson_num
+                WHEN 1 THEN (ARRAY['Introduction to IELTS', 'IELTS Overview', 'Getting Started with IELTS', 'Understanding IELTS'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 2 THEN (ARRAY['IELTS Test Format Explained', 'Understanding All Sections', 'Test Structure Overview', 'Complete Test Guide'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 3 THEN (ARRAY['Essential IELTS Strategies', 'Key Techniques for Success', 'Mastering IELTS Skills', 'Core Preparation Methods'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 4 THEN (ARRAY['Question Types Overview', 'All Question Formats', 'Understanding Question Types', 'Question Type Mastery'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 5 THEN (ARRAY['Practice Exercise 1', 'Practice Test: Section 1', 'Exercise: Basic Skills', 'Practice: Introduction'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 6 THEN (ARRAY['Practice Exercise 2', 'Practice Test: Section 2', 'Exercise: Intermediate Skills', 'Practice: Development'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 7 THEN (ARRAY['Advanced IELTS Techniques', 'Expert Strategies', 'Band 7+ Methods', 'Advanced Skills'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                WHEN 8 THEN (ARRAY['Review & Final Tips', 'Test Day Preparation', 'Summary & Key Points', 'Last-Minute Strategies'])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                ELSE 
+                    CASE 
+                        WHEN lesson_num % 3 = 0 THEN (ARRAY['Advanced Practice Session', 'Expert Techniques Practice', 'Mastery Workshop', 'Advanced Skill Development'])[1 + ((lesson_num - 9) % 4)]
+                        WHEN lesson_num % 3 = 1 THEN (ARRAY['Strategy Deep Dive', 'Technique Mastery', 'Skill Building Session', 'Method Enhancement'])[1 + ((lesson_num - 9) % 4)]
+                        ELSE (ARRAY['Comprehensive Review', 'Consolidation Practice', 'Integrated Skills Practice', 'Full Test Preparation'])[1 + ((lesson_num - 9) % 4)]
+                    END
+            END
+        ELSE
+            CASE lesson_num
+                WHEN 1 THEN 'Introduction to IELTS'
+                WHEN 2 THEN 'Understanding IELTS Format'
+                WHEN 3 THEN 'Key Strategies'
+                WHEN 4 THEN 'Question Types'
+                WHEN 5 THEN 'Practice Exercise 1'
+                WHEN 6 THEN 'Practice Exercise 2'
+                WHEN 7 THEN 'Advanced Techniques'
+                WHEN 8 THEN 'Review & Tips'
+                ELSE 
+                    CASE 
+                        WHEN lesson_num % 3 = 0 THEN (ARRAY['Advanced Practice Session', 'Expert Techniques Practice', 'Mastery Workshop', 'Advanced Skill Development'])[1 + ((lesson_num - 9) % 4)]
+                        WHEN lesson_num % 3 = 1 THEN (ARRAY['Strategy Deep Dive', 'Technique Mastery', 'Skill Building Session', 'Method Enhancement'])[1 + ((lesson_num - 9) % 4)]
+                        ELSE (ARRAY['Comprehensive Review', 'Consolidation Practice', 'Integrated Skills Practice', 'Full Test Preparation'])[1 + ((lesson_num - 9) % 4)]
+                    END
+            END
     END,
-    CASE lesson_num
-        WHEN 1 THEN 'Introduction and overview of ' || c.skill_type || ' in IELTS'
-        WHEN 2 THEN 'Learn the format and structure of IELTS ' || c.skill_type
-        WHEN 3 THEN 'Essential strategies for success in ' || c.skill_type
-        WHEN 4 THEN 'Explore different question types in ' || c.skill_type
-        WHEN 5 THEN 'First practice exercise with detailed explanation'
-        WHEN 6 THEN 'Second practice exercise to reinforce learning'
-        WHEN 7 THEN 'Advanced techniques for higher band scores'
-        WHEN 8 THEN 'Review key points and get tips for the exam'
-        ELSE 'Practice lesson with real IELTS materials'
+    COALESCE(
+        CASE c.skill_type
+            WHEN 'listening' THEN 'Listening Practice ' || COALESCE(lesson_num::text, '0')
+            WHEN 'reading' THEN 'Reading Practice ' || COALESCE(lesson_num::text, '0')
+            WHEN 'writing' THEN 'Writing Practice ' || COALESCE(lesson_num::text, '0')
+            WHEN 'speaking' THEN 'Speaking Practice ' || COALESCE(lesson_num::text, '0')
+            WHEN 'general' THEN 'IELTS Practice ' || COALESCE(lesson_num::text, '0')
+            ELSE 'Lesson ' || COALESCE(lesson_num::text, '0') || ': IELTS Practice'
+        END,
+        'Lesson ' || COALESCE(lesson_num::text, '0') || ': IELTS Practice'
+    )
+    ) as title,
+    -- Diverse lesson descriptions with detailed article content for article/mixed lessons
+    CASE 
+        WHEN lesson_num % 3 = 2 THEN -- Article lessons
+            CASE c.skill_type
+                WHEN 'listening' THEN
+                    CASE lesson_num
+                        WHEN 1 THEN (ARRAY[
+                            '<h2>Introduction to IELTS Listening</h2><p>The IELTS Listening test is designed to assess your ability to understand spoken English in various contexts. This comprehensive guide will help you understand what to expect, how the test is structured, and essential strategies for success.</p><h3>Test Overview</h3><p>The listening test consists of four sections, each becoming progressively more difficult. You will hear each recording only once, so it is crucial to develop strong listening skills and effective note-taking techniques. The test lasts approximately 30 minutes, followed by 10 minutes to transfer your answers to the answer sheet.</p><h3>What You Will Learn</h3><ul><li>Understanding the four sections of the listening test</li><li>Common question types and how to approach them</li><li>Effective prediction and note-taking strategies</li><li>Time management techniques</li><li>How to avoid common mistakes</li></ul><h3>Preparing for Success</h3><p>Success in IELTS Listening requires consistent practice with authentic materials, exposure to various accents, and developing the ability to identify key information quickly. This course will guide you through each step of your preparation journey.</p>',
+                            '<h2>Getting Started with IELTS Listening Skills</h2><p>Welcome to your IELTS Listening preparation journey! This lesson provides a comprehensive introduction to the listening test format, scoring system, and fundamental skills you need to develop.</p><h3>Test Structure</h3><p>The IELTS Listening test is divided into four parts: Part 1 focuses on everyday social situations, Part 2 involves monologues about general topics, Part 3 features conversations in educational contexts, and Part 4 presents academic lectures or talks. Each part contains 10 questions, totaling 40 questions overall.</p><h3>Scoring System</h3><p>Each correct answer receives one mark. Your raw score out of 40 is converted to a band score ranging from 0 to 9. To achieve Band 6.5, you typically need 26-29 correct answers, while Band 7 requires 30-31 correct answers.</p><h3>Key Skills to Develop</h3><ul><li>Predicting information before listening</li><li>Identifying main ideas and specific details</li><li>Understanding speaker attitudes and opinions</li><li>Following the development of ideas</li><li>Recognizing synonyms and paraphrasing</li></ul><h3>Time Management</h3><p>You have 30 minutes to listen and answer questions, plus 10 minutes to transfer answers. Use the time before each section to read questions carefully and predict possible answers. This preparation time is crucial for your success.</p>',
+                            '<h2>IELTS Listening Overview</h2><p>Understanding the IELTS Listening test structure is the first step toward achieving your target band score. This comprehensive overview covers everything you need to know to start your preparation effectively.</p><h3>The Four Sections</h3><p><strong>Section 1:</strong> A conversation between two people in an everyday social context, such as booking accommodation or discussing travel arrangements. This section tests your ability to understand factual information.</p><p><strong>Section 2:</strong> A monologue in a social context, such as a speech about local facilities or a guided tour. You need to identify specific information and follow detailed instructions.</p><p><strong>Section 3:</strong> A conversation between up to four people in an educational context, such as students discussing an assignment or a tutor giving feedback. This section requires understanding of opinions and detailed explanations.</p><p><strong>Section 4:</strong> A monologue on an academic topic, such as a university lecture. This is the most challenging section, testing your ability to follow complex arguments and academic vocabulary.</p><h3>Question Types</h3><p>Throughout the test, you will encounter various question types including multiple choice, matching, plan/map/diagram labeling, form/note/table/flow-chart/summary completion, and sentence completion. Each type requires specific strategies.</p><h3>Test Format</h3><p>The recordings use a variety of accents, including British, Australian, New Zealand, American, and Canadian. You will hear each recording only once, making it essential to develop strong listening skills and concentration abilities.</p>',
+                            '<h2>Understanding the Listening Test</h2><p>The IELTS Listening test evaluates your ability to comprehend spoken English across a range of contexts. This lesson provides essential information about test format, timing, and assessment criteria.</p><h3>Test Duration and Format</h3><p>The listening test takes approximately 40 minutes total: 30 minutes for listening and answering questions, plus 10 minutes to transfer your answers to the answer sheet. The test includes four sections with 10 questions each, covering a range of topics from everyday conversations to academic lectures.</p><h3>What Makes This Test Challenging</h3><p>Several factors contribute to the difficulty of the listening test: you hear each recording only once, the topics become progressively more complex, accents vary throughout the test, and question types require different skills. However, with proper preparation and practice, you can overcome these challenges.</p><h3>Assessment Criteria</h3><p>Your listening skills are assessed based on your ability to: understand main ideas and specific factual information, recognize opinions and attitudes, follow the development of an argument, and understand the purpose of utterances and speaker interactions.</p><h3>Common Topics</h3><p>Section 1 and 2 typically cover everyday topics such as accommodation, travel, work, health, and entertainment. Section 3 focuses on educational contexts like course discussions, assignment feedback, and study groups. Section 4 presents academic topics from various fields including science, history, psychology, and environmental studies.</p><h3>Next Steps</h3><p>After understanding the test format, you will learn specific strategies for each section, practice with authentic materials, and develop techniques to improve your listening accuracy and speed. Consistent practice is key to success.</p>'
+                        ])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                        WHEN 2 THEN (ARRAY[
+                            '<h2>Listening Test Format Explained</h2><p>The IELTS Listening test follows a specific structure that becomes progressively more challenging. Understanding this format is essential for effective preparation and test performance.</p><h3>Section Breakdown</h3><p><strong>Section 1 - Social Conversation:</strong> This section features a conversation between two people in an everyday social context. Topics typically include accommodation booking, travel arrangements, joining a club, or making appointments. The dialogue is usually straightforward, focusing on factual information exchange.</p><p><strong>Section 2 - Social Monologue:</strong> A single speaker provides information about everyday topics such as local facilities, tourist attractions, or event information. This section tests your ability to follow detailed instructions and identify specific information.</p><p><strong>Section 3 - Educational Discussion:</strong> Up to four people discuss academic topics, often involving students and tutors. Common scenarios include assignment discussions, project planning, course feedback, and study group conversations. This section requires understanding opinions, explanations, and reasoning.</p><p><strong>Section 4 - Academic Lecture:</strong> A monologue on an academic subject, similar to a university lecture. Topics range from history and science to psychology and environmental studies. This is the most challenging section, requiring comprehension of complex ideas and academic vocabulary.</p><h3>Question Distribution</h3><p>Each section contains exactly 10 questions, with question types varying throughout the test. Section 1 and 2 typically feature simpler question types like form completion and multiple choice, while Section 3 and 4 include more complex types such as matching and summary completion.</p><h3>Timing Strategy</h3><p>You have 30 minutes to listen and answer questions, plus 10 minutes to transfer answers. Use the time before each section to read questions carefully, underline keywords, and predict possible answers. This preparation significantly improves your chances of success.</p>',
+                            '<h2>Understanding Question Types</h2><p>Mastering different question types is crucial for IELTS Listening success. Each question type requires specific strategies and skills. This lesson provides comprehensive coverage of all question formats you will encounter.</p><h3>Form Completion</h3><p>This question type requires you to complete forms, notes, or tables with information from the recording. Common contexts include booking forms, registration forms, and information sheets. Key strategies include: listening for specific details, paying attention to spelling and numbers, and recognizing paraphrasing of question words.</p><h3>Multiple Choice</h3><p>You choose the correct answer from three or four options. These questions test your ability to understand main ideas, specific details, and speaker attitudes. Important techniques include: eliminating obviously wrong answers, listening for paraphrased information, and being aware of distractors.</p><h3>Matching</h3><p>You match items from a list to options or categories. This tests your ability to understand relationships and connections. Strategies include: listening for key words and phrases, understanding context and relationships, and matching based on meaning rather than exact words.</p><h3>Map/Plan/Diagram Labeling</h3><p>You label locations on a map, plan, or diagram based on the recording. This requires spatial understanding and following directions. Key skills include: understanding directional language, following sequences, and visualizing spatial relationships.</p><h3>Summary Completion</h3><p>You complete a summary with words from the recording or from a given list. This tests your ability to understand main ideas and follow the development of ideas. Important strategies include: understanding the overall meaning, identifying key information, and maintaining grammatical accuracy.</p><h3>Sentence Completion</h3><p>You complete sentences with words from the recording. This tests your ability to understand specific information and maintain grammatical accuracy. Focus on: listening for exact words when required, understanding context for word choice, and checking grammar and spelling.</p>',
+                            '<h2>Test Structure & Timing</h2><p>Effective time management is essential for IELTS Listening success. Understanding the test structure and timing requirements helps you allocate your attention and effort appropriately throughout the test.</p><h3>Overall Test Structure</h3><p>The IELTS Listening test consists of four sections, each lasting approximately 7-8 minutes. Section 1 is the easiest and most straightforward, while Section 4 is the most challenging. The difficulty increases gradually, allowing you to build confidence before facing more complex material.</p><h3>Time Allocation</h3><p>You have 30 minutes to listen to all four sections and answer 40 questions. Each section includes time before the recording starts to read questions, and time after to check answers. During the 10-minute transfer time, you move your answers to the official answer sheet.</p><h3>Reading Time</h3><p>Before each section, you are given time to read the questions. Use this time effectively by: reading all questions carefully, underlining keywords and important information, predicting possible answers based on question words, and identifying what type of information you need to listen for.</p><h3>During Listening</h3><p>While listening, focus on: following the recording without getting stuck on missed answers, keeping track of where you are in the questions, writing answers directly on the question paper, and moving on if you miss an answer.</p><h3>Transfer Time</h3><p>The final 10 minutes are crucial for transferring answers accurately. Use this time to: transfer all answers carefully, check spelling and grammar, ensure answers fit grammatically, and verify that all questions have been attempted.</p><h3>Common Timing Mistakes</h3><p>Avoid these common errors: spending too much time on difficult questions, trying to understand every word, writing answers in full sentences during listening, and leaving questions blank. Remember, unanswered questions receive zero marks.</p>',
+                            '<h2>How the Listening Test Works</h2><p>Understanding how the IELTS Listening test operates helps you prepare effectively and perform confidently on test day. This lesson covers the mechanics of the test, what to expect, and how to use the format to your advantage.</p><h3>Test Mechanics</h3><p>The listening test is played through headphones or speakers in the test center. You hear each recording only once, making it essential to listen actively and take notes effectively. The recordings feature various accents including British, Australian, New Zealand, American, and Canadian English.</p><h3>Question Paper Format</h3><p>Questions appear in order on your question paper. You write answers directly on the question paper during the 30-minute listening period. After the recordings finish, you have 10 minutes to transfer answers to the official answer sheet. This transfer time is crucial - use it wisely.</p><h3>Answer Requirements</h3><p>Most answers require words or numbers from the recording. Some questions specify the maximum number of words (e.g., "Write NO MORE THAN THREE WORDS"). Always follow these instructions carefully. Spelling must be correct for British or American English, depending on the context.</p><h3>Scoring System</h3><p>Each question is worth one mark. There are no half marks. Your raw score out of 40 is converted to a band score from 0 to 9.0. The conversion varies slightly between test versions, but generally: Band 6.0 = 23-25 correct, Band 6.5 = 26-29 correct, Band 7.0 = 30-31 correct, Band 7.5 = 32-34 correct, Band 8.0 = 35-36 correct.</p><h3>Test Environment</h3><p>On test day, arrive early to familiarize yourself with the environment. You will sit in a quiet room with other test takers. The audio quality is clear, but you cannot control the volume or replay any sections. Practice under similar conditions to build familiarity.</p><h3>Preparation Tips</h3><p>Effective preparation involves: listening to a variety of English accents, practicing with authentic IELTS materials, developing note-taking skills, building vocabulary across different topics, and taking practice tests under timed conditions. Regular practice builds confidence and improves performance.</p>'
+                        ])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
+                        WHEN 3 THEN '<h2>Essential Listening Strategies</h2><p>Mastering effective listening strategies is crucial for achieving high scores in IELTS Listening. This lesson introduces proven techniques that will significantly improve your performance.</p><h3>Prediction Strategies</h3><p>Before listening, use the question context to predict possible answers. Look at question words (who, what, where, when, why, how) and the surrounding context to anticipate the type of information you need. This mental preparation helps you focus on relevant information.</p><h3>Keyword Recognition</h3><p>Identify keywords in questions and listen for synonyms and paraphrased versions in the recording. Speakers often use different words to express the same meaning. Developing this skill helps you locate answers even when exact words are not used.</p><h3>Note-Taking Techniques</h3><p>Develop a personal shorthand system for taking notes quickly. Focus on: key information (names, numbers, dates), main ideas, and important details. Don''t try to write everything - prioritize information that directly answers questions.</p><h3>Dealing with Distractors</h3><p>Be aware that speakers may mention incorrect answers before giving the correct one. Listen carefully for information that contradicts or corrects previous statements. The final answer is often the most accurate.</p><h3>Practice Tips</h3><p>Regular practice with authentic IELTS materials is essential. Focus on: listening to various accents, practicing with different question types, timing yourself during practice, and reviewing your mistakes to identify patterns.</p>'
+                        WHEN 4 THEN '<h2>Common Question Types</h2><p>Understanding different question types helps you apply appropriate strategies for each format. This comprehensive guide covers all question types you will encounter in IELTS Listening.</p><h3>Multiple Choice Questions</h3><p>These questions test your ability to understand main ideas, specific details, and speaker attitudes. Strategies include: reading all options carefully before listening, eliminating obviously wrong answers, listening for paraphrased information, and being aware of distractors.</p><h3>Matching Questions</h3><p>You match items from a list to speakers, places, or categories. Key strategies: listen for relationships and connections, understand context, match based on meaning rather than exact words, and pay attention to speakers'' opinions and attitudes.</p><h3>Form/Note/Table Completion</h3><p>Complete forms, notes, or tables with information from the recording. Focus on: listening for specific details, paying attention to spelling and numbers, following the order of information, and recognizing paraphrasing.</p><h3>Map/Plan/Diagram Labeling</h3><p>Label locations on visual materials based on the recording. Skills needed: understanding directional language (left, right, north, south), following sequences, visualizing spatial relationships, and recognizing location vocabulary.</p><h3>Sentence Completion</h3><p>Complete sentences with words from the recording. Important points: maintain grammatical accuracy, listen for exact words when required, understand context for word choice, and check spelling carefully.</p><h3>Summary Completion</h3><p>Complete summaries with words from the recording or a given list. Strategies: understand overall meaning, identify key information, maintain grammatical accuracy, and follow the development of ideas.</p>'
+                        WHEN 5 THEN '<h2>Practice Exercise 1: Part 1 Listening</h2><p>This practice exercise focuses on Part 1 of the IELTS Listening test, which typically features conversations in everyday social contexts. Work through this exercise to develop your skills.</p><h3>Exercise Overview</h3><p>Part 1 usually involves a conversation between two people discussing practical matters such as booking accommodation, making travel arrangements, or joining a club. The dialogue is straightforward and focuses on factual information exchange.</p><h3>What to Expect</h3><p>Common topics include: accommodation (booking hotels, renting apartments), travel (booking flights, train tickets), services (joining gyms, libraries), and appointments (making reservations, scheduling meetings).</p><h3>Key Skills to Practice</h3><ul><li>Listening for specific details (names, addresses, phone numbers)</li><li>Understanding numbers and dates</li><li>Recognizing spelling (especially names)</li><li>Following question order</li><li>Identifying key information quickly</li></ul><h3>Common Challenges</h3><p>Part 1 can be challenging because: speakers may spell names or addresses quickly, numbers may be mentioned multiple times, and information may be corrected or changed during the conversation.</p><h3>After Completing the Exercise</h3><p>Review your answers carefully, identify any mistakes, and understand why the correct answers are correct. This reflection helps you learn from practice and improve your performance.</p>'
+                        WHEN 6 THEN '<h2>Practice Exercise 2: Part 2 Listening</h2><p>This practice exercise focuses on Part 2, which features a monologue in a social context. Develop your skills in following detailed information and instructions.</p><h3>Exercise Overview</h3><p>Part 2 typically involves a single speaker providing information about everyday topics such as local facilities, tourist attractions, event information, or guided tours. The speaker provides detailed information that you need to identify and understand.</p><h3>Common Scenarios</h3><p>Typical Part 2 scenarios include: tourist information talks, facility introductions (museums, libraries, sports centers), event announcements, and service descriptions.</p><h3>Key Skills to Develop</h3><ul><li>Following detailed instructions</li><li>Identifying specific information</li><li>Understanding descriptions and explanations</li><li>Recognizing organizational patterns</li><li>Following the development of ideas</li></ul><h3>Question Types</h3><p>Part 2 often includes: multiple choice questions, matching questions, and completion tasks. You need to listen carefully for details while maintaining understanding of the overall context.</p><h3>Strategy Tips</h3><p>Before listening, read all questions carefully and predict possible answers. During listening, follow the speaker''s organization and keep track of where you are in the questions. Don''t get stuck on missed answers - keep moving forward.</p>'
+                        WHEN 7 THEN '<h2>Advanced Listening Techniques</h2><p>This lesson covers advanced techniques for achieving Band 7+ scores in IELTS Listening. These strategies will help you handle complex questions and improve your accuracy.</p><h3>Advanced Prediction</h3><p>Develop sophisticated prediction skills by analyzing question patterns, understanding context deeply, and anticipating not just answers but also how they might be expressed. This mental preparation significantly improves your focus and accuracy.</p><h3>Dealing with Fast Speech</h3><p>Speakers may speak quickly, especially in Parts 3 and 4. Techniques to handle this include: focusing on content words (nouns, verbs, adjectives), ignoring filler words, maintaining concentration, and not trying to understand every single word.</p><h3>Understanding Complex Ideas</h3><p>Parts 3 and 4 require understanding of complex academic concepts. Develop skills in: following arguments and explanations, understanding cause-and-effect relationships, recognizing speaker attitudes and opinions, and identifying main ideas and supporting details.</p><h3>Vocabulary Building</h3><p>Academic vocabulary is crucial for Parts 3 and 4. Focus on: building vocabulary across academic topics, understanding word families and forms, recognizing synonyms and paraphrasing, and understanding academic discourse markers.</p><h3>Error Avoidance</h3><p>Common mistakes to avoid: writing answers that don''t fit grammatically, misspelling words, exceeding word limits, writing answers in the wrong format, and leaving questions blank. Always check your answers carefully.</p><h3>Time Management</h3><p>Effective time management involves: using reading time effectively, moving on if you miss an answer, checking answers during transfer time, and ensuring all questions are attempted.</p>'
+                        WHEN 8 THEN '<h2>Review & Final Tips</h2><p>This final lesson reviews key strategies and provides essential tips for test day success. Consolidate your learning and prepare confidently for your IELTS Listening test.</p><h3>Key Strategies Review</h3><p>Remember the essential strategies: prediction before listening, keyword recognition and synonym awareness, effective note-taking, managing distractors, and maintaining focus throughout the test.</p><h3>Common Mistakes to Avoid</h3><ul><li>Not reading questions before listening</li><li>Trying to understand every word</li><li>Getting stuck on difficult questions</li><li>Writing answers that don''t fit grammatically</li><li>Leaving questions blank</li><li>Poor spelling and grammar</li><li>Not using transfer time effectively</li></ul><h3>Test Day Preparation</h3><p>On test day: arrive early, bring required identification, familiarize yourself with the test environment, listen to sample audio to test equipment, and stay calm and focused. Remember, preparation builds confidence.</p><h3>During the Test</h3><p>Follow these guidelines: use all reading time effectively, predict answers before listening, write answers clearly on question paper, keep track of where you are, move on if you miss an answer, and use transfer time wisely.</p><h3>Final Checklist</h3><p>Before submitting: check spelling and grammar, ensure answers fit grammatically, verify word limits are followed, confirm all questions are attempted, and transfer answers carefully to the answer sheet.</p><h3>Remember</h3><p>Success in IELTS Listening comes from consistent practice, understanding test format, applying effective strategies, and maintaining confidence. Trust your preparation and perform your best!</p>'
+                        ELSE '<h2>' || (ARRAY['Listening Practice', 'Advanced Listening Strategies', 'Skill Development', 'Test Preparation'])[1 + ((lesson_num - 1) % 4)] || '</h2><p>This comprehensive article lesson provides detailed information and practical strategies to help you succeed in IELTS Listening. Through carefully structured content, examples, and exercises, you will develop the skills necessary to achieve your target band score.</p><h3>Key Concepts</h3><p>The lesson covers essential listening strategies, common question types, and effective techniques for identifying key information. You will learn how to predict answers, recognize paraphrasing, and manage your time effectively throughout the test.</p><h3>Understanding Question Types</h3><p>Master different question types including multiple choice, matching, form completion, map/plan/diagram labeling, and sentence completion. Each type requires specific strategies and skills that you will develop through practice.</p><h3>Practical Application</h3><p>Practice exercises and examples are included to help you apply the strategies discussed. Work through each section carefully, taking notes and identifying areas where you need additional practice.</p><h3>Next Steps</h3><p>After completing this lesson, continue to the next module to build upon these foundational skills. Regular practice with authentic IELTS materials will reinforce your learning and improve your listening abilities.</p>'
+                    END
+                WHEN 'reading' THEN
+                    CASE lesson_num
+                        WHEN 1 THEN '<h2>Introduction to IELTS Reading</h2><p>The IELTS Reading test assesses your ability to understand written English across a range of text types and topics. This comprehensive introduction covers everything you need to know to begin your preparation effectively.</p><h3>Test Overview</h3><p>The reading test consists of three passages with increasing difficulty, totaling 40 questions. You have 60 minutes to read all passages and answer all questions. Time management is crucial as you cannot return to previous sections after moving on.</p><h3>What You Will Learn</h3><ul><li>Understanding the three passages and their characteristics</li><li>All question types and specific strategies for each</li><li>Effective reading techniques (skimming, scanning, detailed reading)</li><li>Time management strategies</li><li>Vocabulary building techniques</li></ul><h3>Passage Types</h3><p>Passages cover a wide range of topics including science, technology, history, psychology, environmental studies, and more. Passage 1 is typically the easiest, while Passage 3 is the most challenging, requiring sophisticated reading skills.</p><h3>Question Distribution</h3><p>Questions are distributed across the three passages, with Passage 1 usually containing simpler questions and Passage 3 containing more complex inference and analysis questions. Understanding this distribution helps you allocate time effectively.</p><h3>Scoring System</h3><p>Each correct answer receives one mark. Your raw score out of 40 is converted to a band score. Generally, Band 6.5 requires 27-29 correct answers, while Band 7 requires 30-32 correct answers.</p>'
+                        WHEN 2 THEN '<h2>Reading Test Format</h2><p>Understanding the IELTS Reading test format is essential for effective preparation. This lesson provides detailed information about passage types, question formats, and test structure.</p><h3>The Three Passages</h3><p><strong>Passage 1:</strong> Typically contains factual, descriptive, or narrative texts on everyday topics. The language is straightforward, and questions focus on locating specific information.</p><p><strong>Passage 2:</strong> Usually features descriptive or argumentative texts on general interest topics. The language becomes more complex, and questions may require understanding opinions and arguments.</p><p><strong>Passage 3:</strong> Contains complex argumentative or analytical texts on academic topics. The language is sophisticated, and questions often require inference, analysis, and understanding of writer''s attitudes.</p><h3>Question Types</h3><p>You will encounter various question types including: multiple choice, True/False/Not Given, Yes/No/Not Given, matching headings, matching information, sentence completion, summary completion, and short answer questions.</p><h3>Time Allocation</h3><p>Effective time management is crucial. Recommended allocation: Passage 1 (15-17 minutes), Passage 2 (20-22 minutes), Passage 3 (23-25 minutes). Always leave time for checking answers.</p><h3>Answer Format</h3><p>Answers are written directly on the answer sheet. There is no extra time for transferring answers. Write clearly and ensure spelling is correct. Follow word limits carefully (e.g., "NO MORE THAN THREE WORDS").</p>'
+                        ELSE '<h2>' || (ARRAY['Reading Strategies', 'Question Types', 'Practice Exercises', 'Advanced Techniques'])[1 + ((lesson_num - 1) % 4)] || '</h2><p>This comprehensive article lesson provides detailed information and practical strategies to help you succeed in IELTS Reading. Develop essential skills through structured content and practice exercises.</p><h3>Key Concepts</h3><p>Learn essential reading strategies, master different question types, and develop techniques for efficient reading and accurate answering. Practice with authentic materials to build confidence.</p><h3>Reading Techniques</h3><p>Master three essential reading techniques: skimming (reading quickly for main ideas), scanning (searching for specific information), and detailed reading (careful reading for comprehension). Each technique serves a different purpose in the test.</p><h3>Question Types</h3><p>Understand and practice with all question types including multiple choice, True/False/Not Given, Yes/No/Not Given, matching headings, matching information, sentence completion, summary completion, and short answer questions.</p><h3>Next Steps</h3><p>Continue practicing with authentic IELTS reading materials and apply the strategies learned in this lesson to improve your reading comprehension and test performance.</p>'
+                    END
+                WHEN 'writing' THEN
+                    CASE lesson_num
+                        WHEN 1 THEN '<h2>Introduction to IELTS Writing</h2><p>The IELTS Writing test evaluates your ability to produce written English in academic contexts. This comprehensive introduction covers both tasks and essential preparation strategies.</p><h3>Test Overview</h3><p>The writing test consists of two tasks: Task 1 requires describing visual information (150 words minimum), and Task 2 requires writing an essay (250 words minimum). You have 60 minutes total, with 20 minutes recommended for Task 1 and 40 minutes for Task 2.</p><h3>Assessment Criteria</h3><p>Both tasks are assessed on four criteria: Task Achievement/Task Response (how well you address the task), Coherence and Cohesion (organization and linking), Lexical Resource (vocabulary range and accuracy), and Grammatical Range and Accuracy (grammar variety and correctness).</p><h3>What You Will Learn</h3><ul><li>Understanding Task 1 and Task 2 requirements</li><li>Effective planning and organization strategies</li><li>Language use for academic writing</li><li>Structuring essays and reports</li><li>Common mistakes and how to avoid them</li></ul>'
+                        WHEN 2 THEN '<h2>Writing Test Format</h2><p>Understanding the format and requirements of both writing tasks is crucial for success. This lesson provides detailed information about each task type.</p><h3>Task 1 Overview</h3><p>Task 1 requires describing visual information such as charts, graphs, tables, diagrams, or maps. You must write at least 150 words in 20 minutes. Focus on: selecting and reporting main features, making comparisons where relevant, and using appropriate language.</p><h3>Task 2 Overview</h3><p>Task 2 requires writing an essay responding to a point of view, argument, or problem. You must write at least 250 words in 40 minutes. Focus on: addressing all parts of the question, developing ideas with examples, organizing ideas logically, and using appropriate academic language.</p><h3>Planning Time</h3><p>Always spend 2-3 minutes planning before writing. For Task 1: identify main trends and features. For Task 2: brainstorm ideas, organize arguments, and plan paragraph structure. This planning significantly improves your writing quality.</p>'
+                        ELSE '<h2>' || (ARRAY['Writing Strategies', 'Task 1 Techniques', 'Task 2 Techniques', 'Language Use'])[1 + ((lesson_num - 1) % 4)] || '</h2><p>This comprehensive article lesson provides detailed information and practical strategies to help you succeed in IELTS Writing. Develop essential skills through structured content and practice exercises.</p><h3>Key Concepts</h3><p>Learn essential writing strategies, master task requirements, and develop techniques for effective organization and language use. Practice with sample tasks to build confidence.</p><h3>Assessment Criteria</h3><p>Understand the four assessment criteria: Task Achievement/Task Response (how well you address the task), Coherence and Cohesion (organization and linking), Lexical Resource (vocabulary range and accuracy), and Grammatical Range and Accuracy (grammar variety and correctness).</p><h3>Practice Tips</h3><p>Regular practice with authentic IELTS writing tasks is essential. Focus on: planning before writing, organizing ideas logically, using appropriate academic language, and reviewing your work for errors.</p>'
+                    END
+                WHEN 'speaking' THEN
+                    CASE lesson_num
+                        WHEN 1 THEN '<h2>Introduction to IELTS Speaking</h2><p>The IELTS Speaking test evaluates your ability to communicate effectively in English through face-to-face conversation with an examiner. This comprehensive introduction covers all three parts and essential preparation strategies.</p><h3>Test Overview</h3><p>The speaking test lasts 11-14 minutes and consists of three parts: Part 1 (4-5 minutes) features questions about familiar topics, Part 2 (3-4 minutes) requires a 2-minute monologue on a given topic, and Part 3 (4-5 minutes) involves abstract discussion related to Part 2.</p><h3>Assessment Criteria</h3><p>You are assessed on four criteria: Fluency and Coherence (speaking smoothly and logically), Lexical Resource (vocabulary range and accuracy), Grammatical Range and Accuracy (grammar variety and correctness), and Pronunciation (clarity and naturalness).</p><h3>What You Will Learn</h3><ul><li>Understanding all three parts of the test</li><li>Strategies for fluent and coherent responses</li><li>Building vocabulary for various topics</li><li>Improving pronunciation and intonation</li><li>Developing ideas and expressing opinions</li></ul>'
+                        WHEN 2 THEN '<h2>Speaking Test Format</h2><p>Understanding the format and requirements of all three parts helps you prepare effectively and perform confidently on test day.</p><h3>Part 1: Introduction and Interview</h3><p>Part 1 lasts 4-5 minutes and covers familiar topics such as home, work, studies, hobbies, and daily routines. The examiner asks straightforward questions, and you should provide extended answers (2-3 sentences) rather than single-word responses.</p><h3>Part 2: Long Turn</h3><p>Part 2 lasts 3-4 minutes: you receive a cue card with a topic and have 1 minute to prepare notes. You then speak for 1-2 minutes, followed by 1-2 brief follow-up questions. Focus on: covering all points on the cue card, speaking for the full time, and organizing your response logically.</p><h3>Part 3: Two-Way Discussion</h3><p>Part 3 lasts 4-5 minutes and involves abstract discussion related to Part 2. Questions are more complex, requiring you to: express and justify opinions, analyze and evaluate ideas, speculate about future possibilities, and compare and contrast different views.</p>'
+                        ELSE '<h2>' || (ARRAY['Speaking Strategies', 'Fluency Development', 'Vocabulary Building', 'Pronunciation Practice'])[1 + ((lesson_num - 1) % 4)] || '</h2><p>This comprehensive article lesson provides detailed information and practical strategies to help you succeed in IELTS Speaking. Develop essential skills through structured content and practice exercises.</p><h3>Key Concepts</h3><p>Learn essential speaking strategies, develop fluency and coherence, build vocabulary for various topics, and improve pronunciation. Practice regularly to build confidence.</p><h3>Assessment Criteria</h3><p>Understand the four assessment criteria: Fluency and Coherence (speaking smoothly and logically), Lexical Resource (vocabulary range and accuracy), Grammatical Range and Accuracy (grammar variety and correctness), and Pronunciation (clarity and naturalness).</p><h3>Practice Tips</h3><p>Regular practice is essential for improving speaking skills. Focus on: speaking on various topics, recording yourself, building vocabulary, practicing pronunciation, and developing ideas and opinions.</p>'
+                    END
+                ELSE '<h2>' || (ARRAY['IELTS Preparation', 'Test Strategies', 'Skill Development'])[1 + (lesson_num % 3)] || '</h2><p>This comprehensive lesson provides detailed information and practical strategies to help you succeed in IELTS. Develop essential skills through structured content and practice exercises.</p><h3>Key Concepts</h3><p>Learn essential strategies, master test format, and develop techniques for effective preparation. Practice regularly to build confidence and improve performance.</p>'
+            END
+        WHEN lesson_num % 3 = 0 THEN -- Mixed lessons
+            CASE c.skill_type
+                WHEN 'listening' THEN
+                    CASE lesson_num
+                        WHEN 1 THEN '<h2>Introduction to IELTS Listening</h2><p>This comprehensive mixed lesson combines video instruction with detailed reading materials to help you master IELTS Listening. You will watch an instructional video and then read supplementary materials to reinforce your understanding.</p><h3>What You Will Learn</h3><ul><li>Understanding the four sections of the listening test</li><li>Common question types and how to approach them</li><li>Effective prediction and note-taking strategies</li><li>Time management techniques</li><li>How to avoid common mistakes</li></ul><h3>Learning Approach</h3><p>Start by watching the video lesson to understand key concepts visually. Then read the accompanying article to deepen your understanding and review important points. Practice exercises are included to help you apply what you''ve learned.</p>'
+                        WHEN 2 THEN '<h2>Listening Test Format Explained</h2><p>This mixed lesson provides both visual and textual explanations of the IELTS Listening test format. Watch the video for an overview, then read detailed information about each section.</p><h3>Section Breakdown</h3><p><strong>Section 1 - Social Conversation:</strong> Learn about everyday conversations and how to identify key information.</p><p><strong>Section 2 - Social Monologue:</strong> Understand how to follow detailed instructions and identify specific information.</p><p><strong>Section 3 - Educational Discussion:</strong> Master strategies for understanding opinions and explanations.</p><p><strong>Section 4 - Academic Lecture:</strong> Develop skills to comprehend complex ideas and academic vocabulary.</p><h3>Question Distribution</h3><p>Each section contains exactly 10 questions. Section 1 and 2 typically feature simpler question types, while Section 3 and 4 include more complex types.</p>'
+                        ELSE '<h2>' || (ARRAY['Listening Practice', 'Advanced Listening Strategies', 'Skill Development', 'Test Preparation'])[1 + ((lesson_num - 3) % 4)] || '</h2><p>This comprehensive mixed lesson combines video instruction with detailed reading materials. Watch the video to see concepts demonstrated, then read the article to reinforce your learning and practice with included exercises.</p><h3>Key Concepts</h3><p>The lesson covers essential listening strategies, common question types, and effective techniques for identifying key information. You will learn how to predict answers, recognize paraphrasing, and manage your time effectively.</p><h3>Practice Application</h3><p>Practice exercises and examples are included to help you apply the strategies discussed. Work through each section carefully, taking notes and identifying areas where you need additional practice.</p>'
+                    END
+                WHEN 'reading' THEN
+                    CASE lesson_num
+                        WHEN 1 THEN '<h2>Introduction to IELTS Reading</h2><p>This comprehensive mixed lesson combines video instruction with detailed reading materials to help you master IELTS Reading. You will watch an instructional video and then read supplementary materials to reinforce your understanding.</p><h3>What You Will Learn</h3><ul><li>Understanding the three passages and their characteristics</li><li>All question types and specific strategies for each</li><li>Effective reading techniques (skimming, scanning, detailed reading)</li><li>Time management strategies</li><li>Vocabulary building techniques</li></ul><h3>Learning Approach</h3><p>Start by watching the video lesson to understand key concepts visually. Then read the accompanying article to deepen your understanding and review important points. Practice exercises are included to help you apply what you''ve learned.</p>'
+                        WHEN 2 THEN '<h2>Reading Test Format</h2><p>This mixed lesson provides both visual and textual explanations of the IELTS Reading test format. Watch the video for an overview, then read detailed information about passage types and question formats.</p><h3>The Three Passages</h3><p><strong>Passage 1:</strong> Typically contains factual, descriptive, or narrative texts on everyday topics.</p><p><strong>Passage 2:</strong> Usually features descriptive or argumentative texts on general interest topics.</p><p><strong>Passage 3:</strong> Contains complex argumentative or analytical texts on academic topics.</p><h3>Question Types</h3><p>You will encounter various question types including: multiple choice, True/False/Not Given, Yes/No/Not Given, matching headings, matching information, sentence completion, summary completion, and short answer questions.</p>'
+                        ELSE '<h2>' || (ARRAY['Reading Strategies', 'Question Types', 'Practice Exercises', 'Advanced Techniques'])[1 + ((lesson_num - 3) % 4)] || '</h2><p>This comprehensive mixed lesson combines video instruction with detailed reading materials. Watch the video to see concepts demonstrated, then read the article to reinforce your learning and practice with included exercises.</p><h3>Key Concepts</h3><p>Learn essential reading strategies, master different question types, and develop techniques for efficient reading and accurate answering.</p><h3>Practice Application</h3><p>Practice with authentic IELTS reading materials and apply the strategies learned in this lesson to improve your reading comprehension and test performance.</p>'
+                    END
+                WHEN 'writing' THEN
+                    CASE lesson_num
+                        WHEN 1 THEN '<h2>Introduction to IELTS Writing</h2><p>This comprehensive mixed lesson combines video instruction with detailed reading materials to help you master IELTS Writing. You will watch an instructional video and then read supplementary materials to reinforce your understanding.</p><h3>What You Will Learn</h3><ul><li>Understanding Task 1 and Task 2 requirements</li><li>Effective planning and organization strategies</li><li>Language use for academic writing</li><li>Structuring essays and reports</li><li>Common mistakes and how to avoid them</li></ul><h3>Learning Approach</h3><p>Start by watching the video lesson to understand key concepts visually. Then read the accompanying article to deepen your understanding and review important points. Practice exercises are included to help you apply what you''ve learned.</p>'
+                        WHEN 2 THEN '<h2>Writing Test Format</h2><p>This mixed lesson provides both visual and textual explanations of the IELTS Writing test format. Watch the video for an overview, then read detailed information about each task type.</p><h3>Task 1 Overview</h3><p>Task 1 requires describing visual information such as charts, graphs, tables, diagrams, or maps. You must write at least 150 words in 20 minutes.</p><h3>Task 2 Overview</h3><p>Task 2 requires writing an essay responding to a point of view, argument, or problem. You must write at least 250 words in 40 minutes.</p><h3>Planning Time</h3><p>Always spend 2-3 minutes planning before writing. For Task 1: identify main trends and features. For Task 2: brainstorm ideas, organize arguments, and plan paragraph structure.</p>'
+                        ELSE '<h2>' || (ARRAY['Writing Strategies', 'Task 1 Techniques', 'Task 2 Techniques', 'Language Use'])[1 + ((lesson_num - 3) % 4)] || '</h2><p>This comprehensive mixed lesson combines video instruction with detailed reading materials. Watch the video to see concepts demonstrated, then read the article to reinforce your learning and practice with included exercises.</p><h3>Key Concepts</h3><p>Learn essential writing strategies, master task requirements, and develop techniques for effective organization and language use.</p>'
+                    END
+                WHEN 'speaking' THEN
+                    CASE lesson_num
+                        WHEN 1 THEN '<h2>Introduction to IELTS Speaking</h2><p>This comprehensive mixed lesson combines video instruction with detailed reading materials to help you master IELTS Speaking. You will watch an instructional video and then read supplementary materials to reinforce your understanding.</p><h3>What You Will Learn</h3><ul><li>Understanding all three parts of the test</li><li>Strategies for fluent and coherent responses</li><li>Building vocabulary for various topics</li><li>Improving pronunciation and intonation</li><li>Developing ideas and expressing opinions</li></ul><h3>Learning Approach</h3><p>Start by watching the video lesson to understand key concepts visually. Then read the accompanying article to deepen your understanding and review important points. Practice exercises are included to help you apply what you''ve learned.</p>'
+                        WHEN 2 THEN '<h2>Speaking Test Format</h2><p>This mixed lesson provides both visual and textual explanations of the IELTS Speaking test format. Watch the video for an overview, then read detailed information about all three parts.</p><h3>Part 1: Introduction and Interview</h3><p>Part 1 lasts 4-5 minutes and covers familiar topics such as home, work, studies, hobbies, and daily routines.</p><h3>Part 2: Long Turn</h3><p>Part 2 lasts 3-4 minutes: you receive a cue card with a topic and have 1 minute to prepare notes. You then speak for 1-2 minutes.</p><h3>Part 3: Two-Way Discussion</h3><p>Part 3 lasts 4-5 minutes and involves abstract discussion related to Part 2. Questions are more complex, requiring you to express and justify opinions.</p>'
+                        ELSE '<h2>' || (ARRAY['Speaking Strategies', 'Fluency Development', 'Vocabulary Building', 'Pronunciation Practice'])[1 + ((lesson_num - 3) % 4)] || '</h2><p>This comprehensive mixed lesson combines video instruction with detailed reading materials. Watch the video to see concepts demonstrated, then read the article to reinforce your learning and practice with included exercises.</p><h3>Key Concepts</h3><p>Learn essential speaking strategies, develop fluency and coherence, build vocabulary for various topics, and improve pronunciation.</p>'
+                    END
+                ELSE '<h2>' || (ARRAY['IELTS Preparation', 'Test Strategies', 'Skill Development'])[1 + (lesson_num % 3)] || '</h2><p>This comprehensive mixed lesson combines video instruction with detailed reading materials. Watch the video to see concepts demonstrated, then read the article to reinforce your learning and practice with included exercises.</p><h3>Key Concepts</h3><p>Learn essential strategies, master test format, and develop techniques for effective preparation.</p>'
+            END
+        ELSE -- Video lessons
+            (ARRAY['Introduction and overview of ' || c.skill_type || ' in IELTS', 'Learn the format and structure of IELTS ' || c.skill_type, 'Essential strategies for success in ' || c.skill_type, 'Explore different question types in ' || c.skill_type])[1 + (hashtext(m.id::text || lesson_num::text) % 4)]
     END,
     CASE 
         WHEN lesson_num % 3 = 1 THEN 'video'
@@ -756,177 +1003,30 @@ INSERT INTO lesson_videos (
     id, lesson_id, title, description, video_url, video_provider, video_id,
     duration_seconds, thumbnail_url, has_subtitles, subtitle_languages, display_order
 )
-SELECT 
-    uuid_generate_v4(),
-    l.id,
-    l.title || ' - Video',
-    l.description || ' Video content',
-    CASE 
-        WHEN l.content_type = 'video' THEN
-            COALESCE(
-                'https://www.youtube.com/watch?v=' || video_ids[1 + (hashtext(l.id::text) % array_length(video_ids, 1))],
-                'https://www.youtube.com/watch?v=k72qx-LSKIg' -- Fallback
-            )
-        ELSE NULL
-    END,
-    CASE WHEN l.content_type = 'video' THEN 'youtube' ELSE NULL END,
-    CASE WHEN l.content_type = 'video' THEN
-        video_ids[1 + (hashtext(l.id::text) % array_length(video_ids, 1))]
-    ELSE NULL END,
-    CASE WHEN l.content_type = 'video' THEN 
+WITH video_assignments AS (
+    SELECT 
+        l.id as lesson_id,
+        l.course_id,
+        l.content_type,
+        l.title as lesson_title,
+        l.id as lesson_uuid,
+        -- Assign unique video IDs per course using sequential assignment with course-based offset
+        -- This ensures no duplicate videos within the same course
         COALESCE(
-            (
-                SELECT duration_seconds FROM (
-                    SELECT video_id, duration_seconds FROM (VALUES
-                        ('0E7ss6etqDU', 244),
-                        ('1-aFVhGhtFQ', 145),
-                        ('1H-bsnpUiak', 126),
-                        ('20j9hYPuCLE', 188),
-                        ('2Fqo0OoEoSU', 185),
-                        ('2VRuK5QBjTw', 174),
-                        ('2qP1JotBMTY', 247),
-                        ('38Vx2NjW3T4', 208),
-                        ('3I7bBIm3-PU', 61),
-                        ('4QAV5NiaW7k', 296),
-                        ('7QXZyJ3Rj_Y', 246),
-                        ('7oSQjdLfN5M', 192),
-                        ('7rULJclm0Ek', 330),
-                        ('84Pn0s4RN70', 247),
-                        ('9WO4_N9C0po', 199),
-                        ('Aj4i9htNbxM', 267),
-                        ('BCOJqpeqHrM', 247),
-                        ('BIn8zm8yymk', 143),
-                        ('BVyP7sWR4Ew', 239),
-                        ('BdBJTjuW_wo', 202),
-                        ('CYc-r5AeBcU', 362),
-                        ('Cc4lAvgLptg', 282),
-                        ('D8qWDovn5ck', 202),
-                        ('ECwA6aEvGuw', 264),
-                        ('F32lFOipk3M', 225),
-                        ('FNwV3WqV6Sc', 288),
-                        ('HEnTJqwewsg', 291),
-                        ('INRq3QW_VHI', 331),
-                        ('IxNWmkDAjoM', 79),
-                        ('JSgOqBAjcMA', 200),
-                        ('K5MFUpEmDvU', 152),
-                        ('KD3OKlOXvxE', 249),
-                        ('KDbtZqLohUU', 175),
-                        ('KGFGZP3B8ZQ', 225),
-                        ('KPb9VZMkais', 165),
-                        ('KVYx5CgAuao', 95),
-                        ('KaJW7j0zey0', 203),
-                        ('LjxIzECH7Ys', 248),
-                        ('M0BUE7iMILc', 216),
-                        ('MQ_c-2IrAzk', 184),
-                        ('MrJ33X0InXA', 223),
-                        ('NkJO7ceI3mo', 151),
-                        ('O8-N-vprxTs', 156),
-                        ('OBryguHcJXc', 169),
-                        ('OPjsRxh6AF0', 590),
-                        ('OWduuHEpuzg', 280),
-                        ('OmwzWAUCSQ8', 229),
-                        ('OpDlKRhISqE', 205),
-                        ('QkPVVvPRE2s', 195),
-                        ('R89l1zrgXzs', 261),
-                        ('RyTdIYMrcKY', 181),
-                        ('SdV_3Ct5SNk', 294),
-                        ('T49sg7i7ZAc', 250),
-                        ('T8GB-tPlSY8', 207),
-                        ('UfqugyGe-jk', 179),
-                        ('UkUCO02Adt8', 249),
-                        ('V9qSdbotEkE', 198),
-                        ('VGhUo8ezk4M', 263),
-                        ('WGXGArS8UC8', 279),
-                        ('WT0QV_3Y7Fw', 187),
-                        ('X9eHv7iasws', 242),
-                        ('YOSgRy3kqRs', 263),
-                        ('ZdPZ6dgO44E', 218),
-                        ('ZmMszhayj9I', 178),
-                        ('_-nhtI3hn0Y', 164),
-                        ('_aLlKFKEWXY', 225),
-                        ('_ggznNb_er4', 249),
-                        ('_jJi6k3CThM', 226),
-                        ('a065ioF1jeM', 231),
-                        ('a_Q3YAN-Duo', 188),
-                        ('bGFDE0uBQEs', 192),
-                        ('bYyXN5BPJkU', 232),
-                        ('cGG3ovpSQZc', 196),
-                        ('cQPjT9kXYgI', 255),
-                        ('cuRJt35xAdY', 181),
-                        ('dSW6rSzvbRY', 233),
-                        ('eG7VeYMW5qE', 226),
-                        ('eHdhDqgVdPQ', 206),
-                        ('fJLgA8BVhGA', 263),
-                        ('fSXQJQWfKxk', 241),
-                        ('gGZt4PLF9WM', 295),
-                        ('gxYIe1jqLTM', 239),
-                        ('hGdJ5PJNjGI', 226),
-                        ('hXDK7WgVxqE', 206),
-                        ('iFRp_0XlD3E', 216),
-                        ('j0qywR59Wv4', 232),
-                        ('jDkOlzOeEHs', 228),
-                        ('k-D2p-QQyE8', 179),
-                        ('k72qx-LSKIg', 236),
-                        ('kugScbTr3gs', 153),
-                        ('mGXWsxNfwhk', 218),
-                        ('n-DzRPPXnNY', 199),
-                        ('nNTipHpP7so', 365),
-                        ('nXvcLRAYIXs', 290),
-                        ('oKZDa00CYU4', 201),
-                        ('oUOiZhQqBxw', 191),
-                        ('p-JfuIyV9xQ', 217),
-                        ('ptO6NawNVgQ', 190),
-                        ('rArhIvypfTI', 265),
-                        ('rPRCpfltzio', 190),
-                        ('sYff9BKA-fY', 232),
-                        ('tZ_ioUgKXwE', 224),
-                        ('t_EVh8jxDbs', 162),
-                        ('uZNV1o7yLys', 311),
-                        ('udPtobGpMSI', 193),
-                        ('vQ7ZL1wMgCE', 197),
-                        ('xGTaNjsLmss', 195),
-                        ('xJlIQCWM1EA', 221),
-                        ('xf5iUMqHInk', 243),
-                        ('xhd-RZGcfIQ', 124),
-                        ('xoaWIur-YVY', 298),
-                        ('xpmWhPew5QU', 205),
-                        ('y6Yv7ukWgy8', 273),
-                        ('yBiW708dDLI', 324),
-                        ('yi8uDHSuf9E', 201),
-                        ('z6nsI5G9RWc', 253),
-                        ('z8wZUS_b7k8', 248),
-                        ('zGdCHg7gick', 189),
-                        ('zaKl0H-YoQw', 265)
-                    ) AS duration_map(video_id, duration_seconds)
-                ) AS d
-                WHERE d.video_id = video_ids[1 + (hashtext(l.id::text) % array_length(video_ids, 1))]
-                LIMIT 1
-            ),
-            l.duration_minutes * 60 -- Fallback: use calculated duration
-        )
-    ELSE NULL END,
-    CASE WHEN l.content_type = 'video' THEN
-        CASE (row_number() OVER (PARTITION BY l.course_id ORDER BY l.id) % 12)
-            WHEN 0 THEN 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800&h=600&fit=crop'
-            WHEN 1 THEN 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&h=600&fit=crop'
-            WHEN 2 THEN 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=600&fit=crop'
-            WHEN 3 THEN 'https://images.unsplash.com/photo-1589903308904-1010c2294adc?w=800&h=600&fit=crop'
-            WHEN 4 THEN 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&h=600&fit=crop'
-            WHEN 5 THEN 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&h=600&fit=crop'
-            WHEN 6 THEN 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=600&fit=crop'
-            WHEN 7 THEN 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop'
-            WHEN 8 THEN 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=600&fit=crop'
-            WHEN 9 THEN 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800&h=600&fit=crop'
-            WHEN 10 THEN 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&h=600&fit=crop'
-            ELSE 'https://images.unsplash.com/photo-1508921340878-bad53cfe2816?w=800&h=600&fit=crop'
-        END
-    ELSE NULL END,
-    CASE WHEN l.content_type = 'video' THEN true ELSE false END,
-    CASE WHEN l.content_type = 'video' THEN ARRAY['en', 'vi'] ELSE NULL END,
-    1
-FROM lessons l
-CROSS JOIN (
-    SELECT ARRAY[
+            video_ids[1 + (
+                -- Calculate a unique index for each lesson within its course
+                -- Use course_id hash as base offset, then add lesson row number within course
+                (
+                    ABS(hashtext(l.course_id::text)::bigint) % array_length(video_ids, 1) + 
+                    ROW_NUMBER() OVER (PARTITION BY l.course_id ORDER BY l.id)
+                ) % array_length(video_ids, 1) + 1
+            )],
+            video_ids[1] -- Fallback to first video if calculation fails
+        ) as assigned_video_id,
+        ROW_NUMBER() OVER (PARTITION BY l.course_id ORDER BY l.id) as lesson_num_in_course
+    FROM lessons l
+    CROSS JOIN (
+        SELECT ARRAY[
         'k72qx-LSKIg', 'RyTdIYMrcKY', 'xpmWhPew5QU', 'p-JfuIyV9xQ', 'nXvcLRAYIXs',
         'WT0QV_3Y7Fw', 'T49sg7i7ZAc', '20j9hYPuCLE', 'WGXGArS8UC8', 'uZNV1o7yLys',
         'gA7XBM5Z-zM', '7rULJclm0Ek', 'a_Q3YAN-Duo', 'nNTipHpP7so', 'MrJ33X0InXA',
@@ -955,11 +1055,388 @@ CROSS JOIN (
         'oV7qaHKPoK0', '9TH5JGYZB4o', 'vVYONjT2b0Y', 'kop8O3A-UGs', 'btAiWvdIxm4',
         'G5orxWQWafI', 'OZmK0YuSmXU'
     ] as video_ids
-) vid
-WHERE l.content_type = 'video';
+    ) vid
+    WHERE l.content_type IN ('video', 'mixed')
+)
+SELECT 
+    uuid_generate_v4(),
+    va.lesson_id,
+    -- Diverse video titles based on lesson content
+    CASE 
+        WHEN va.content_type IN ('video', 'mixed') THEN
+            CASE 
+                WHEN va.lesson_title ILIKE '%introduction%' OR va.lesson_title ILIKE '%overview%' THEN
+                    (ARRAY[va.lesson_title || ' - Complete Guide', va.lesson_title || ' - Full Tutorial', va.lesson_title || ' - Step by Step', va.lesson_title || ' - Expert Explanation'])[1 + (hashtext(va.lesson_uuid::text) % 4)]
+                WHEN va.lesson_title ILIKE '%practice%' OR va.lesson_title ILIKE '%exercise%' THEN
+                    (ARRAY[va.lesson_title || ' - Walkthrough', va.lesson_title || ' - Detailed Solution', va.lesson_title || ' - Complete Practice', va.lesson_title || ' - Step-by-Step Guide'])[1 + (hashtext(va.lesson_uuid::text) % 4)]
+                WHEN va.lesson_title ILIKE '%advanced%' OR va.lesson_title ILIKE '%technique%' THEN
+                    (ARRAY[va.lesson_title || ' - Expert Strategies', va.lesson_title || ' - Advanced Methods', va.lesson_title || ' - Pro Tips', va.lesson_title || ' - Master Class'])[1 + (hashtext(va.lesson_uuid::text) % 4)]
+                WHEN va.lesson_title ILIKE '%strategy%' OR va.lesson_title ILIKE '%tip%' THEN
+                    (ARRAY[va.lesson_title || ' - Essential Guide', va.lesson_title || ' - Proven Methods', va.lesson_title || ' - Success Strategies', va.lesson_title || ' - Best Practices'])[1 + (hashtext(va.lesson_uuid::text) % 4)]
+                ELSE
+                    (ARRAY[va.lesson_title || ' - Video Lesson', va.lesson_title || ' - Complete Tutorial', va.lesson_title || ' - Full Explanation', va.lesson_title || ' - Comprehensive Guide'])[1 + (hashtext(va.lesson_uuid::text) % 4)]
+            END
+        ELSE NULL
+    END,
+    -- Diverse video descriptions
+    CASE 
+        WHEN va.content_type IN ('video', 'mixed') THEN
+            CASE 
+                WHEN va.lesson_title ILIKE '%introduction%' OR va.lesson_title ILIKE '%overview%' THEN
+                    'This comprehensive video lesson provides a complete introduction to ' || LOWER(va.lesson_title) || '. Learn essential concepts, understand key strategies, and build a strong foundation for your IELTS preparation. Perfect for beginners starting their learning journey.'
+                WHEN va.lesson_title ILIKE '%practice%' OR va.lesson_title ILIKE '%exercise%' THEN
+                    'Watch this detailed walkthrough of ' || LOWER(va.lesson_title) || '. Follow along as we work through practice questions step-by-step, explain answer strategies, and demonstrate effective techniques. Includes detailed explanations and tips for improvement.'
+                WHEN va.lesson_title ILIKE '%advanced%' OR va.lesson_title ILIKE '%technique%' THEN
+                    'Master advanced techniques and strategies in this expert-level video lesson on ' || LOWER(va.lesson_title) || '. Learn sophisticated methods, avoid common mistakes, and develop skills to achieve Band 7+ scores. Includes proven strategies from experienced instructors.'
+                WHEN va.lesson_title ILIKE '%strategy%' OR va.lesson_title ILIKE '%tip%' THEN
+                    'Discover proven strategies and essential tips in this comprehensive video lesson on ' || LOWER(va.lesson_title) || '. Learn effective methods, understand best practices, and develop skills to maximize your IELTS performance. Includes practical examples and real-world applications.'
+                ELSE
+                    'This comprehensive video lesson covers ' || LOWER(va.lesson_title) || ' in detail. Learn essential concepts, practice with examples, and develop the skills necessary for IELTS success. Perfect for students at all levels looking to improve their performance.'
+            END
+        ELSE NULL
+    END,
+    CASE 
+        WHEN va.content_type IN ('video', 'mixed') THEN
+            'https://www.youtube.com/watch?v=' || va.assigned_video_id
+        ELSE NULL
+    END,
+    CASE WHEN va.content_type IN ('video', 'mixed') THEN 'youtube' ELSE NULL END,
+    CASE WHEN va.content_type IN ('video', 'mixed') THEN va.assigned_video_id ELSE NULL END,
+    CASE WHEN va.content_type IN ('video', 'mixed') THEN 
+        COALESCE(
+            (
+                SELECT duration_seconds FROM (
+                    SELECT video_id, duration_seconds FROM (VALUES
+                                                                                                                                                ('0E7ss6etqDU', 244),
+                        ('1-aFVhGhtFQ', 145),
+                        ('1H-bsnpUiak', 126),
+                        ('20j9hYPuCLE', 188),
+                        ('2Fqo0OoEoSU', 185),
+                        ('2VRuK5QBjTw', 174),
+                        ('2qP1JotBMTY', 247),
+                        ('38Vx2NjW3T4', 208),
+                        ('3I7bBIm3-PU', 61),
+                        ('4QAV5NiaW7k', 296),
+                        ('6QMu7-3DMi0', 60),
+                        ('7QXZyJ3Rj_Y', 246),
+                        ('7oSQjdLfN5M', 192),
+                        ('7rULJclm0Ek', 330),
+                        ('84Pn0s4RN70', 247),
+                        ('9TH5JGYZB4o', 233),
+                        ('9WO4_N9C0po', 199),
+                        ('Aj4i9htNbxM', 267),
+                        ('BCOJqpeqHrM', 247),
+                        ('BIn8zm8yymk', 143),
+                        ('BVyP7sWR4Ew', 239),
+                        ('BdBJTjuW_wo', 202),
+                        ('CYc-r5AeBcU', 362),
+                        ('Cc4lAvgLptg', 282),
+                        ('D8qWDovn5ck', 202),
+                        ('ECwA6aEvGuw', 264),
+                        ('F32lFOipk3M', 225),
+                        ('FNwV3WqV6Sc', 288),
+                        ('G5orxWQWafI', 249),
+                        ('HEnTJqwewsg', 291),
+                        ('INRq3QW_VHI', 331),
+                        ('IxNWmkDAjoM', 79),
+                        ('JSgOqBAjcMA', 200),
+                        ('K5MFUpEmDvU', 152),
+                        ('KD3OKlOXvxE', 249),
+                        ('KDbtZqLohUU', 175),
+                        ('KGFGZP3B8ZQ', 225),
+                        ('KPb9VZMkais', 165),
+                        ('KVYx5CgAuao', 95),
+                        ('KaJW7j0zey0', 203),
+                        ('LjxIzECH7Ys', 248),
+                        ('M0BUE7iMILc', 216),
+                        ('MQ_c-2IrAzk', 184),
+                        ('MrJ33X0InXA', 223),
+                        ('NkJO7ceI3mo', 151),
+                        ('O8-N-vprxTs', 156),
+                        ('OBryguHcJXc', 169),
+                        ('OPjsRxh6AF0', 590),
+                        ('OWduuHEpuzg', 280),
+                        ('OZmK0YuSmXU', 279),
+                        ('OmwzWAUCSQ8', 229),
+                        ('OpDlKRhISqE', 205),
+                        ('QkPVVvPRE2s', 195),
+                        ('R89l1zrgXzs', 261),
+                        ('RyTdIYMrcKY', 181),
+                        ('SdV_3Ct5SNk', 294),
+                        ('SeWt7IpZ0CA', 310),
+                        ('T49sg7i7ZAc', 250),
+                        ('T8GB-tPlSY8', 207),
+                        ('UfqugyGe-jk', 179),
+                        ('UkUCO02Adt8', 249),
+                        ('V9qSdbotEkE', 198),
+                        ('VGhUo8ezk4M', 263),
+                        ('WGXGArS8UC8', 279),
+                        ('WT0QV_3Y7Fw', 187),
+                        ('X9eHv7iasws', 242),
+                        ('YOSgRy3kqRs', 263),
+                        ('ZdPZ6dgO44E', 218),
+                        ('ZmMszhayj9I', 178),
+                        ('_-nhtI3hn0Y', 164),
+                        ('_aLlKFKEWXY', 225),
+                        ('_ggznNb_er4', 249),
+                        ('_jJi6k3CThM', 226),
+                        ('a065ioF1jeM', 231),
+                        ('a_Q3YAN-Duo', 188),
+                        ('bGFDE0uBQEs', 192),
+                        ('bYyXN5BPJkU', 232),
+                        ('btAiWvdIxm4', 37),
+                        ('cGG3ovpSQZc', 196),
+                        ('cQPjT9kXYgI', 255),
+                        ('cuRJt35xAdY', 181),
+                        ('dSW6rSzvbRY', 233),
+                        ('d_q5o7pDRh0', 184),
+                        ('dnmElGczPf8', 204),
+                        ('f5WH4UnDU7A', 260),
+                        ('fHx9Hnn48G0', 204),
+                        ('fX3qI4lQ6P0', 176),
+                        ('fgBepZmk5VM', 186),
+                        ('fsq-IQgKtTk', 169),
+                        ('g92Fum1z6w8', 161),
+                        ('gA7XBM5Z-zM', 291),
+                        ('gQPO4q-ptUc', 273),
+                        ('h-4V_duEx3w', 223),
+                        ('j0qywR59Wv4', 232),
+                        ('jDkOlzOeEHs', 228),
+                        ('k-D2p-QQyE8', 179),
+                        ('k72qx-LSKIg', 236),
+                        ('kop8O3A-UGs', 136),
+                        ('kugScbTr3gs', 153),
+                        ('mGXWsxNfwhk', 218),
+                        ('n-DzRPPXnNY', 199),
+                        ('nNTipHpP7so', 365),
+                        ('nXvcLRAYIXs', 290),
+                        ('oKZDa00CYU4', 201),
+                        ('oUOiZhQqBxw', 191),
+                        ('oV7qaHKPoK0', 257),
+                        ('p-JfuIyV9xQ', 217),
+                        ('ptO6NawNVgQ', 190),
+                        ('rArhIvypfTI', 265),
+                        ('rPRCpfltzio', 190),
+                        ('sYff9BKA-fY', 232),
+                        ('tZ_ioUgKXwE', 224),
+                        ('t_EVh8jxDbs', 162),
+                        ('tml3fxV9w7g', 226),
+                        ('uZNV1o7yLys', 311),
+                        ('udPtobGpMSI', 193),
+                        ('vQ7ZL1wMgCE', 197),
+                        ('vVYONjT2b0Y', 226),
+                        ('xGTaNjsLmss', 195),
+                        ('xJlIQCWM1EA', 221),
+                        ('xf5iUMqHInk', 243),
+                        ('xhd-RZGcfIQ', 124),
+                        ('xoaWIur-YVY', 298),
+                        ('xpmWhPew5QU', 205),
+                        ('y6Yv7ukWgy8', 273),
+                        ('yBiW708dDLI', 324),
+                        ('yi8uDHSuf9E', 201),
+                        ('ys-1LqlUNCk', 226),
+                        ('z6nsI5G9RWc', 253),
+                        ('z8wZUS_b7k8', 248),
+                        ('zGdCHg7gick', 189),
+                        ('zaKl0H-YoQw', 265)
+                    ) AS duration_map(video_id, duration_seconds)
+                ) AS d
+                WHERE d.video_id = va.assigned_video_id
+                LIMIT 1
+            ),
+            (SELECT duration_minutes FROM lessons WHERE id = va.lesson_id) * 60 -- Fallback: use calculated duration
+        )
+    ELSE NULL END,
+    CASE WHEN va.content_type IN ('video', 'mixed') THEN
+        CASE (va.lesson_num_in_course % 12)
+            WHEN 0 THEN 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800&h=600&fit=crop'
+            WHEN 1 THEN 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&h=600&fit=crop'
+            WHEN 2 THEN 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=600&fit=crop'
+            WHEN 3 THEN 'https://images.unsplash.com/photo-1589903308904-1010c2294adc?w=800&h=600&fit=crop'
+            WHEN 4 THEN 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&h=600&fit=crop'
+            WHEN 5 THEN 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&h=600&fit=crop'
+            WHEN 6 THEN 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=600&fit=crop'
+            WHEN 7 THEN 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop'
+            WHEN 8 THEN 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=600&fit=crop'
+            WHEN 9 THEN 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800&h=600&fit=crop'
+            WHEN 10 THEN 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&h=600&fit=crop'
+            ELSE 'https://images.unsplash.com/photo-1508921340878-bad53cfe2816?w=800&h=600&fit=crop'
+        END
+    ELSE NULL END,
+    CASE WHEN va.content_type IN ('video', 'mixed') THEN true ELSE false END,
+    CASE WHEN va.content_type IN ('video', 'mixed') THEN ARRAY['en', 'vi'] ELSE NULL END,
+    1
+FROM video_assignments va;
 
 -- ============================================
--- 5. COURSE_CATEGORY_MAPPING
+-- 5. LESSON_MATERIALS (Detailed & Diverse)
+-- ============================================
+-- Additional learning materials: PDFs, documents, worksheets, etc.
+
+WITH lesson_material_data AS (
+    SELECT 
+        l.id as lesson_id,
+        l.content_type,
+        l.title as lesson_title,
+        mat_num,
+        -- Diverse material titles based on lesson content and skill type
+        CASE 
+            WHEN l.content_type = 'video' THEN
+                CASE mat_num
+                    WHEN 1 THEN (ARRAY['Video Transcript', 'Complete Transcript PDF', 'Full Transcript Document', 'Lesson Transcript'])[1 + (hashtext(l.id::text || '1') % 4)]
+                    WHEN 2 THEN (ARRAY['Practice Exercises', 'Supplementary Exercises', 'Additional Practice PDF', 'Extra Exercises'])[1 + (hashtext(l.id::text || '2') % 4)]
+                    WHEN 3 THEN (ARRAY['Key Points Summary', 'Lesson Summary PDF', 'Important Points Document', 'Summary Notes'])[1 + (hashtext(l.id::text || '3') % 4)]
+                    WHEN 4 THEN (ARRAY['Vocabulary List', 'Word List PDF', 'Key Vocabulary Document', 'Vocabulary Sheet'])[1 + (hashtext(l.id::text || '4') % 4)]
+                    ELSE (ARRAY['Study Guide', 'Reference Guide PDF', 'Learning Guide Document', 'Guide Material'])[1 + (hashtext(l.id::text || '5') % 4)]
+                END
+            WHEN l.content_type = 'article' THEN
+                CASE mat_num
+                    WHEN 1 THEN (ARRAY['Reading Comprehension Questions', 'Practice Questions PDF', 'Question Set Document', 'Comprehension Exercises'])[1 + (hashtext(l.id::text || '1') % 4)]
+                    WHEN 2 THEN (ARRAY['Vocabulary Worksheet', 'Vocabulary Practice PDF', 'Word Worksheet Document', 'Vocab Practice Sheet'])[1 + (hashtext(l.id::text || '2') % 4)]
+                    WHEN 3 THEN (ARRAY['Key Concepts Summary', 'Concept Summary PDF', 'Main Ideas Document', 'Concepts Summary'])[1 + (hashtext(l.id::text || '3') % 4)]
+                    ELSE (ARRAY['Additional Reading', 'Extended Reading PDF', 'Further Reading Document', 'Reading Extension'])[1 + (hashtext(l.id::text || '4') % 4)]
+                END
+            ELSE -- Mixed lessons
+                CASE mat_num
+                    WHEN 1 THEN (ARRAY['Complete Lesson Package', 'Full Lesson Materials', 'All Resources ZIP', 'Complete Package'])[1 + (hashtext(l.id::text || '1') % 4)]
+                    WHEN 2 THEN (ARRAY['Practice Materials', 'Practice Pack PDF', 'Practice Documents ZIP', 'Practice Resources'])[1 + (hashtext(l.id::text || '2') % 4)]
+                    WHEN 3 THEN (ARRAY['Study Notes', 'Notes PDF', 'Study Notes Document', 'Learning Notes'])[1 + (hashtext(l.id::text || '3') % 4)]
+                    WHEN 4 THEN (ARRAY['Assessment Quiz', 'Quiz PDF', 'Assessment Document', 'Quiz Material'])[1 + (hashtext(l.id::text || '4') % 4)]
+                    ELSE (ARRAY['Supplementary Resources', 'Extra Resources ZIP', 'Additional Materials', 'More Resources'])[1 + (hashtext(l.id::text || '5') % 4)]
+                END
+        END as material_title,
+        -- Detailed descriptions for materials
+        CASE 
+            WHEN l.content_type = 'video' THEN
+                CASE mat_num
+                    WHEN 1 THEN 'Complete transcript of the video lesson with timestamps. Perfect for reviewing key points, practicing pronunciation, and understanding the content in detail. Includes all dialogue and important information.'
+                    WHEN 2 THEN 'Supplementary practice exercises related to the video lesson. These exercises reinforce the concepts covered in the video and provide additional opportunities to practice and improve your skills.'
+                    WHEN 3 THEN 'Comprehensive summary of key points and important information from the video lesson. Use this document to review main concepts, strategies, and tips without rewatching the entire video.'
+                    WHEN 4 THEN 'Essential vocabulary list extracted from the video lesson. Includes definitions, example sentences, and usage notes. Perfect for building your vocabulary and understanding key terms.'
+                    ELSE 'Complete study guide covering all aspects of the video lesson. Includes summaries, exercises, vocabulary, and additional resources to maximize your learning experience.'
+                END
+            WHEN l.content_type = 'article' THEN
+                CASE mat_num
+                    WHEN 1 THEN 'Comprehensive reading comprehension questions designed to test your understanding of the article. Includes multiple question types, answer keys, and detailed explanations for each answer.'
+                    WHEN 2 THEN 'Vocabulary worksheet focusing on key words and phrases from the article. Includes matching exercises, fill-in-the-blank activities, and context-based questions to reinforce vocabulary learning.'
+                    WHEN 3 THEN 'Detailed summary of key concepts, main ideas, and important points from the article. Helps you consolidate your understanding and remember essential information for future reference.'
+                    ELSE 'Additional reading materials and resources related to the article topic. Expand your knowledge and explore related topics with these carefully selected supplementary materials.'
+                END
+            ELSE
+                CASE mat_num
+                    WHEN 1 THEN 'Complete package containing all lesson materials including transcripts, exercises, summaries, and additional resources. Everything you need for comprehensive study in one convenient download.'
+                    WHEN 2 THEN 'Practice materials pack with various exercises, worksheets, and activities related to the lesson content. Perfect for hands-on practice and skill reinforcement.'
+                    WHEN 3 THEN 'Comprehensive study notes covering all aspects of the lesson. Includes key points, strategies, examples, and tips to help you master the content effectively.'
+                    WHEN 4 THEN 'Assessment quiz to test your understanding of the lesson content. Includes various question types and provides immediate feedback on your performance.'
+                    ELSE 'Supplementary resources including additional reading, exercises, and reference materials. Perfect for students who want to go beyond the basic lesson content.'
+                END
+        END as material_description,
+        -- Diverse file types
+        CASE (hashtext(l.id::text || mat_num::text) % 6)
+            WHEN 0 THEN 'pdf'
+            WHEN 1 THEN 'doc'
+            WHEN 2 THEN 'docx'
+            WHEN 3 THEN 'ppt'
+            WHEN 4 THEN 'zip'
+            ELSE 'xlsx'
+        END as file_type
+    FROM lessons l
+    CROSS JOIN generate_series(1, 
+        CASE l.content_type
+            WHEN 'video' THEN (CASE WHEN random() > 0.3 THEN 2 ELSE 3 END)::INTEGER  -- 2-3 materials for video lessons
+            WHEN 'article' THEN (CASE WHEN random() > 0.2 THEN 2 ELSE 3 END)::INTEGER  -- 2-3 materials for article lessons
+            ELSE (CASE WHEN random() > 0.25 THEN 3 ELSE 4 END)::INTEGER  -- 3-4 materials for mixed lessons
+        END
+    ) mat_num
+    WHERE l.content_type IN ('video', 'article', 'mixed')
+        AND random() > 
+            CASE l.content_type
+                WHEN 'video' THEN 0.3  -- 70% of video lessons have materials
+                WHEN 'article' THEN 0.2 -- 80% of article lessons have materials
+                ELSE 0.25               -- 75% of mixed lessons have materials
+            END
+)
+INSERT INTO lesson_materials (
+    id, lesson_id, title, description, file_type, file_url, file_size_bytes,
+    display_order, total_downloads
+)
+SELECT 
+    uuid_generate_v4(),
+    lmd.lesson_id,
+    COALESCE(lmd.material_title, 'Lesson Material ' || lmd.mat_num::text) as title,
+    lmd.material_description,
+    lmd.file_type,
+    -- Realistic file URLs
+    'https://ielts-learning-platform.s3.amazonaws.com/materials/' || lmd.lesson_id::text || '_' || 
+    CASE lmd.file_type
+        WHEN 'pdf' THEN 'material_' || lmd.mat_num::text || '.pdf'
+        WHEN 'doc' THEN 'material_' || lmd.mat_num::text || '.doc'
+        WHEN 'docx' THEN 'material_' || lmd.mat_num::text || '.docx'
+        WHEN 'ppt' THEN 'presentation_' || lmd.mat_num::text || '.ppt'
+        WHEN 'zip' THEN 'package_' || lmd.mat_num::text || '.zip'
+        ELSE 'worksheet_' || lmd.mat_num::text || '.xlsx'
+    END,
+    -- Realistic file sizes (in bytes)
+    CASE lmd.file_type
+        WHEN 'pdf' THEN (random() * 2000000 + 500000)::BIGINT  -- 500KB to 2.5MB
+        WHEN 'doc' THEN (random() * 1500000 + 300000)::BIGINT   -- 300KB to 1.8MB
+        WHEN 'docx' THEN (random() * 2000000 + 400000)::BIGINT   -- 400KB to 2.4MB
+        WHEN 'ppt' THEN (random() * 5000000 + 1000000)::BIGINT  -- 1MB to 6MB
+        WHEN 'zip' THEN (random() * 10000000 + 2000000)::BIGINT -- 2MB to 12MB
+        ELSE (random() * 1000000 + 200000)::BIGINT          -- 200KB to 1.2MB
+    END,
+    lmd.mat_num,
+    (random() * 500 + 10)::INTEGER -- 10 to 510 downloads
+FROM lesson_material_data lmd;
+
+-- ============================================
+-- 6. VIDEO_SUBTITLES (Detailed & Diverse)
+-- ============================================
+-- Subtitle files for lesson videos in multiple languages
+
+INSERT INTO video_subtitles (
+    id, video_id, language, subtitle_url, format, is_default
+)
+WITH video_langs AS (
+    SELECT 
+        lv.id as video_id,
+        lang.lang,
+        row_number() OVER (PARTITION BY lv.id ORDER BY lang.priority) as lang_order
+    FROM lesson_videos lv
+    CROSS JOIN (
+        VALUES 
+            ('vi', 1),  -- Vietnamese - highest priority
+            ('en', 2),  -- English
+            ('zh', 3),  -- Chinese
+            ('ko', 4)   -- Korean
+    ) AS lang(lang, priority)
+    WHERE 
+        (lang.lang = 'vi' AND random() > 0.0) OR  -- Vietnamese for all videos
+        (lang.lang = 'en' AND random() > 0.1) OR  -- English for 90% of videos
+        (lang.lang = 'zh' AND random() > 0.7) OR  -- Chinese for 30% of videos
+        (lang.lang = 'ko' AND random() > 0.8)    -- Korean for 20% of videos
+)
+SELECT 
+    uuid_generate_v4(),
+    vl.video_id,
+    vl.lang,
+    -- Realistic subtitle URLs
+    'https://ielts-learning-platform.s3.amazonaws.com/subtitles/' || vl.video_id::text || '_' || vl.lang || 
+    CASE (random() * 2)::INTEGER
+        WHEN 0 THEN '.vtt'
+        WHEN 1 THEN '.srt'
+        ELSE '.vtt'
+    END,
+    CASE (random() * 2)::INTEGER
+        WHEN 0 THEN 'vtt'
+        WHEN 1 THEN 'srt'
+        ELSE 'vtt'
+    END,
+    CASE WHEN vl.lang_order = 1 THEN true ELSE false END -- First language is default
+FROM video_langs vl;
+
+-- ============================================
+-- 7. COURSE_CATEGORY_MAPPING
 -- ============================================
 
 INSERT INTO course_category_mapping (course_id, category_id)
@@ -1002,12 +1479,15 @@ SET
     ),
     -- Calculate duration_hours from ALL lesson durations (video + article + mixed)
     -- This represents the TOTAL study time, not just video watching time
+    -- Add variation based on course characteristics to avoid identical durations
     duration_hours = ROUND(
         (
             SELECT COALESCE(SUM(l.duration_minutes), 0) / 60.0
             FROM lessons l
             WHERE l.course_id = c.id AND l.duration_minutes IS NOT NULL
-        ),
+        ) * 
+        -- Add variation: ±5% based on course hash to create diversity
+        (1.0 + (ABS(hashtext(c.id::text)::bigint % 11) - 5) * 0.01),
         2
     ),
     -- Add meta fields if missing
@@ -1028,5 +1508,7 @@ SELECT
     (SELECT COUNT(*) FROM modules) as total_modules,
     (SELECT COUNT(*) FROM lessons) as total_lessons,
     (SELECT COUNT(*) FROM lesson_videos) as total_videos,
+    (SELECT COUNT(*) FROM lesson_materials) as total_materials,
+    (SELECT COUNT(*) FROM video_subtitles) as total_subtitles,
     (SELECT COUNT(*) FROM course_category_mapping) as total_category_mappings;
 

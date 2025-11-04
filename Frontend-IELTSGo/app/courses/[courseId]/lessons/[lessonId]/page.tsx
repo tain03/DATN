@@ -24,6 +24,7 @@ import {
   PenTool,
   Target,
   Loader2,
+  Layers,
 } from "lucide-react"
 import { PageLoading } from "@/components/ui/page-loading"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -117,6 +118,15 @@ export default function LessonPlayerPage() {
   // Check if this is a YouTube video
   const isYouTube = videos.length > 0 && videos[0]?.video_provider?.toLowerCase() === 'youtube' && videos[0]?.video_id
   const youtubeVideoId = isYouTube ? videos[0].video_id : ''
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('[Lesson Player] Render - videos:', videos)
+    console.log('[Lesson Player] Render - isYouTube:', isYouTube)
+    console.log('[Lesson Player] Render - youtubeVideoId:', youtubeVideoId)
+    console.log('[Lesson Player] Render - lesson content_type:', lesson?.content_type)
+    console.log('[Lesson Player] Render - progressLoaded:', progressLoaded)
+  }, [videos, isYouTube, youtubeVideoId, lesson?.content_type, progressLoaded])
 
   // ✅ Memoize onProgressUpdate để tránh re-render loop
   const handleProgressUpdate = useCallback((data: {
@@ -168,8 +178,14 @@ export default function LessonPlayerPage() {
         // Fix: getLessonById only takes lessonId, not courseId
         const lessonData = await coursesApi.getLessonById(params.lessonId as string)
         
+        console.log('[Lesson Player] Lesson data:', lessonData)
+        console.log('[Lesson Player] Videos:', lessonData.videos)
+        console.log('[Lesson Player] Lesson content_type:', lessonData.lesson?.content_type)
+        
         setLesson(lessonData.lesson)
         setVideos(lessonData.videos || [])
+        
+        console.log('[Lesson Player] Videos set:', lessonData.videos || [])
 
         // ✅ Load last position để resume watching (BEFORE rendering player)
         try {
@@ -511,18 +527,18 @@ export default function LessonPlayerPage() {
       <PageContainer className="py-6">
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Video Content - Show if videos exist, regardless of content_type */}
-            {videos.length > 0 && (
+            {/* Video Content - Show if videos exist OR if lesson is video/mixed type */}
+            {(videos.length > 0 || (lesson && (lesson.content_type === 'video' || lesson.content_type === 'mixed'))) && (
               <Card className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="relative bg-black aspect-video">
-                    {videos[0]?.video_provider?.toLowerCase() === 'youtube' && videos[0]?.video_id ? (
+                    {videos.length > 0 && videos[0]?.video_provider?.toLowerCase() === 'youtube' && videos[0]?.video_id ? (
                       /* YouTube player container - controlled by useYouTubeProgress hook */
                       <div 
                         ref={youtubeProgress.containerRef}
                         className="absolute inset-0 w-full h-full"
                       />
-                    ) : videos[0]?.video_url ? (
+                    ) : videos.length > 0 && videos[0]?.video_url ? (
                       <video
                         ref={videoRef}
                         src={videos[0].video_url}
@@ -532,7 +548,12 @@ export default function LessonPlayerPage() {
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-white">
-                        <Loader2 className="w-8 h-8 animate-spin" />
+                        <div className="text-center">
+                          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            {videos.length === 0 ? 'Đang tải video...' : 'Không thể tải video'}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -543,9 +564,11 @@ export default function LessonPlayerPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-xl mb-2">{lesson.title}</CardTitle>
-                      {lesson.description && (
+                      {/* Don't show description preview for mixed lessons - will show full HTML below */}
+                      {lesson.description && 
+                       !(lesson.content_type === "mixed" || lesson.contentType === "MIXED") && (
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          {lesson.description}
+                          {lesson.description.replace(/<[^>]*>/g, '').substring(0, 150)}...
                         </p>
                       )}
                     </div>
@@ -597,9 +620,25 @@ export default function LessonPlayerPage() {
                   <CardTitle>{lesson.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose prose-sm max-w-none">
-                    <p>{lesson.description}</p>
-                  </div>
+                  <div 
+                    className="prose prose-sm md:prose-base max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: lesson.description || '' }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Mixed Content - Show detailed description after video */}
+            {(lesson.content_type === "mixed" || lesson.contentType === "MIXED") && videos.length > 0 && lesson.description && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('lesson_content')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div 
+                    className="prose prose-sm md:prose-base max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: lesson.description || '' }}
+                  />
                 </CardContent>
               </Card>
             )}
@@ -724,6 +763,19 @@ export default function LessonPlayerPage() {
                                         <FileText className="w-3 h-3" />
                                         {t('article')}
                                       </span>
+                                    )}
+                                    {contentType === "mixed" && (
+                                      <>
+                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                          <Layers className="w-3 h-3" />
+                                          {t('mixed')}
+                                        </span>
+                                        {durationSeconds > 0 && (
+                                          <span className="text-xs text-muted-foreground">
+                                            • {formatDuration(durationSeconds)}
+                                          </span>
+                                        )}
+                                      </>
                                     )}
                                   </div>
                                 </div>

@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { Users, Star, BookOpen, PlayCircle, FileText, CheckCircle, Loader2, Target } from "lucide-react"
+import { Users, Star, BookOpen, PlayCircle, FileText, CheckCircle, Loader2, Target, Layers } from "lucide-react"
 import { coursesApi } from "@/lib/api/courses"
 import { useAuth } from "@/lib/contexts/auth-context"
 import type { Course, Module, LessonProgress } from "@/types"
@@ -180,6 +180,8 @@ export default function CourseDetailPage() {
     video: PlayCircle,
     ARTICLE: FileText,
     article: FileText,
+    MIXED: Layers,
+    mixed: Layers,
     QUIZ: CheckCircle,
     quiz: CheckCircle,
     exercise: CheckCircle,

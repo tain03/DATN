@@ -33,37 +33,26 @@ def update_seed_file(file_path: str, durations: Dict[str, int]) -> bool:
     
     original_content = content
     
-    # Find all video IDs in the file
-    video_id_pattern = r"'([a-zA-Z0-9_-]{11})'"
-    video_ids = set(re.findall(video_id_pattern, content))
+    # Generate VALUES clause from JSON durations
+    values_lines = []
+    for video_id, duration in sorted(durations.items()):
+        values_lines.append(f"                        ('{video_id}', {duration})")
     
-    if not video_ids:
-        return False
+    values_clause = ',\n'.join(values_lines)
     
-    # Build CASE statement for all video IDs found
-    case_statements = []
-    for video_id in sorted(video_ids):
-        if video_id in durations:
-            duration = durations[video_id]
-            case_statements.append(f"            WHEN '{video_id}' THEN {duration}")
+    # Pattern to match VALUES clause in lesson_videos INSERT
+    # Match: SELECT video_id, duration_seconds FROM (VALUES ... ) AS duration_map
+    pattern = r"(SELECT duration_seconds FROM \(\s+SELECT video_id, duration_seconds FROM \(VALUES\s+)(.*?)(\s+\) AS duration_map)"
     
-    if not case_statements:
-        return False
+    def replace_values(match):
+        return match.group(1) + values_clause + match.group(3)
     
-    # Pattern to match duration calculation in lesson_videos
-    duration_pattern = r"(CASE WHEN l\.content_type = 'video' THEN\s+-- Use duration from YouTube API.*?)(CASE\s+.*?ELSE l\.duration_minutes \* 60.*?END)(.*?ELSE NULL END)"
+    new_content = re.sub(pattern, replace_values, content, flags=re.DOTALL)
     
-    replacement = f"""\\1
-        CASE 
-{chr(10).join(case_statements)}
-            ELSE l.duration_minutes * 60 -- Fallback: use calculated duration
-        END\\3"""
-    
-    content = re.sub(duration_pattern, replacement, content, flags=re.DOTALL)
-    
-    if content != original_content:
+    if new_content != original_content:
         with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
+            f.write(new_content)
+        print(f"   Updated VALUES clause with {len(durations)} durations")
         return True
     
     return False

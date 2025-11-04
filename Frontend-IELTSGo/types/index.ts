@@ -193,7 +193,7 @@ export interface Lesson {
   course_id: string
   title: string
   description?: string
-  content_type: 'video' | 'article' | 'quiz'  // UPDATED: Removed 'exercise'
+  content_type: 'video' | 'article' | 'mixed' | 'quiz'  // UPDATED: Added 'mixed', removed 'exercise'
   duration_minutes?: number
   display_order: number
   is_free: boolean
@@ -206,7 +206,7 @@ export interface Lesson {
 
   // Legacy support
   moduleId?: string
-  contentType?: "VIDEO" | "ARTICLE" | "QUIZ"
+  contentType?: "VIDEO" | "ARTICLE" | "MIXED" | "QUIZ"
   contentUrl?: string
   duration?: number
   order?: number
