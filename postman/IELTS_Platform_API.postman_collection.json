@@ -5672,10 +5672,23 @@
                       "pm.test('Success true', function() { pm.expect(pm.response.json().success).to.be.true; });",
                       "pm.test('Has exercises array', function() { pm.expect(pm.response.json().data.exercises).to.be.an('array'); });",
                       "",
+                      "// Verify new fields in exercise response",
                       "const exercises = pm.response.json().data.exercises;",
                       "if (exercises.length > 0) {",
                       "    pm.environment.set('test_exercise_id', exercises[0].id);",
                       "    console.log('Saved exercise ID:', exercises[0].id);",
+                      "    ",
+                      "    // Check for ielts_test_type field (for Reading exercises)",
+                      "    const exercise = exercises[0];",
+                      "    if (exercise.skill_type === 'reading') {",
+                      "        console.log('Reading exercise - ielts_test_type:', exercise.ielts_test_type || 'null');",
+                      "    }",
+                      "    ",
+                      "    // Verify average_score is percentage (0-100)",
+                      "    if (exercise.average_score !== null && exercise.average_score !== undefined) {",
+                      "        pm.expect(exercise.average_score).to.be.at.least(0);",
+                      "        pm.expect(exercise.average_score).to.be.at.most(100);",
+                      "    }",
                       "}"
                     ]
                   }
@@ -5734,7 +5747,7 @@
                     }
                   ]
                 },
-                "description": "Browse exercises with filters (no auth required)"
+                "description": "Browse exercises with filters (no auth required). Response includes field 'ielts_test_type' for Reading exercises (academic or general_training). 'average_score' is percentage (0-100)."
               }
             },
             {
@@ -5746,7 +5759,33 @@
                     "type": "text/javascript",
                     "exec": [
                       "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
-                      "pm.test('Has sections', function() { pm.expect(pm.response.json().data.sections).to.be.an('array'); });"
+                      "pm.test('Has sections', function() { pm.expect(pm.response.json().data.sections).to.be.an('array'); });",
+                      "",
+                      "// Verify exercise fields including ielts_test_type",
+                      "const exercise = pm.response.json().data.exercise;",
+                      "pm.test('Exercise has required fields', function() {",
+                      "    pm.expect(exercise).to.have.property('id');",
+                      "    pm.expect(exercise).to.have.property('title');",
+                      "    pm.expect(exercise).to.have.property('skill_type');",
+                      "    pm.expect(exercise).to.have.property('average_score');",
+                      "    pm.expect(exercise).to.have.property('total_attempts');",
+                      "});",
+                      "",
+                      "// Check ielts_test_type for Reading exercises",
+                      "if (exercise.skill_type === 'reading') {",
+                      "    console.log('Reading exercise - ielts_test_type:', exercise.ielts_test_type || 'null (may need migration)');",
+                      "    if (exercise.ielts_test_type) {",
+                      "        pm.expect(exercise.ielts_test_type).to.be.oneOf(['academic', 'general_training']);",
+                      "    }",
+                      "}",
+                      "",
+                      "// Verify average_score is percentage (0-100)",
+                      "if (exercise.average_score !== null && exercise.average_score !== undefined) {",
+                      "    pm.test('Average score is valid percentage', function() {",
+                      "        pm.expect(exercise.average_score).to.be.at.least(0);",
+                      "        pm.expect(exercise.average_score).to.be.at.most(100);",
+                      "    });",
+                      "}"
                     ]
                   }
                 }
@@ -5769,7 +5808,7 @@
                     "{{test_exercise_id}}"
                   ]
                 },
-                "description": "Get exercise with sections and questions"
+                "description": "Get exercise with sections and questions. Response includes field 'ielts_test_type' for Reading exercises (academic or general_training). 'average_score' is percentage (0-100)."
               }
             }
           ]
@@ -5822,6 +5861,21 @@
             },
             {
               "name": "Submit Answers",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                      "pm.test('Answers submitted', function() {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.be.true;",
+                      "});"
+                    ]
+                  }
+                }
+              ],
               "request": {
                 "method": "PUT",
                 "header": [
@@ -5847,11 +5901,128 @@
                     "answers"
                   ]
                 },
-                "description": "Submit answers for an attempt. Auto-grades answers (multiple choice checks is_correct flag, fill-in-blank uses case-insensitive comparison with answer_variations). Calculates band_score (0-9 IELTS scale) and marks attempt as completed."
+                "description": "Submit answers for an attempt. Auto-grades answers (multiple choice checks is_correct flag, fill-in-blank uses case-insensitive comparison with answer_variations). Calculates band_score (0-9 IELTS scale) using official IELTS conversion tables. For Reading exercises, uses correct conversion table based on ielts_test_type (academic vs general_training). Marks attempt as completed."
+              }
+            },
+            {
+              "name": "Complete Submission",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                      "pm.test('Submission completed', function() {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.be.true;",
+                      "    const submission = jsonData.data;",
+                      "    ",
+                      "    // Verify submission fields",
+                      "    pm.expect(submission).to.have.property('id');",
+                      "    pm.expect(submission).to.have.property('status');",
+                      "    pm.expect(submission.status).to.equal('completed');",
+                      "    ",
+                      "    // Verify band_score is in range 0-9",
+                      "    if (submission.band_score !== null && submission.band_score !== undefined) {",
+                      "        pm.expect(submission.band_score).to.be.at.least(0);",
+                      "        pm.expect(submission.band_score).to.be.at.most(9);",
+                      "        console.log('Band Score:', submission.band_score);",
+                      "    }",
+                      "    ",
+                      "    // Verify score is percentage (0-100)",
+                      "    if (submission.score !== null && submission.score !== undefined) {",
+                      "        pm.expect(submission.score).to.be.at.least(0);",
+                      "        pm.expect(submission.score).to.be.at.most(100);",
+                      "        console.log('Score (percentage):', submission.score);",
+                      "    }",
+                      "    ",
+                      "    console.log('Submission completed:', submission.id);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"total_time_spent_seconds\": 1800\n}"
+                },
+                "url": {
+                  "raw": "{{exercise_service_url}}/api/v1/submissions/{{test_submission_id}}/complete",
+                  "host": [
+                    "{{exercise_service_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "submissions",
+                    "{{test_submission_id}}",
+                    "complete"
+                  ]
+                },
+                "description": "Complete a submission. Calculates final band_score (0-9) using official IELTS conversion tables. For Reading exercises, uses correct conversion table based on ielts_test_type (academic vs general_training). Updates statistics and sends notifications. Response includes: submission with band_score, score (percentage 0-100), correct_answers, total_questions."
               }
             },
             {
               "name": "Get Submission Result",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                      "pm.test('Result retrieved', function() {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.be.true;",
+                      "    const result = jsonData.data;",
+                      "    ",
+                      "    // Verify structure",
+                      "    pm.expect(result).to.have.property('submission');",
+                      "    pm.expect(result).to.have.property('exercise');",
+                      "    pm.expect(result).to.have.property('performance');",
+                      "    ",
+                      "    // Verify performance stats",
+                      "    const perf = result.performance;",
+                      "    if (perf.band_score !== null && perf.band_score !== undefined) {",
+                      "        pm.expect(perf.band_score).to.be.at.least(0);",
+                      "        pm.expect(perf.band_score).to.be.at.most(9);",
+                      "        console.log('Band Score:', perf.band_score);",
+                      "    }",
+                      "    ",
+                      "    if (perf.percentage !== null && perf.percentage !== undefined) {",
+                      "        pm.expect(perf.percentage).to.be.at.least(0);",
+                      "        pm.expect(perf.percentage).to.be.at.most(100);",
+                      "        console.log('Percentage:', perf.percentage);",
+                      "    }",
+                      "    ",
+                      "    // Verify exercise ielts_test_type for Reading",
+                      "    const exercise = result.exercise;",
+                      "    if (exercise.skill_type === 'reading') {",
+                      "        console.log('Reading exercise - ielts_test_type:', exercise.ielts_test_type || 'null');",
+                      "        if (exercise.ielts_test_type) {",
+                      "            pm.expect(exercise.ielts_test_type).to.be.oneOf(['academic', 'general_training']);",
+                      "        }",
+                      "    }",
+                      "    ",
+                      "    // Verify average_score is percentage",
+                      "    if (exercise.average_score !== null && exercise.average_score !== undefined) {",
+                      "        pm.expect(exercise.average_score).to.be.at.least(0);",
+                      "        pm.expect(exercise.average_score).to.be.at.most(100);",
+                      "    }",
+                      "});"
+                    ]
+                  }
+                }
+              ],
               "request": {
                 "method": "GET",
                 "header": [],
@@ -5868,7 +6039,7 @@
                     "result"
                   ]
                 },
-                "description": "Get detailed results for an attempt including: submission data (attempt_number, band_score, status), exercise info, all answers with questions, correct answers, and performance stats (accuracy, band_score, time spent)."
+                "description": "Get detailed results for an attempt including: submission data (attempt_number, band_score 0-9, status), exercise info (with ielts_test_type for Reading), all answers with questions, correct answers, and performance stats (accuracy, band_score 0-9, percentage 0-100, time spent). 'band_score' uses official IELTS conversion tables. 'average_score' is percentage (0-100)."
               }
             },
             {
@@ -5898,7 +6069,7 @@
                     }
                   ]
                 },
-                "description": "Get user's attempt history with pagination. Shows all attempts with attempt_number, band_score, status, and exercise details."
+                "description": "Get user's attempt history with pagination. Shows all attempts with attempt_number, band_score (0-9), status, and exercise details. Response includes field 'ielts_test_type' for Reading exercises."
               },
               "event": [
                 {
@@ -5950,6 +6121,14 @@
                       "    const exercise = pm.response.json().data;",
                       "    pm.environment.set('test_exercise_id', exercise.id);",
                       "    console.log('Created exercise:', exercise.id);",
+                      "    ",
+                      "    // Verify ielts_test_type for Reading exercises",
+                      "    if (exercise.skill_type === 'reading') {",
+                      "        console.log('Reading exercise - ielts_test_type:', exercise.ielts_test_type || 'null');",
+                      "        if (exercise.ielts_test_type) {",
+                      "            pm.expect(exercise.ielts_test_type).to.be.oneOf(['academic', 'general_training']);",
+                      "        }",
+                      "    }",
                       "}"
                     ]
                   }
@@ -5965,7 +6144,12 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"IELTS Listening Practice Test 1\",\n  \"slug\": \"ielts-listening-practice-test-1\",\n  \"description\": \"Complete IELTS Listening practice test with 40 questions\",\n  \"exercise_type\": \"practice\",\n  \"skill_type\": \"listening\",\n  \"difficulty\": \"medium\",\n  \"ielts_level\": \"6.0-7.0\",\n  \"time_limit_minutes\": 40,\n  \"audio_url\": \"https://example.com/audio/listening-test-1.mp3\",\n  \"audio_duration_seconds\": 2400,\n  \"passing_score\": 60,\n  \"is_free\": true\n}"
+                  "raw": "{\n  \"title\": \"IELTS Listening Practice Test 1\",\n  \"slug\": \"ielts-listening-practice-test-1\",\n  \"description\": \"Complete IELTS Listening practice test with 40 questions\",\n  \"exercise_type\": \"practice\",\n  \"skill_type\": \"listening\",\n  \"difficulty\": \"medium\",\n  \"ielts_level\": \"6.0-7.0\",\n  \"time_limit_minutes\": 40,\n  \"audio_url\": \"https://example.com/audio/listening-test-1.mp3\",\n  \"audio_duration_seconds\": 2400,\n  \"passing_score\": 60,\n  \"is_free\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{exercise_service_url}}/api/v1/admin/exercises",
@@ -5994,7 +6178,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Updated Exercise Title\",\n  \"difficulty\": \"hard\",\n  \"is_published\": true\n}"
+                  "raw": "{\n  \"title\": \"Updated Exercise Title\",\n  \"difficulty\": \"hard\",\n  \"is_published\": true,\n  \"ielts_test_type\": \"academic\"\n}"
                 },
                 "url": {
                   "raw": "{{exercise_service_url}}/api/v1/admin/exercises/{{test_exercise_id}}",
@@ -6009,7 +6193,7 @@
                     "{{test_exercise_id}}"
                   ]
                 },
-                "description": "Update exercise details"
+                "description": "Update exercise details. For Reading exercises, can set 'ielts_test_type' to 'academic' or 'general_training'. Other fields are optional."
               }
             },
             {
