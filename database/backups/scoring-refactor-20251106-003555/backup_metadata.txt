@@ -1,0 +1,14 @@
+Backup Date: 2025-11-06 00:35:56
+Purpose: Scoring System Refactoring - Phase 0
+Branch: feature/scoring-system-refactor
+Commit: 13443478feb6d662b29431c74dc356d53ad5cd0b
+
+Databases backed up:
+- user_db
+- exercise_db
+- ai_db
+
+Restore commands:
+docker exec -i ielts_postgres psql -U ielts_admin -d user_db < user_db_backup.sql
+docker exec -i ielts_postgres psql -U ielts_admin -d exercise_db < exercise_db_backup.sql
+docker exec -i ielts_postgres psql -U ielts_admin -d ai_db < ai_db_backup.sql
