@@ -14,7 +14,7 @@ import (
 )
 
 type UserService struct {
-	repo              *repository.UserRepository
+	repo               *repository.UserRepository
 	notificationClient *client.NotificationServiceClient
 }
 
@@ -29,7 +29,7 @@ func NewUserService(repo *repository.UserRepository, cfg *config.Config) *UserSe
 	} else {
 		log.Printf("⚠️  Notification Service URL not configured, sync will be disabled")
 	}
-	
+
 	return &UserService{
 		repo:               repo,
 		notificationClient: notificationClient,
@@ -109,18 +109,18 @@ func (s *UserService) GetPublicProfile(targetUserID uuid.UUID, requestingUserID 
 
 	// Convert profile to map and add profile_visibility
 	result := map[string]interface{}{
-		"user_id":              profile.UserID.String(),
-		"first_name":           profile.FirstName,
-		"last_name":            profile.LastName,
-		"full_name":            profile.FullName,
-		"avatar_url":           profile.AvatarURL,
-		"cover_image_url":      profile.CoverImageURL,
-		"bio":                  profile.Bio,
-		"target_band_score":    profile.TargetBandScore,
-		"current_level":        profile.CurrentLevel,
-		"profile_visibility":   visibility, // ✅ Include profile_visibility in response
-		"created_at":           profile.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		"updated_at":           profile.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		"user_id":            profile.UserID.String(),
+		"first_name":         profile.FirstName,
+		"last_name":          profile.LastName,
+		"full_name":          profile.FullName,
+		"avatar_url":         profile.AvatarURL,
+		"cover_image_url":    profile.CoverImageURL,
+		"bio":                profile.Bio,
+		"target_band_score":  profile.TargetBandScore,
+		"current_level":      profile.CurrentLevel,
+		"profile_visibility": visibility, // ✅ Include profile_visibility in response
+		"created_at":         profile.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		"updated_at":         profile.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	// Get learning progress for stats
@@ -133,26 +133,26 @@ func (s *UserService) GetPublicProfile(targetUserID uuid.UUID, requestingUserID 
 			level = int(*progress.OverallScore)
 		}
 		result["level"] = level
-		
+
 		// Points: calculate from achievements or use a default
 		// For now, use a simple calculation based on progress
 		points := (progress.TotalLessonsCompleted * 10) + (progress.TotalExercisesCompleted * 5)
 		result["points"] = points
-		
+
 		result["coursesCompleted"] = 0 // TODO: Get from enrollments if needed
 		result["exercisesCompleted"] = int(progress.TotalExercisesCompleted)
-		
+
 		// Calculate study time in seconds (convert from hours)
 		studyTimeSeconds := int(progress.TotalStudyHours * 3600)
 		result["studyTime"] = studyTimeSeconds
 		result["streak"] = int(progress.CurrentStreakDays)
-		
+
 		// Get follow counts
 		followersCount, _ := s.repo.GetFollowersCount(targetUserID)
 		followingCount, _ := s.repo.GetFollowingCount(targetUserID)
 		result["followersCount"] = followersCount
 		result["followingCount"] = followingCount
-		
+
 		// Check if requesting user is following target user
 		isFollowing := false
 		if requestingUserID != nil {
@@ -200,7 +200,6 @@ func (s *UserService) GetProgressStats(userID uuid.UUID) (*models.ProgressStatsR
 	if err != nil {
 		return nil, err
 	}
-
 
 	// Get recent sessions (just 10 most recent for dashboard, page 1)
 	recentSessions, _, err := s.repo.GetRecentSessions(userID, 1, 10)
@@ -305,7 +304,7 @@ func (s *UserService) CreateGoal(userID uuid.UUID, req *models.CreateGoalRequest
 		SkillType:       req.SkillType,
 		StartDate:       time.Now(),
 		EndDate:         endDate,
-		Status:          "not_started",
+		Status:          "active", // Match DB schema: active, completed, cancelled, expired
 		ReminderEnabled: false,
 		ReminderTime:    nil,
 		CreatedAt:       time.Now(),
@@ -571,7 +570,7 @@ func (s *UserService) UpdatePreferences(userID uuid.UUID, req *models.UpdatePref
 	}
 	if req.PushNotifications != nil {
 		prefs.PushNotifications = *req.PushNotifications
-		
+
 		// Sync with Notification Service (source of truth)
 		if s.notificationClient != nil {
 			go func() {
@@ -580,7 +579,7 @@ func (s *UserService) UpdatePreferences(userID uuid.UUID, req *models.UpdatePref
 						log.Printf("[User-Service] PANIC in notification sync: %v", r)
 					}
 				}()
-				
+
 				pushEnabled := *req.PushNotifications
 				err := s.syncPushNotificationPreference(userID, pushEnabled)
 				if err != nil {
@@ -649,16 +648,16 @@ func (s *UserService) syncPushNotificationPreference(userID uuid.UUID, pushEnabl
 	// Update Notification Service preferences using internal endpoint
 	// Map push_notifications → push_enabled and in_app_enabled
 	endpoint := fmt.Sprintf("/api/v1/notifications/internal/preferences/%s", userID.String())
-	
+
 	payload := map[string]interface{}{
-		"push_enabled":  pushEnabled,
+		"push_enabled":   pushEnabled,
 		"in_app_enabled": pushEnabled, // In-app notifications follow the same preference
 	}
 
 	// Retry mechanism with exponential backoff (max 3 retries)
 	maxRetries := 3
 	var lastErr error
-	
+
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		// Use internal API endpoint for service-to-service communication
 		resp, err := s.notificationClient.ServiceClient.Put(endpoint, payload)
@@ -686,13 +685,13 @@ func (s *UserService) syncPushNotificationPreference(userID uuid.UUID, pushEnabl
 		// Non-2xx status code
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		lastErr = fmt.Errorf("Notification Service returned status %d: %s", resp.StatusCode, string(bodyBytes))
-		
+
 		// Don't retry on client errors (4xx)
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			log.Printf("[User-Service] ❌ Client error, not retrying: %v", lastErr)
 			return lastErr
 		}
-		
+
 		// Retry on server errors (5xx)
 		if attempt < maxRetries {
 			backoff := time.Duration(1<<uint(attempt-1)) * time.Second
@@ -817,12 +816,12 @@ func (s *UserService) FollowUser(followerID, followingID uuid.UUID) error {
 		if visibility == "" {
 			visibility = "public" // Default to public
 		}
-		
+
 		// If profile is private, don't allow follow
 		if visibility == "private" {
 			return fmt.Errorf("cannot follow private profile")
 		}
-		
+
 		// If profile is friends-only, check if followingID is following followerID
 		// (one-way friendship: target user must follow requester first)
 		if visibility == "friends" {
@@ -864,13 +863,13 @@ func (s *UserService) FollowUser(followerID, followingID uuid.UUID) error {
 			actionType := "navigate_to_user_profile"
 			notificationErr := s.notificationClient.SendNotification(client.SendNotificationRequest{
 				UserID:     followingID.String(),
-				Title:      "notifications.new_follower_title", // Translation key
+				Title:      "notifications.new_follower_title",   // Translation key
 				Message:    "notifications.new_follower_message", // Translation key
 				Type:       "social",
 				Category:   "info",
 				ActionType: &actionType,
 				ActionData: map[string]interface{}{
-					"user_id": followerID.String(),
+					"user_id":       followerID.String(),
 					"follower_name": followerName, // For template replacement
 				},
 				Priority: "normal",
@@ -913,12 +912,12 @@ func (s *UserService) GetFollowers(userID uuid.UUID, requestingUserID *uuid.UUID
 			if visibility == "" {
 				visibility = "public"
 			}
-			
+
 			// Private profiles: only owner can see followers
 			if visibility == "private" {
 				return nil, 0, fmt.Errorf("followers list is private")
 			}
-			
+
 			// Friends-only: check if userID follows requestingUserID
 			if visibility == "friends" {
 				if requestingUserID == nil {
@@ -931,7 +930,7 @@ func (s *UserService) GetFollowers(userID uuid.UUID, requestingUserID *uuid.UUID
 			}
 		}
 	}
-	
+
 	return s.repo.GetFollowers(userID, page, limit)
 }
 
@@ -947,12 +946,12 @@ func (s *UserService) GetFollowing(userID uuid.UUID, requestingUserID *uuid.UUID
 			if visibility == "" {
 				visibility = "public"
 			}
-			
+
 			// Private profiles: only owner can see following list
 			if visibility == "private" {
 				return nil, 0, fmt.Errorf("following list is private")
 			}
-			
+
 			// Friends-only: check if userID follows requestingUserID
 			if visibility == "friends" {
 				if requestingUserID == nil {
@@ -965,7 +964,7 @@ func (s *UserService) GetFollowing(userID uuid.UUID, requestingUserID *uuid.UUID
 			}
 		}
 	}
-	
+
 	return s.repo.GetFollowing(userID, page, limit)
 }
 
@@ -1119,7 +1118,7 @@ func (s *UserService) UpdateSkillStatistics(userID uuid.UUID, skillType string, 
 		case "speaking":
 			progressUpdates["speaking_score"] = score
 		}
-		
+
 		// Update learning_progress with skill score
 		// This will also trigger overall_score recalculation
 		if len(progressUpdates) > 0 {

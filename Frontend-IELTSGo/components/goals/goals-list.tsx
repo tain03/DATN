@@ -6,7 +6,7 @@ import { GoalCard } from "./goal-card"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslations } from "@/lib/i18n"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent } from "@/components/ui/card"
+import { EmptyState } from "@/components/ui/empty-state"
 import { Target } from "lucide-react"
 
 export function GoalsList() {
@@ -26,11 +26,10 @@ export function GoalsList() {
       const response = await goalsApi.getGoals()
       setGoals(response.goals || [])
     } catch (error: any) {
-      toast({
-        title: tCommon('error'),
-        description: error?.message || t('failed_to_create'),
-        variant: "destructive",
-      })
+      console.error('[GoalsList] Error loading goals:', error)
+      // Don't show error toast for empty goals (might be 404 or similar)
+      // Just set empty array
+      setGoals([])
     } finally {
       setLoading(false)
     }
@@ -87,49 +86,28 @@ export function GoalsList() {
 
   if (goals.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-16">
-          <Target className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">{t('no_goals')}</h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
-            {t('no_goals_description')}
-          </p>
-        </CardContent>
-      </Card>
+      <EmptyState
+        icon={Target}
+        title={t('no_goals') || 'No goals yet'}
+        description={t('no_goals_description') || 'Create your first study goal to start tracking your progress!'}
+      />
     )
   }
 
-  // Group goals by status
-  const notStarted = goals.filter(g => g.status === 'not_started')
-  const inProgress = goals.filter(g => g.status === 'in_progress')
+  // Group goals by status (match DB schema: active, completed, cancelled, expired)
+  const active = goals.filter(g => g.status === 'active')
   const completed = goals.filter(g => g.status === 'completed')
+  const expired = goals.filter(g => g.status === 'expired')
+  const cancelled = goals.filter(g => g.status === 'cancelled')
 
   return (
     <div className="space-y-8">
-      {/* In Progress Goals */}
-      {inProgress.length > 0 && (
+      {/* Active Goals */}
+      {active.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold mb-4">{t('in_progress')}</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('active') || 'Active Goals'}</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {inProgress.map((goal) => (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                onDelete={handleDelete}
-                onComplete={handleComplete}
-                onUpdate={handleUpdate}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Not Started Goals */}
-      {notStarted.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">{t('not_started')}</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {notStarted.map((goal) => (
+            {active.map((goal) => (
               <GoalCard
                 key={goal.id}
                 goal={goal}
@@ -148,6 +126,42 @@ export function GoalsList() {
           <h2 className="text-xl font-semibold mb-4">{t('completed')}</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {completed.map((goal) => (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                onDelete={handleDelete}
+                onComplete={handleComplete}
+                onUpdate={handleUpdate}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Expired Goals */}
+      {expired.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4 text-muted-foreground">{t('expired') || 'Expired Goals'}</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 opacity-60">
+            {expired.map((goal) => (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                onDelete={handleDelete}
+                onComplete={handleComplete}
+                onUpdate={handleUpdate}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cancelled Goals */}
+      {cancelled.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4 text-muted-foreground">{t('cancelled') || 'Cancelled Goals'}</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 opacity-60">
+            {cancelled.map((goal) => (
               <GoalCard
                 key={goal.id}
                 goal={goal}

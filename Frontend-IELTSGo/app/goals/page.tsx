@@ -26,6 +26,12 @@ function GoalsContent() {
   const t = useTranslations('goals')
   const tCommon = useTranslations('common')
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  const handleGoalCreated = () => {
+    // Trigger refresh of goals list
+    setRefreshTrigger(prev => prev + 1)
+  }
 
   return (
     <AppLayout showSidebar={true} showFooter={false} hideNavbar={true} hideTopBar={true}>
@@ -43,7 +49,7 @@ function GoalsContent() {
 
         {/* Goals List */}
         <Suspense fallback={<PageLoading translationKey="loading" />}>
-          <GoalsList />
+          <GoalsList key={refreshTrigger} />
         </Suspense>
 
         {/* Create Goal Dialog */}
@@ -52,6 +58,7 @@ function GoalsContent() {
             <CreateGoalDialog
               open={createDialogOpen}
               onOpenChange={setCreateDialogOpen}
+              onSuccess={handleGoalCreated}
             />
           </Suspense>
         )}

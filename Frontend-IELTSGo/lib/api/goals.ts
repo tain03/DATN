@@ -22,10 +22,11 @@ export interface StudyGoal {
   skill_type?: string
   start_date: string
   end_date: string
-  status: "not_started" | "in_progress" | "completed"
+  status: "active" | "completed" | "cancelled" | "expired" // Match DB schema
   reminder_enabled: boolean
   created_at: string
   updated_at: string
+  completed_at?: string
   // Enriched fields
   completion_percentage?: number
   days_remaining?: number
@@ -39,7 +40,7 @@ export interface CreateGoalRequest {
   target_value: number
   target_unit: string
   skill_type?: string
-  end_date: string // YYYY-MM-DD
+  end_date: string // YYYY-MM-DD - start_date will be auto-set by backend
 }
 
 export interface UpdateGoalRequest {

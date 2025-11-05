@@ -21,49 +21,6 @@ export function CreateGoalDialog({ open, onOpenChange, onSuccess }: CreateGoalDi
   const t = useTranslations('goals')
   const tCommon = useTranslations('common')
   const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState<CreateGoalRequest>({
-    goal_type: "weekly",
-    title: "",
-    description: "",
-    target_value: 10,
-    target_unit: "exercises",
-    skill_type: "",
-    end_date: "",
-  })
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await goalsApi.createGoal(formData)
-      toast({
-        title: t('goal_created'),
-        description: tCommon('success'),
-      })
-      // Reset form
-      setFormData({
-        goal_type: "weekly",
-        title: "",
-        description: "",
-        target_value: 10,
-        target_unit: "exercises",
-        skill_type: "",
-        end_date: "",
-      })
-      onOpenChange(false)
-      onSuccess?.()
-    } catch (error: any) {
-      toast({
-        title: tCommon('error'),
-        description: error?.message || t('failed_to_create'),
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
   // Calculate default end date (7 days from now for weekly, 30 for monthly)
   const getDefaultEndDate = (type: string) => {
     const date = new Date()
@@ -79,9 +36,68 @@ export function CreateGoalDialog({ open, onOpenChange, onSuccess }: CreateGoalDi
     return date.toISOString().split('T')[0]
   }
 
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState<CreateGoalRequest>({
+    goal_type: "weekly",
+    title: "",
+    description: "",
+    target_value: 10,
+    target_unit: "exercises",
+    end_date: getDefaultEndDate("weekly"),
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      // Clean up the data before sending
+      const cleanedData: CreateGoalRequest = {
+        goal_type: formData.goal_type,
+        title: formData.title.trim(),
+        target_value: formData.target_value,
+        target_unit: formData.target_unit.trim(),
+        end_date: formData.end_date,
+      }
+
+      // Only add optional fields if they have values
+      if (formData.description?.trim()) {
+        cleanedData.description = formData.description.trim()
+      }
+      if (formData.skill_type && formData.skill_type !== "all") {
+        cleanedData.skill_type = formData.skill_type
+      }
+
+      console.log('[CreateGoal] Submitting data:', cleanedData)
+      await goalsApi.createGoal(cleanedData)
+      toast({
+        title: t('goal_created'),
+        description: tCommon('success'),
+      })
+      // Reset form
+      setFormData({
+        goal_type: "weekly",
+        title: "",
+        description: "",
+        target_value: 10,
+        target_unit: "exercises",
+        end_date: getDefaultEndDate("weekly"),
+      })
+      onOpenChange(false)
+      onSuccess?.()
+    } catch (error: any) {
+      toast({
+        title: tCommon('error'),
+        description: error?.message || t('failed_to_create'),
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{t('create_goal')}</DialogTitle>
         </DialogHeader>
