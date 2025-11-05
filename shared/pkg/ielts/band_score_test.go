@@ -34,11 +34,11 @@ func TestConvertListeningScore(t *testing.T) {
 		{"0/40 correct", 0, 40, 0.0},
 
 		// Practice tests with different question counts (normalized)
-		{"20/20 correct (100%)", 20, 20, 9.0},   // 40/40 normalized = 9.0
-		{"15/20 correct (75%)", 15, 20, 7.0},    // 30/40 normalized = 7.0
-		{"10/20 correct (50%)", 10, 20, 5.5},    // 20/40 normalized = 5.5
-		{"12/15 correct (80%)", 12, 15, 7.5},    // 32/40 normalized = 7.5
-		{"5/10 correct (50%)", 5, 10, 5.5},      // 20/40 normalized = 5.5
+		{"20/20 correct (100%)", 20, 20, 9.0}, // 40/40 normalized = 9.0
+		{"15/20 correct (75%)", 15, 20, 7.0},  // 30/40 normalized = 7.0
+		{"10/20 correct (50%)", 10, 20, 5.5},  // 20/40 normalized = 5.5
+		{"12/15 correct (80%)", 12, 15, 7.5},  // 32/40 normalized = 7.5
+		{"5/10 correct (50%)", 5, 10, 5.5},    // 20/40 normalized = 5.5
 
 		// Edge cases
 		{"zero total", 5, 0, 0.0},
@@ -86,8 +86,8 @@ func TestConvertReadingScoreAcademic(t *testing.T) {
 		{"0/40 correct", 0, 40, 0.0},
 
 		// Practice tests normalized
-		{"15/20 correct (75%)", 15, 20, 7.0},    // 30/40 normalized
-		{"12/15 correct (80%)", 12, 15, 7.0},    // 32/40 normalized = 7.0
+		{"15/20 correct (75%)", 15, 20, 7.0}, // 30/40 normalized
+		{"12/15 correct (80%)", 12, 15, 7.0}, // 32/40 normalized = 7.0
 	}
 
 	for _, tt := range tests {
@@ -160,7 +160,7 @@ func TestCalculateWritingBand(t *testing.T) {
 		{"Mixed scores 2", 7.0, 6.5, 6.5, 6.0, 6.5}, // 6.5
 		{"Mixed scores 3", 8.0, 7.5, 7.0, 7.5, 7.5}, // 7.5
 		{"Mixed scores 4", 6.0, 6.0, 6.5, 6.5, 6.5}, // 6.25 → 6.5
-		{"High scores", 8.5, 8.0, 8.5, 8.0, 8.5}, // 8.25 → 8.5
+		{"High scores", 8.5, 8.0, 8.5, 8.0, 8.5},    // 8.25 → 8.5
 		{"Low scores", 5.0, 5.0, 5.5, 5.0, 5.0},
 
 		// Edge cases
@@ -195,7 +195,7 @@ func TestCalculateSpeakingBand(t *testing.T) {
 		{"Mixed scores 1", 7.5, 7.0, 7.0, 7.5, 7.5}, // 7.25 → 7.5
 		{"Mixed scores 2", 7.0, 6.5, 7.0, 6.5, 7.0}, // 6.75 → 7.0
 		{"Mixed scores 3", 8.0, 8.0, 7.5, 7.5, 8.0}, // 7.75 → 8.0
-		{"High scores", 8.5, 8.5, 8.0, 8.0, 8.5}, // 8.25 → 8.5
+		{"High scores", 8.5, 8.5, 8.0, 8.0, 8.5},    // 8.25 → 8.5
 		{"Low scores", 5.0, 5.0, 5.5, 5.0, 5.0},
 
 		// Edge cases
@@ -235,8 +235,8 @@ func TestCalculateOverallBand(t *testing.T) {
 
 		// Partial scores (some skills not taken)
 		{"Only L&R", 7.0, 7.0, 0.0, 0.0, 7.0},
-		{"Only W&S", 0.0, 0.0, 7.5, 7.0, 7.5},    // 7.25 → 7.5
-		{"3 skills", 7.0, 6.5, 7.0, 0.0, 7.0},    // 6.83 → 7.0
+		{"Only W&S", 0.0, 0.0, 7.5, 7.0, 7.5}, // 7.25 → 7.5
+		{"3 skills", 7.0, 6.5, 7.0, 0.0, 7.0}, // 6.83 → 7.0
 
 		// Edge cases
 		{"All zeros", 0.0, 0.0, 0.0, 0.0, 0.0},
