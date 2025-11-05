@@ -13,7 +13,7 @@ type Exercise struct {
 	Slug                  string     `json:"slug"`
 	Description           *string    `json:"description,omitempty"`
 	ExerciseType          string     `json:"exercise_type"` // practice, mock_test, full_test, mini_test
-	SkillType             string     `json:"skill_type"`    // listening, reading
+	SkillType             string     `json:"skill_type"`    // listening, reading, writing, speaking
 	IELTSTestType         *string    `json:"ielts_test_type,omitempty"` // academic, general_training (only for Reading)
 	Difficulty            string     `json:"difficulty"`    // easy, medium, hard
 	IELTSLevel            *string    `json:"ielts_level,omitempty"`
@@ -39,6 +39,16 @@ type Exercise struct {
 	PublishedAt           *time.Time `json:"published_at,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 	UpdatedAt             time.Time  `json:"updated_at"`
+}
+
+// IsOfficialTest returns true if this is an official full test
+func (e *Exercise) IsOfficialTest() bool {
+	return e.ExerciseType == "full_test"
+}
+
+// RequiresAIEvaluation returns true if this exercise requires AI evaluation (Writing/Speaking)
+func (e *Exercise) RequiresAIEvaluation() bool {
+	return e.SkillType == "writing" || e.SkillType == "speaking"
 }
 
 // ExerciseSection represents a section within an exercise
@@ -123,6 +133,29 @@ type Submission struct {
 	StartedAt         time.Time  `json:"started_at"`
 	CompletedAt       *time.Time `json:"completed_at,omitempty"`
 	DeviceType        *string    `json:"device_type,omitempty"` // web, android, ios
+	
+	// Writing-specific fields (Phase 4)
+	EssayText     *string `json:"essay_text,omitempty"`
+	WordCount     *int    `json:"word_count,omitempty"`
+	TaskType      *string `json:"task_type,omitempty"`       // task1, task2
+	PromptText    *string `json:"prompt_text,omitempty"`
+	
+	// Speaking-specific fields (Phase 4)
+	AudioURL              *string `json:"audio_url,omitempty"`
+	AudioDurationSeconds  *int    `json:"audio_duration_seconds,omitempty"`
+	TranscriptText        *string `json:"transcript_text,omitempty"`
+	SpeakingPartNumber    *int    `json:"speaking_part_number,omitempty"` // 1, 2, 3
+	
+	// AI Evaluation fields (Phase 4)
+	EvaluationStatus      *string `json:"evaluation_status,omitempty"`       // pending, processing, completed, failed
+	AIEvaluationID        *string `json:"ai_evaluation_id,omitempty"`        // Reference to AI evaluation
+	DetailedScores        *string `json:"detailed_scores,omitempty"`         // JSONB with criteria scores
+	AIFeedback            *string `json:"ai_feedback,omitempty"`             // AI-generated feedback
+	
+	// Test/Practice linking (Phase 4)
+	OfficialTestResultID  *uuid.UUID `json:"official_test_result_id,omitempty"`  // FK to user_db.official_test_results
+	PracticeActivityID    *uuid.UUID `json:"practice_activity_id,omitempty"`     // FK to user_db.practice_activities
+	
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
 }
