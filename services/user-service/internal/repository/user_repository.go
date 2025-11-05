@@ -1752,3 +1752,466 @@ func (r *UserRepository) GetUserRank(userID uuid.UUID) (*models.LeaderboardEntry
 	}
 	return entry, nil
 }
+
+// ============= Official Test Results =============
+
+// CreateOfficialTestResult creates a new official test result (source of truth for band scores)
+func (r *UserRepository) CreateOfficialTestResult(result *models.OfficialTestResult) error {
+	query := `
+		INSERT INTO official_test_results (
+			user_id, test_type, overall_band_score,
+			listening_score, reading_score, writing_score, speaking_score,
+			listening_raw_score, reading_raw_score,
+			test_date, test_duration_minutes, completion_status,
+			test_source, notes
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+		) RETURNING id, created_at, updated_at`
+
+	err := r.db.DB.QueryRow(
+		query,
+		result.UserID,
+		result.TestType,
+		result.OverallBandScore,
+		result.ListeningScore,
+		result.ReadingScore,
+		result.WritingScore,
+		result.SpeakingScore,
+		result.ListeningRawScore,
+		result.ReadingRawScore,
+		result.TestDate,
+		result.TestDurationMinutes,
+		result.CompletionStatus,
+		result.TestSource,
+		result.Notes,
+	).Scan(&result.ID, &result.CreatedAt, &result.UpdatedAt)
+
+	if err != nil {
+		log.Printf("❌ Error creating official test result for user %s: %v", result.UserID, err)
+		return fmt.Errorf("failed to create official test result: %w", err)
+	}
+
+	log.Printf("✅ Created official test result %s for user %s (overall: %.1f)", result.ID, result.UserID, result.OverallBandScore)
+	return nil
+}
+
+// GetUserTestHistory retrieves user's test history with pagination
+func (r *UserRepository) GetUserTestHistory(userID uuid.UUID, skillType *string, page, limit int) ([]models.OfficialTestResult, int, error) {
+	offset := (page - 1) * limit
+
+	// Base query
+	whereClause := "WHERE user_id = $1"
+	args := []interface{}{userID}
+	paramCount := 1
+
+	// Add skill filter if provided
+	if skillType != nil && *skillType != "" {
+		// This would require additional logic if we want to filter by specific skills
+		// For now, we'll just return all tests
+	}
+
+	// Count total records
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM official_test_results %s", whereClause)
+	var totalCount int
+	err := r.db.DB.QueryRow(countQuery, args...).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count test results: %w", err)
+	}
+
+	// Get paginated results
+	query := fmt.Sprintf(`
+		SELECT id, user_id, test_type, overall_band_score,
+			   listening_score, reading_score, writing_score, speaking_score,
+			   listening_raw_score, reading_raw_score,
+			   test_date, test_duration_minutes, completion_status,
+			   test_source, notes, created_at, updated_at
+		FROM official_test_results
+		%s
+		ORDER BY test_date DESC
+		LIMIT $%d OFFSET $%d
+	`, whereClause, paramCount+1, paramCount+2)
+
+	args = append(args, limit, offset)
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get test history: %w", err)
+	}
+	defer rows.Close()
+
+	var results []models.OfficialTestResult
+	for rows.Next() {
+		var result models.OfficialTestResult
+		err := rows.Scan(
+			&result.ID,
+			&result.UserID,
+			&result.TestType,
+			&result.OverallBandScore,
+			&result.ListeningScore,
+			&result.ReadingScore,
+			&result.WritingScore,
+			&result.SpeakingScore,
+			&result.ListeningRawScore,
+			&result.ReadingRawScore,
+			&result.TestDate,
+			&result.TestDurationMinutes,
+			&result.CompletionStatus,
+			&result.TestSource,
+			&result.Notes,
+			&result.CreatedAt,
+			&result.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan test result: %w", err)
+		}
+		results = append(results, result)
+	}
+
+	return results, totalCount, nil
+}
+
+// GetUserTestStatistics retrieves aggregated statistics from official tests
+func (r *UserRepository) GetUserTestStatistics(userID uuid.UUID) (map[string]interface{}, error) {
+	query := `
+		SELECT 
+			COUNT(*) as total_tests,
+			MAX(overall_band_score) as highest_overall_score,
+			AVG(overall_band_score) as average_overall_score,
+			MAX(listening_score) as highest_listening,
+			MAX(reading_score) as highest_reading,
+			MAX(writing_score) as highest_writing,
+			MAX(speaking_score) as highest_speaking,
+			AVG(listening_score) as average_listening,
+			AVG(reading_score) as average_reading,
+			AVG(writing_score) as average_writing,
+			AVG(speaking_score) as average_speaking,
+			MAX(test_date) as most_recent_test_date
+		FROM official_test_results
+		WHERE user_id = $1 AND completion_status = 'completed'
+	`
+
+	stats := make(map[string]interface{})
+	var totalTests int
+	var highestOverall, avgOverall sql.NullFloat64
+	var highestL, highestR, highestW, highestS sql.NullFloat64
+	var avgL, avgR, avgW, avgS sql.NullFloat64
+	var mostRecentTestDate sql.NullTime
+
+	err := r.db.DB.QueryRow(query, userID).Scan(
+		&totalTests,
+		&highestOverall, &avgOverall,
+		&highestL, &highestR, &highestW, &highestS,
+		&avgL, &avgR, &avgW, &avgS,
+		&mostRecentTestDate,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get test statistics: %w", err)
+	}
+
+	stats["total_tests"] = totalTests
+	stats["highest_overall_score"] = highestOverall.Float64
+	stats["average_overall_score"] = avgOverall.Float64
+	stats["highest_listening"] = highestL.Float64
+	stats["highest_reading"] = highestR.Float64
+	stats["highest_writing"] = highestW.Float64
+	stats["highest_speaking"] = highestS.Float64
+	stats["average_listening"] = avgL.Float64
+	stats["average_reading"] = avgR.Float64
+	stats["average_writing"] = avgW.Float64
+	stats["average_speaking"] = avgS.Float64
+	if mostRecentTestDate.Valid {
+		stats["most_recent_test_date"] = mostRecentTestDate.Time
+	}
+
+	return stats, nil
+}
+
+// ============= Practice Activities =============
+
+// CreatePracticeActivity creates a new practice activity record
+func (r *UserRepository) CreatePracticeActivity(activity *models.PracticeActivity) error {
+	query := `
+		INSERT INTO practice_activities (
+			user_id, skill, activity_type,
+			exercise_id, exercise_title,
+			score, max_score, band_score,
+			correct_answers, total_questions, accuracy_percentage,
+			time_spent_seconds, started_at, completed_at,
+			completion_status, ai_evaluated, ai_feedback_summary,
+			difficulty_level, tags, notes
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+			$11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+		) RETURNING id, created_at, updated_at`
+
+	err := r.db.DB.QueryRow(
+		query,
+		activity.UserID,
+		activity.Skill,
+		activity.ActivityType,
+		activity.ExerciseID,
+		activity.ExerciseTitle,
+		activity.Score,
+		activity.MaxScore,
+		activity.BandScore,
+		activity.CorrectAnswers,
+		activity.TotalQuestions,
+		activity.AccuracyPercentage,
+		activity.TimeSpentSeconds,
+		activity.StartedAt,
+		activity.CompletedAt,
+		activity.CompletionStatus,
+		activity.AIEvaluated,
+		activity.AIFeedbackSummary,
+		activity.DifficultyLevel,
+		activity.Tags,
+		activity.Notes,
+	).Scan(&activity.ID, &activity.CreatedAt, &activity.UpdatedAt)
+
+	if err != nil {
+		log.Printf("❌ Error creating practice activity for user %s: %v", activity.UserID, err)
+		return fmt.Errorf("failed to create practice activity: %w", err)
+	}
+
+	log.Printf("✅ Created practice activity %s for user %s (skill: %s, type: %s)",
+		activity.ID, activity.UserID, activity.Skill, activity.ActivityType)
+	return nil
+}
+
+// GetUserPracticeActivities retrieves user's practice activities with pagination
+func (r *UserRepository) GetUserPracticeActivities(userID uuid.UUID, skillType *string, page, limit int) ([]models.PracticeActivity, int, error) {
+	offset := (page - 1) * limit
+
+	// Build WHERE clause
+	whereClause := "WHERE user_id = $1"
+	args := []interface{}{userID}
+	paramCount := 1
+
+	if skillType != nil && *skillType != "" {
+		paramCount++
+		whereClause += fmt.Sprintf(" AND skill = $%d", paramCount)
+		args = append(args, *skillType)
+	}
+
+	// Count total records
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM practice_activities %s", whereClause)
+	var totalCount int
+	err := r.db.DB.QueryRow(countQuery, args...).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count practice activities: %w", err)
+	}
+
+	// Get paginated results
+	query := fmt.Sprintf(`
+		SELECT id, user_id, skill, activity_type,
+			   exercise_id, exercise_title,
+			   score, max_score, band_score,
+			   correct_answers, total_questions, accuracy_percentage,
+			   time_spent_seconds, started_at, completed_at,
+			   completion_status, ai_evaluated, ai_feedback_summary,
+			   difficulty_level, tags, notes,
+			   created_at, updated_at
+		FROM practice_activities
+		%s
+		ORDER BY completed_at DESC NULLS LAST, created_at DESC
+		LIMIT $%d OFFSET $%d
+	`, whereClause, paramCount+1, paramCount+2)
+
+	args = append(args, limit, offset)
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get practice activities: %w", err)
+	}
+	defer rows.Close()
+
+	var activities []models.PracticeActivity
+	for rows.Next() {
+		var activity models.PracticeActivity
+		err := rows.Scan(
+			&activity.ID,
+			&activity.UserID,
+			&activity.Skill,
+			&activity.ActivityType,
+			&activity.ExerciseID,
+			&activity.ExerciseTitle,
+			&activity.Score,
+			&activity.MaxScore,
+			&activity.BandScore,
+			&activity.CorrectAnswers,
+			&activity.TotalQuestions,
+			&activity.AccuracyPercentage,
+			&activity.TimeSpentSeconds,
+			&activity.StartedAt,
+			&activity.CompletedAt,
+			&activity.CompletionStatus,
+			&activity.AIEvaluated,
+			&activity.AIFeedbackSummary,
+			&activity.DifficultyLevel,
+			&activity.Tags,
+			&activity.Notes,
+			&activity.CreatedAt,
+			&activity.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan practice activity: %w", err)
+		}
+		activities = append(activities, activity)
+	}
+
+	return activities, totalCount, nil
+}
+
+// GetUserPracticeStatistics retrieves aggregated statistics from practice activities
+func (r *UserRepository) GetUserPracticeStatistics(userID uuid.UUID, skillType *string) (map[string]interface{}, error) {
+	whereClause := "WHERE user_id = $1 AND completion_status = 'completed'"
+	args := []interface{}{userID}
+
+	if skillType != nil && *skillType != "" {
+		whereClause += " AND skill = $2"
+		args = append(args, *skillType)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT 
+			skill,
+			COUNT(*) as total_activities,
+			AVG(score) as average_score,
+			MAX(score) as best_score,
+			AVG(accuracy_percentage) as average_accuracy,
+			SUM(time_spent_seconds) as total_time_seconds,
+			COUNT(CASE WHEN ai_evaluated = true THEN 1 END) as ai_evaluated_count
+		FROM practice_activities
+		%s
+		GROUP BY skill
+	`, whereClause)
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get practice statistics: %w", err)
+	}
+	defer rows.Close()
+
+	stats := make(map[string]interface{})
+	skillStats := make(map[string]map[string]interface{})
+
+	for rows.Next() {
+		var skill string
+		var totalActivities int
+		var avgScore, bestScore, avgAccuracy sql.NullFloat64
+		var totalTime, aiEvaluatedCount sql.NullInt64
+
+		err := rows.Scan(&skill, &totalActivities, &avgScore, &bestScore, &avgAccuracy, &totalTime, &aiEvaluatedCount)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan practice statistics: %w", err)
+		}
+
+		skillStats[skill] = map[string]interface{}{
+			"total_activities":   totalActivities,
+			"average_score":      avgScore.Float64,
+			"best_score":         bestScore.Float64,
+			"average_accuracy":   avgAccuracy.Float64,
+			"total_time_seconds": totalTime.Int64,
+			"ai_evaluated_count": aiEvaluatedCount.Int64,
+		}
+	}
+
+	stats["by_skill"] = skillStats
+	return stats, nil
+}
+
+// UpdateLearningProgressWithTestScore updates learning_progress with official test scores
+// This should be called after recording an official test result
+func (r *UserRepository) UpdateLearningProgressWithTestScore(
+	userID uuid.UUID,
+	skillType string,
+	bandScore float64,
+	incrementTestCount bool,
+) error {
+	tx, err := r.db.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Build update query dynamically based on skill type
+	var scoreColumn, testCountColumn string
+	switch skillType {
+	case "listening":
+		scoreColumn = "listening_score"
+		testCountColumn = "listening_tests_taken"
+	case "reading":
+		scoreColumn = "reading_score"
+		testCountColumn = "reading_tests_taken"
+	case "writing":
+		scoreColumn = "writing_score"
+		testCountColumn = "writing_tests_taken"
+	case "speaking":
+		scoreColumn = "speaking_score"
+		testCountColumn = "speaking_tests_taken"
+	case "overall":
+		scoreColumn = "overall_score"
+		// No test count for overall
+	default:
+		return fmt.Errorf("invalid skill type: %s", skillType)
+	}
+
+	// Update score and increment test count if needed
+	query := fmt.Sprintf(`
+		UPDATE learning_progress
+		SET %s = $1,
+			updated_at = CURRENT_TIMESTAMP
+	`, scoreColumn)
+
+	args := []interface{}{bandScore}
+	paramCount := 1
+
+	if incrementTestCount && testCountColumn != "" {
+		paramCount++
+		query += fmt.Sprintf(", %s = COALESCE(%s, 0) + 1", testCountColumn, testCountColumn)
+	}
+
+	paramCount++
+	query += fmt.Sprintf(" WHERE user_id = $%d", paramCount)
+	args = append(args, userID)
+
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to update learning progress: %w", err)
+	}
+
+	// If all 4 skills are updated, recalculate overall score
+	if skillType != "overall" {
+		recalcQuery := `
+			UPDATE learning_progress
+			SET overall_score = (
+				COALESCE(listening_score, 0) + 
+				COALESCE(reading_score, 0) + 
+				COALESCE(writing_score, 0) + 
+				COALESCE(speaking_score, 0)
+			) / 
+			NULLIF(
+				(CASE WHEN listening_score IS NOT NULL THEN 1 ELSE 0 END +
+				 CASE WHEN reading_score IS NOT NULL THEN 1 ELSE 0 END +
+				 CASE WHEN writing_score IS NOT NULL THEN 1 ELSE 0 END +
+				 CASE WHEN speaking_score IS NOT NULL THEN 1 ELSE 0 END),
+				0
+			)
+			WHERE user_id = $1
+		`
+		_, err = tx.Exec(recalcQuery, userID)
+		if err != nil {
+			return fmt.Errorf("failed to recalculate overall score: %w", err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	log.Printf("✅ Updated learning progress for user %s: %s = %.1f", userID, skillType, bandScore)
+	return nil
+}
