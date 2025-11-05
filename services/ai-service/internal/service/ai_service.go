@@ -14,18 +14,16 @@ import (
 )
 
 type AIService struct {
-	repo                 *repository.AIRepository
-	config               *config.Config
-	openAIClient         *OpenAIClient
-	integrationHandler   *IntegrationHandler
+	repo         *repository.AIRepository
+	config       *config.Config
+	openAIClient *OpenAIClient
 }
 
 func NewAIService(repo *repository.AIRepository, cfg *config.Config) *AIService {
 	return &AIService{
-		repo:               repo,
-		config:             cfg,
-		openAIClient:       NewOpenAIClient(cfg.OpenAIAPIKey),
-		integrationHandler: NewIntegrationHandler(cfg),
+		repo:         repo,
+		config:       cfg,
+		openAIClient: NewOpenAIClient(cfg.OpenAIAPIKey),
 	}
 }
 
@@ -33,22 +31,22 @@ func NewAIService(repo *repository.AIRepository, cfg *config.Config) *AIService 
 func (s *AIService) SubmitWriting(userID uuid.UUID, req *models.WritingSubmissionRequest) (*models.WritingSubmissionResponse, error) {
 	// Create submission
 	submission := &models.WritingSubmission{
-		ID:              uuid.New(),
-		UserID:          userID,
-		TaskType:        req.TaskType,
-		TaskPromptID:    req.TaskPromptID,
-		TaskPromptText:  req.TaskPromptText,
-		EssayText:       req.EssayText,
-		WordCount:       len(strings.Fields(req.EssayText)),
+		ID:               uuid.New(),
+		UserID:           userID,
+		TaskType:         req.TaskType,
+		TaskPromptID:     req.TaskPromptID,
+		TaskPromptText:   req.TaskPromptText,
+		EssayText:        req.EssayText,
+		WordCount:        len(strings.Fields(req.EssayText)),
 		TimeSpentSeconds: req.TimeSpentSeconds,
-		SubmittedFrom:   "web",
-		Status:          "pending",
-		ExerciseID:      req.ExerciseID,
-		CourseID:        req.CourseID,
-		LessonID:        req.LessonID,
-		SubmittedAt:     time.Now(),
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
+		SubmittedFrom:    "web",
+		Status:           "pending",
+		ExerciseID:       req.ExerciseID,
+		CourseID:         req.CourseID,
+		LessonID:         req.LessonID,
+		SubmittedAt:      time.Now(),
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 
 	if err := s.repo.CreateWritingSubmission(submission); err != nil {
@@ -111,20 +109,20 @@ Grammatical Range: %s`,
 	}
 
 	evaluation := &models.WritingEvaluation{
-		ID:                      uuid.New(),
-		SubmissionID:            submission.ID,
-		OverallBandScore:        evalResult.OverallBand,
-		TaskAchievementScore:    evalResult.CriteriaScores.TaskAchievement,
-		CoherenceCohesionScore:   evalResult.CriteriaScores.CoherenceCohesion,
-		LexicalResourceScore:    evalResult.CriteriaScores.LexicalResource,
-		GrammarAccuracyScore:    evalResult.CriteriaScores.GrammaticalRange,
-		Strengths:               evalResult.Strengths,
-		Weaknesses:              evalResult.AreasForImprovement,
-		DetailedFeedback:        detailedFeedbackText + "\n\n" + evalResult.ExaminerFeedback,
-		DetailedFeedbackJSON:    detailedFeedbackJSON,
-		ImprovementSuggestions:   evalResult.AreasForImprovement,
-		AIModelName:             stringPtr("gpt-4o"),
-		CreatedAt:               time.Now(),
+		ID:                     uuid.New(),
+		SubmissionID:           submission.ID,
+		OverallBandScore:       evalResult.OverallBand,
+		TaskAchievementScore:   evalResult.CriteriaScores.TaskAchievement,
+		CoherenceCohesionScore: evalResult.CriteriaScores.CoherenceCohesion,
+		LexicalResourceScore:   evalResult.CriteriaScores.LexicalResource,
+		GrammarAccuracyScore:   evalResult.CriteriaScores.GrammaticalRange,
+		Strengths:              evalResult.Strengths,
+		Weaknesses:             evalResult.AreasForImprovement,
+		DetailedFeedback:       detailedFeedbackText + "\n\n" + evalResult.ExaminerFeedback,
+		DetailedFeedbackJSON:   detailedFeedbackJSON,
+		ImprovementSuggestions: evalResult.AreasForImprovement,
+		AIModelName:            stringPtr("gpt-4o"),
+		CreatedAt:              time.Now(),
 	}
 
 	if err := s.repo.CreateWritingEvaluation(evaluation); err != nil {
@@ -137,9 +135,6 @@ Grammatical Range: %s`,
 	submission.EvaluatedAt = &now
 	s.repo.UpdateWritingSubmissionStatus(submission.ID, "completed")
 
-	// Trigger service integration (non-blocking)
-	s.integrationHandler.HandleWritingEvaluationCompletion(submission, evaluation)
-
 	return &models.WritingSubmissionResponse{
 		Submission: submission,
 		Evaluation: evaluation,
@@ -150,23 +145,23 @@ Grammatical Range: %s`,
 func (s *AIService) SubmitSpeaking(userID uuid.UUID, req *models.SpeakingSubmissionRequest) (*models.SpeakingSubmissionResponse, error) {
 	// Create submission
 	submission := &models.SpeakingSubmission{
-		ID:                  uuid.New(),
-		UserID:              userID,
-		PartNumber:          req.PartNumber,
-		TaskPromptID:        req.TaskPromptID,
-		TaskPromptText:      req.TaskPromptText,
-		AudioURL:            req.AudioURL,
+		ID:                   uuid.New(),
+		UserID:               userID,
+		PartNumber:           req.PartNumber,
+		TaskPromptID:         req.TaskPromptID,
+		TaskPromptText:       req.TaskPromptText,
+		AudioURL:             req.AudioURL,
 		AudioDurationSeconds: req.AudioDurationSeconds,
-		AudioFormat:         req.AudioFormat,
-		AudioFileSizeBytes:  req.AudioFileSizeBytes,
-		RecordedFrom:        "web",
-		Status:              "pending",
-		ExerciseID:          req.ExerciseID,
-		CourseID:            req.CourseID,
-		LessonID:            req.LessonID,
-		SubmittedAt:         time.Now(),
-		CreatedAt:           time.Now(),
-		UpdatedAt:           time.Now(),
+		AudioFormat:          req.AudioFormat,
+		AudioFileSizeBytes:   req.AudioFileSizeBytes,
+		RecordedFrom:         "web",
+		Status:               "pending",
+		ExerciseID:           req.ExerciseID,
+		CourseID:             req.CourseID,
+		LessonID:             req.LessonID,
+		SubmittedAt:          time.Now(),
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
 	}
 
 	if err := s.repo.CreateSpeakingSubmission(submission); err != nil {
@@ -177,7 +172,7 @@ func (s *AIService) SubmitSpeaking(userID uuid.UUID, req *models.SpeakingSubmiss
 	if err := s.repo.UpdateSpeakingSubmissionStatus(submission.ID, "transcribing"); err != nil {
 		return nil, fmt.Errorf("failed to update status: %w", err)
 	}
-	
+
 	// Download and transcribe audio
 	audioData, err := downloadAudio(req.AudioURL)
 	if err != nil {
@@ -200,7 +195,7 @@ func (s *AIService) SubmitSpeaking(userID uuid.UUID, req *models.SpeakingSubmiss
 	if err := s.repo.UpdateSpeakingSubmissionStatus(submission.ID, "processing"); err != nil {
 		return nil, fmt.Errorf("failed to update status: %w", err)
 	}
-	
+
 	partName := fmt.Sprintf("part%d", req.PartNumber)
 	evalResult, err := s.openAIClient.EvaluateSpeaking(
 		partName,
@@ -230,20 +225,20 @@ Pronunciation: %s`,
 	)
 
 	evaluation := &models.SpeakingEvaluation{
-		ID:                      uuid.New(),
-		SubmissionID:            submission.ID,
-		OverallBandScore:        evalResult.OverallBand,
-		FluencyCoherenceScore:   evalResult.CriteriaScores.FluencyCoherence,
-		LexicalResourceScore:    evalResult.CriteriaScores.LexicalResource,
-		GrammarAccuracyScore:    evalResult.CriteriaScores.GrammaticalRange,
-		PronunciationScore:      evalResult.CriteriaScores.Pronunciation,
-		Strengths:               evalResult.Strengths,
-		Weaknesses:              evalResult.AreasForImprovement,
-		DetailedFeedback:        detailedFeedbackText + "\n\n" + evalResult.ExaminerFeedback,
-		ImprovementSuggestions:   evalResult.AreasForImprovement,
-		TranscriptionModel:      stringPtr("whisper-1"),
-		EvaluationModel:         stringPtr("gpt-4o"),
-		CreatedAt:               time.Now(),
+		ID:                     uuid.New(),
+		SubmissionID:           submission.ID,
+		OverallBandScore:       evalResult.OverallBand,
+		FluencyCoherenceScore:  evalResult.CriteriaScores.FluencyCoherence,
+		LexicalResourceScore:   evalResult.CriteriaScores.LexicalResource,
+		GrammarAccuracyScore:   evalResult.CriteriaScores.GrammaticalRange,
+		PronunciationScore:     evalResult.CriteriaScores.Pronunciation,
+		Strengths:              evalResult.Strengths,
+		Weaknesses:             evalResult.AreasForImprovement,
+		DetailedFeedback:       detailedFeedbackText + "\n\n" + evalResult.ExaminerFeedback,
+		ImprovementSuggestions: evalResult.AreasForImprovement,
+		TranscriptionModel:     stringPtr("whisper-1"),
+		EvaluationModel:        stringPtr("gpt-4o"),
+		CreatedAt:              time.Now(),
 	}
 
 	if err := s.repo.CreateSpeakingEvaluation(evaluation); err != nil {
@@ -258,9 +253,6 @@ Pronunciation: %s`,
 		return nil, fmt.Errorf("failed to update status: %w", err)
 	}
 
-	// Trigger service integration (non-blocking)
-	s.integrationHandler.HandleSpeakingEvaluationCompletion(submission, evaluation)
-
 	return &models.SpeakingSubmissionResponse{
 		Submission: submission,
 		Evaluation: evaluation,
@@ -271,23 +263,23 @@ Pronunciation: %s`,
 func (s *AIService) SubmitSpeakingWithAudio(userID uuid.UUID, req *models.SpeakingSubmissionRequest, audioData []byte) (*models.SpeakingSubmissionResponse, error) {
 	// Create submission
 	submission := &models.SpeakingSubmission{
-		ID:                  uuid.New(),
-		UserID:              userID,
-		PartNumber:          req.PartNumber,
-		TaskPromptID:        req.TaskPromptID,
-		TaskPromptText:      req.TaskPromptText,
-		AudioURL:            req.AudioURL,
+		ID:                   uuid.New(),
+		UserID:               userID,
+		PartNumber:           req.PartNumber,
+		TaskPromptID:         req.TaskPromptID,
+		TaskPromptText:       req.TaskPromptText,
+		AudioURL:             req.AudioURL,
 		AudioDurationSeconds: req.AudioDurationSeconds,
-		AudioFormat:         req.AudioFormat,
-		AudioFileSizeBytes:  req.AudioFileSizeBytes,
-		RecordedFrom:        "web",
-		Status:              "pending",
-		ExerciseID:          req.ExerciseID,
-		CourseID:            req.CourseID,
-		LessonID:            req.LessonID,
-		SubmittedAt:         time.Now(),
-		CreatedAt:           time.Now(),
-		UpdatedAt:           time.Now(),
+		AudioFormat:          req.AudioFormat,
+		AudioFileSizeBytes:   req.AudioFileSizeBytes,
+		RecordedFrom:         "web",
+		Status:               "pending",
+		ExerciseID:           req.ExerciseID,
+		CourseID:             req.CourseID,
+		LessonID:             req.LessonID,
+		SubmittedAt:          time.Now(),
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
 	}
 
 	if err := s.repo.CreateSpeakingSubmission(submission); err != nil {
@@ -344,20 +336,20 @@ Pronunciation: %s`,
 	)
 
 	evaluation := &models.SpeakingEvaluation{
-		ID:                      uuid.New(),
-		SubmissionID:            submission.ID,
-		OverallBandScore:        evalResult.OverallBand,
-		FluencyCoherenceScore:   evalResult.CriteriaScores.FluencyCoherence,
-		LexicalResourceScore:    evalResult.CriteriaScores.LexicalResource,
-		GrammarAccuracyScore:    evalResult.CriteriaScores.GrammaticalRange,
-		PronunciationScore:      evalResult.CriteriaScores.Pronunciation,
-		Strengths:               evalResult.Strengths,
-		Weaknesses:              evalResult.AreasForImprovement,
-		DetailedFeedback:        detailedFeedbackText + "\n\n" + evalResult.ExaminerFeedback,
-		ImprovementSuggestions:   evalResult.AreasForImprovement,
-		TranscriptionModel:      stringPtr("whisper-1"),
-		EvaluationModel:         stringPtr("gpt-4o"),
-		CreatedAt:               time.Now(),
+		ID:                     uuid.New(),
+		SubmissionID:           submission.ID,
+		OverallBandScore:       evalResult.OverallBand,
+		FluencyCoherenceScore:  evalResult.CriteriaScores.FluencyCoherence,
+		LexicalResourceScore:   evalResult.CriteriaScores.LexicalResource,
+		GrammarAccuracyScore:   evalResult.CriteriaScores.GrammaticalRange,
+		PronunciationScore:     evalResult.CriteriaScores.Pronunciation,
+		Strengths:              evalResult.Strengths,
+		Weaknesses:             evalResult.AreasForImprovement,
+		DetailedFeedback:       detailedFeedbackText + "\n\n" + evalResult.ExaminerFeedback,
+		ImprovementSuggestions: evalResult.AreasForImprovement,
+		TranscriptionModel:     stringPtr("whisper-1"),
+		EvaluationModel:        stringPtr("gpt-4o"),
+		CreatedAt:              time.Now(),
 	}
 
 	if err := s.repo.CreateSpeakingEvaluation(evaluation); err != nil {
@@ -371,9 +363,6 @@ Pronunciation: %s`,
 	if err := s.repo.UpdateSpeakingSubmissionStatus(submission.ID, "completed"); err != nil {
 		return nil, fmt.Errorf("failed to update status: %w", err)
 	}
-
-	// Trigger service integration (non-blocking)
-	s.integrationHandler.HandleSpeakingEvaluationCompletion(submission, evaluation)
 
 	return &models.SpeakingSubmissionResponse{
 		Submission: submission,
@@ -437,20 +426,20 @@ func (s *AIService) GetWritingPrompts(taskType *string, difficulty *string, isPu
 
 func (s *AIService) CreateWritingPrompt(adminID uuid.UUID, req *models.WritingPromptRequest) (*models.WritingPrompt, error) {
 	prompt := &models.WritingPrompt{
-		ID:                  uuid.New(),
-		TaskType:            req.TaskType,
-		PromptText:          req.PromptText,
-		VisualType:          req.VisualType,
-		VisualURL:           req.VisualURL,
-		Topic:               req.Topic,
-		Difficulty:          req.Difficulty,
-		HasSampleAnswer:     req.HasSampleAnswer,
-		SampleAnswerText:    req.SampleAnswerText,
+		ID:                    uuid.New(),
+		TaskType:              req.TaskType,
+		PromptText:            req.PromptText,
+		VisualType:            req.VisualType,
+		VisualURL:             req.VisualURL,
+		Topic:                 req.Topic,
+		Difficulty:            req.Difficulty,
+		HasSampleAnswer:       req.HasSampleAnswer,
+		SampleAnswerText:      req.SampleAnswerText,
 		SampleAnswerBandScore: req.SampleAnswerBandScore,
-		IsPublished:         req.IsPublished,
-		CreatedBy:           &adminID,
-		CreatedAt:           time.Now(),
-		UpdatedAt:           time.Now(),
+		IsPublished:           req.IsPublished,
+		CreatedBy:             &adminID,
+		CreatedAt:             time.Now(),
+		UpdatedAt:             time.Now(),
 	}
 
 	if err := s.repo.CreateWritingPrompt(prompt); err != nil {
@@ -461,17 +450,17 @@ func (s *AIService) CreateWritingPrompt(adminID uuid.UUID, req *models.WritingPr
 
 func (s *AIService) UpdateWritingPrompt(id uuid.UUID, req *models.WritingPromptRequest) (*models.WritingPrompt, error) {
 	prompt := &models.WritingPrompt{
-		TaskType:            req.TaskType,
-		PromptText:          req.PromptText,
-		VisualType:          req.VisualType,
-		VisualURL:           req.VisualURL,
-		Topic:               req.Topic,
-		Difficulty:          req.Difficulty,
-		HasSampleAnswer:     req.HasSampleAnswer,
-		SampleAnswerText:    req.SampleAnswerText,
+		TaskType:              req.TaskType,
+		PromptText:            req.PromptText,
+		VisualType:            req.VisualType,
+		VisualURL:             req.VisualURL,
+		Topic:                 req.Topic,
+		Difficulty:            req.Difficulty,
+		HasSampleAnswer:       req.HasSampleAnswer,
+		SampleAnswerText:      req.SampleAnswerText,
 		SampleAnswerBandScore: req.SampleAnswerBandScore,
-		IsPublished:         req.IsPublished,
-		UpdatedAt:           time.Now(),
+		IsPublished:           req.IsPublished,
+		UpdatedAt:             time.Now(),
 	}
 
 	if err := s.repo.UpdateWritingPrompt(id, prompt); err != nil {
@@ -578,5 +567,3 @@ func downloadAudio(url string) ([]byte, error) {
 
 	return data, nil
 }
-
-
