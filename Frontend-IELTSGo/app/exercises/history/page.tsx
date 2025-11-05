@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/layout/page-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Clock, Target, TrendingUp, Eye, Calendar, BookOpen } from "lucide-react"
+import { Clock, Target, TrendingUp, Eye, Calendar, BookOpen, ArrowRight } from "lucide-react"
 import { PageLoading } from "@/components/ui/page-loading"
 import { EmptyState } from "@/components/ui/empty-state"
 import { exercisesApi, type SubmissionFilters } from "@/lib/api/exercises"
@@ -87,13 +87,18 @@ export default function ExerciseHistoryPage() {
 
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+    try {
+      const locale = typeof navigator !== 'undefined' && navigator.language ? navigator.language : undefined
+      return date.toLocaleDateString(locale, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    } catch {
+      return date.toISOString()
+    }
   }, [])
 
   const formatTime = useCallback((seconds: number) => {
@@ -254,27 +259,27 @@ export default function ExerciseHistoryPage() {
                               {t('standalone') || 'Standalone'}
                             </Badge>
                           )}
+                          {/* Course Link Badge - Show if exercise belongs to a course */}
+                          {exercise.course_id && (
+                            <Badge 
+                              variant="outline" 
+                              className="bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 transition-colors cursor-pointer text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                router.push(`/courses/${exercise.course_id}`)
+                              }}
+                            >
+                              <ArrowRight className="w-3 h-3 mr-1" />
+                              {t('view_course') || 'View Course'}
+                            </Badge>
+                          )}
                         </div>
                         <CardDescription className="flex items-center gap-2 flex-wrap">
                           <Calendar className="w-3 h-3" />
                           {formatDate(submission.started_at)}
                           {submission.completed_at && (
-                            <span className="ml-2">
+                            <span>
                               • {t('completed_label')} {formatDate(submission.completed_at)}
-                            </span>
-                          )}
-                          {/* Course Link - Show if exercise belongs to a course */}
-                          {exercise.course_id && (
-                            <span className="ml-2">
-                              • <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  router.push(`/courses/${exercise.course_id}`)
-                                }}
-                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
-                              >
-                                {t('view_course') || 'View Course'}
-                              </button>
                             </span>
                           )}
                         </CardDescription>
@@ -286,74 +291,77 @@ export default function ExerciseHistoryPage() {
                           ? t('status_in_progress')
                           : submission.status === "abandoned"
                           ? t('status_abandoned')
-                          : submission.status.replace("_", " ")}
+                          : String(submission.status).replace("_", " ")}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      {/* Attempt Number */}
-                      <div>
-                        <p className="text-sm text-muted-foreground">{t('attempt')}</p>
-                        <p className="text-lg font-semibold">#{submission.attempt_number}</p>
-                      </div>
-
-                      {/* Performance (combine percentage + correct/total) */}
-                      {submission.status === "completed" ? (
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 flex-1 min-w-0">
+                        {/* Attempt Number */}
                         <div>
-                          <p className="text-sm text-muted-foreground">{t('percentage')}</p>
-                          <p className={`text-2xl font-semibold ${getScoreColor(percentage)}`}>
-                            {percentage.toFixed(1)}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {submission.correct_answers}/{submission.total_questions} {t('questions')}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{t('attempt')}</p>
+                          <p className="text-lg font-semibold">#{submission.attempt_number}</p>
                         </div>
-                      ) : (
+
+                        {/* Performance (combine percentage + correct/total) */}
+                        {submission.status === "completed" ? (
+                          <div>
+                            <p className="text-sm text-muted-foreground">{t('percentage')}</p>
+                            <p className={`text-2xl font-semibold ${getScoreColor(percentage)}`}>
+                              {percentage.toFixed(1)}%
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {submission.correct_answers}/{submission.total_questions} {t('questions')}
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm text-muted-foreground">{t('progress')}</p>
+                            <p className="text-lg font-semibold">
+                              {submission.questions_answered}/{submission.total_questions}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Band Score */}
+                        {submission.band_score && (exercise.skill_type?.toLowerCase() === 'listening' || exercise.skill_type?.toLowerCase() === 'reading') && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">{t('band_score')}</p>
+                            <p className="text-lg font-semibold text-primary">
+                              {submission.band_score}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Time Spent */}
                         <div>
-                          <p className="text-sm text-muted-foreground">{t('progress')}</p>
+                          <p className="text-sm text-muted-foreground">{t('time_spent')}</p>
                           <p className="text-lg font-semibold">
-                            {submission.questions_answered}/{submission.total_questions}
+                            {formatTime(submission.time_spent_seconds)}
                           </p>
                         </div>
-                      )}
-
-                      {/* Band Score */}
-                      {submission.band_score && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">{t('band_score')}</p>
-                          <p className="text-lg font-semibold text-primary">
-                            {submission.band_score}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Time Spent */}
-                      <div>
-                        <p className="text-sm text-muted-foreground">{t('time_spent')}</p>
-                        <p className="text-lg font-semibold">
-                          {formatTime(submission.time_spent_seconds)}
-                        </p>
                       </div>
-                    </div>
 
-                    {/* Action Button */}
-                    <div className="mt-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (submission.status === "completed") {
-                            router.push(`/exercises/${exercise.id}/result/${submission.id}`)
-                          } else {
-                            router.push(`/exercises/${exercise.id}/take/${submission.id}`)
-                          }
-                        }}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        {submission.status === "completed" ? t('view_results') : t('continue')}
-                      </Button>
+                      {/* Action Button - Right aligned on large screens, full width on mobile */}
+                      <div className="flex-shrink-0 lg:self-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full lg:w-auto"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (submission.status === "completed") {
+                              router.push(`/exercises/${exercise.id}/result/${submission.id}`)
+                            } else {
+                              router.push(`/exercises/${exercise.id}/take/${submission.id}`)
+                            }
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          {submission.status === "completed" ? t('view_results') : t('continue')}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

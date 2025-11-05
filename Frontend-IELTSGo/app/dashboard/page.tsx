@@ -40,6 +40,11 @@ function DashboardContent() {
   const t = useTranslations('dashboard')
   const tCommon = useTranslations('common')
   const showStats = preferences?.show_study_stats ?? true // Default to true for backward compatibility
+  
+  // Debug log
+  useEffect(() => {
+    console.log('[Dashboard] showStats:', showStats, 'preferences:', preferences)
+  }, [showStats, preferences])
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<any>(null)
   const [analytics, setAnalytics] = useState<any>(null)
@@ -57,7 +62,7 @@ function DashboardContent() {
       ])
       setSummary(summaryData)
       setAnalytics(analyticsData)
-      setHistory(historyData.data || [])
+      setHistory(Array.isArray(historyData) ? historyData : (historyData as any)?.data || [])
     } catch (error) {
       console.error('[Dashboard] Error fetching data:', error)
       // Keep previous data on error if available (optimistic UI)
