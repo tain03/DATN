@@ -41,9 +41,10 @@ func main() {
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	internalHandler := handlers.NewInternalHandler(userService)
+	scoringHandler := handlers.NewScoringHandler(userService)
 
 	// Setup routes
-	router := routes.SetupRoutes(userHandler, internalHandler, authMiddleware)
+	router := routes.SetupRoutes(userHandler, internalHandler, scoringHandler, authMiddleware)
 
 	// Start server
 	port := ":" + cfg.ServerPort

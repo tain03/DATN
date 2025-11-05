@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -9,8 +8,8 @@ import (
 
 	"github.com/bisosad1501/DATN/services/user-service/internal/models"
 	"github.com/bisosad1501/DATN/services/user-service/internal/service"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 )
 
 type ScoringHandler struct {
@@ -61,20 +60,19 @@ type RecordPracticeActivityRequest struct {
 // ============= Handler Methods =============
 
 // RecordTestResultInternal records an official test result (internal service-to-service)
-func (h *ScoringHandler) RecordTestResultInternal(w http.ResponseWriter, r *http.Request) {
+func (h *ScoringHandler) RecordTestResultInternal(c *gin.Context) {
 	// Extract user_id from path
-	vars := mux.Vars(r)
-	userIDStr := vars["user_id"]
+	userIDStr := c.Param("user_id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Parse request body
 	var req RecordTestResultRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
 		return
 	}
 
@@ -102,14 +100,12 @@ func (h *ScoringHandler) RecordTestResultInternal(w http.ResponseWriter, r *http
 	// Record test result
 	if err := h.service.RecordOfficialTestResult(result); err != nil {
 		log.Printf("❌ Error recording test result: %v", err)
-		http.Error(w, "Failed to record test result", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to record test result"})
 		return
 	}
 
 	// Return success response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	c.JSON(http.StatusCreated, gin.H{
 		"success":        true,
 		"test_result_id": result.ID,
 		"message":        "Test result recorded successfully",
@@ -117,20 +113,19 @@ func (h *ScoringHandler) RecordTestResultInternal(w http.ResponseWriter, r *http
 }
 
 // RecordPracticeActivityInternal records a practice activity (internal service-to-service)
-func (h *ScoringHandler) RecordPracticeActivityInternal(w http.ResponseWriter, r *http.Request) {
+func (h *ScoringHandler) RecordPracticeActivityInternal(c *gin.Context) {
 	// Extract user_id from path
-	vars := mux.Vars(r)
-	userIDStr := vars["user_id"]
+	userIDStr := c.Param("user_id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Parse request body
 	var req RecordPracticeActivityRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
 		return
 	}
 
@@ -160,14 +155,12 @@ func (h *ScoringHandler) RecordPracticeActivityInternal(w http.ResponseWriter, r
 	// Record practice activity
 	if err := h.service.RecordPracticeActivity(activity); err != nil {
 		log.Printf("❌ Error recording practice activity: %v", err)
-		http.Error(w, "Failed to record practice activity", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to record practice activity"})
 		return
 	}
 
 	// Return success response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	c.JSON(http.StatusCreated, gin.H{
 		"success":     true,
 		"activity_id": activity.ID,
 		"message":     "Practice activity recorded successfully",
@@ -175,23 +168,18 @@ func (h *ScoringHandler) RecordPracticeActivityInternal(w http.ResponseWriter, r
 }
 
 // GetUserTestHistory retrieves user's test history with pagination
-func (h *ScoringHandler) GetUserTestHistory(w http.ResponseWriter, r *http.Request) {
+func (h *ScoringHandler) GetUserTestHistory(c *gin.Context) {
 	// Extract user_id from path
-	vars := mux.Vars(r)
-	userIDStr := vars["user_id"]
+	userIDStr := c.Param("user_id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	// Parse query parameters
-	pageStr := r.URL.Query().Get("page")
-	limitStr := r.URL.Query().Get("limit")
-	skillType := r.URL.Query().Get("skill")
-
 	page := 1
-	if pageStr != "" {
+	if pageStr := c.Query("page"); pageStr != "" {
 		page, _ = strconv.Atoi(pageStr)
 		if page < 1 {
 			page = 1
@@ -199,7 +187,7 @@ func (h *ScoringHandler) GetUserTestHistory(w http.ResponseWriter, r *http.Reque
 	}
 
 	limit := 10
-	if limitStr != "" {
+	if limitStr := c.Query("limit"); limitStr != "" {
 		limit, _ = strconv.Atoi(limitStr)
 		if limit < 1 || limit > 100 {
 			limit = 10
@@ -207,7 +195,7 @@ func (h *ScoringHandler) GetUserTestHistory(w http.ResponseWriter, r *http.Reque
 	}
 
 	var skillPtr *string
-	if skillType != "" {
+	if skillType := c.Query("skill"); skillType != "" {
 		skillPtr = &skillType
 	}
 
@@ -216,10 +204,9 @@ func (h *ScoringHandler) GetUserTestHistory(w http.ResponseWriter, r *http.Reque
 	log.Printf("📊 Fetching test history for user %s (page=%d, limit=%d, skill=%v)", userID, page, limit, skillPtr)
 
 	// Return placeholder response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data": map[string]interface{}{
+		"data": gin.H{
 			"tests":       []interface{}{},
 			"total_count": 0,
 			"page":        page,
@@ -230,30 +217,27 @@ func (h *ScoringHandler) GetUserTestHistory(w http.ResponseWriter, r *http.Reque
 }
 
 // GetUserPracticeStatistics retrieves user's practice statistics
-func (h *ScoringHandler) GetUserPracticeStatistics(w http.ResponseWriter, r *http.Request) {
+func (h *ScoringHandler) GetUserPracticeStatistics(c *gin.Context) {
 	// Extract user_id from path
-	vars := mux.Vars(r)
-	userIDStr := vars["user_id"]
+	userIDStr := c.Param("user_id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
-	skillType := r.URL.Query().Get("skill")
 	var skillPtr *string
-	if skillType != "" {
+	if skillType := c.Query("skill"); skillType != "" {
 		skillPtr = &skillType
 	}
 
 	log.Printf("📊 Fetching practice statistics for user %s (skill=%v)", userID, skillPtr)
 
 	// Return placeholder response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data": map[string]interface{}{
-			"by_skill": map[string]interface{}{},
+		"data": gin.H{
+			"by_skill": gin.H{},
 		},
 		"message": "Practice statistics retrieved (placeholder)",
 	})

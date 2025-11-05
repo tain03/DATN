@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(handler *handlers.UserHandler, internalHandler *handlers.InternalHandler, authMiddleware *middleware.AuthMiddleware) *gin.Engine {
+func SetupRoutes(handler *handlers.UserHandler, internalHandler *handlers.InternalHandler, scoringHandler *handlers.ScoringHandler, authMiddleware *middleware.AuthMiddleware) *gin.Engine {
 	router := gin.Default()
 
 	// Health check
@@ -19,17 +19,17 @@ func SetupRoutes(handler *handlers.UserHandler, internalHandler *handlers.Intern
 		usersGroup := v1.Group("/users")
 		usersGroup.Use(authMiddleware.OptionalAuth()) // Optional auth - allows unauthenticated access but checks auth if available
 		{
-			usersGroup.GET("/:id/profile", handler.GetPublicProfile)      // Get public user profile
+			usersGroup.GET("/:id/profile", handler.GetPublicProfile)           // Get public user profile
 			usersGroup.GET("/:id/achievements", handler.GetPublicAchievements) // Get public user achievements
-			usersGroup.GET("/:id/followers", handler.GetFollowers)        // Get user followers (paginated)
-			usersGroup.GET("/:id/following", handler.GetFollowing)        // Get user following (paginated)
+			usersGroup.GET("/:id/followers", handler.GetFollowers)             // Get user followers (paginated)
+			usersGroup.GET("/:id/following", handler.GetFollowing)             // Get user following (paginated)
 		}
 
 		// Protected user social routes (auth required)
 		usersProtected := v1.Group("/users")
 		usersProtected.Use(authMiddleware.AuthRequired())
 		{
-			usersProtected.POST("/:id/follow", handler.FollowUser)   // Follow a user
+			usersProtected.POST("/:id/follow", handler.FollowUser)     // Follow a user
 			usersProtected.DELETE("/:id/follow", handler.UnfollowUser) // Unfollow a user
 		}
 
@@ -97,10 +97,16 @@ func SetupRoutes(handler *handlers.UserHandler, internalHandler *handlers.Intern
 			// Skill statistics updates
 			internal.PUT("/statistics/:skill/update", internalHandler.UpdateSkillStatisticsInternal)
 
-		// Study session tracking
-		internal.POST("/session/start", internalHandler.StartSessionInternal)
-		internal.PUT("/session/:session_id/end", internalHandler.EndSessionInternal)
-		internal.POST("/session/record", internalHandler.RecordCompletedSessionInternal)
+			// Study session tracking
+			internal.POST("/session/start", internalHandler.StartSessionInternal)
+			internal.PUT("/session/:session_id/end", internalHandler.EndSessionInternal)
+			internal.POST("/session/record", internalHandler.RecordCompletedSessionInternal)
+
+			// Scoring endpoints (Phase 3 - Official vs Practice separation)
+			internal.POST("/users/:user_id/test-results", scoringHandler.RecordTestResultInternal)
+			internal.POST("/users/:user_id/practice-activities", scoringHandler.RecordPracticeActivityInternal)
+			internal.GET("/users/:user_id/test-history", scoringHandler.GetUserTestHistory)
+			internal.GET("/users/:user_id/practice-statistics", scoringHandler.GetUserPracticeStatistics)
 		}
 	}
 
