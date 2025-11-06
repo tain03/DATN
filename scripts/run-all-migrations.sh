@@ -1,4 +1,4 @@
-#!/bin/bash
+curl http://localhost:8080/healthcurl http://localhost:8080/health#!/bin/bash
 
 # ============================================
 # RUN ALL DATABASE MIGRATIONS
@@ -166,36 +166,6 @@ for db_info in "${DATABASES[@]}"; do
         echo -e "${YELLOW}⚠️  Database ${db_name} does not exist, skipping${NC}"
     fi
 done
-
-# Special migrations that need manual attention (012 - dblink)
-echo ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🔧 Special Migrations (Extensions & Cross-DB)${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-
-# Migration 012: Enable dblink for course_db
-DBLINK_FILE="${MIGRATION_DIR}/012_enable_dblink_for_cross_database_queries.sql"
-if [ -f "$DBLINK_FILE" ]; then
-    echo -e "${CYAN}📝 Checking dblink extension in course_db...${NC}"
-    
-    dblink_exists=$($PSQL_CMD_BASE -d course_db -t -c \
-        "SELECT COUNT(*) FROM pg_extension WHERE extname = 'dblink';" 2>/dev/null | tr -d ' ')
-    
-    if [ "$dblink_exists" -gt 0 ]; then
-        echo -e "${GREEN}✅ dblink already enabled in course_db${NC}"
-    else
-        echo -e "${CYAN}📝 Installing dblink extension...${NC}"
-        if cat "$DBLINK_FILE" | $PSQL_CMD_BASE -d course_db 2>&1; then
-            echo -e "${GREEN}✅ dblink enabled successfully${NC}"
-            TOTAL_APPLIED=$((TOTAL_APPLIED + 1))
-        else
-            echo -e "${RED}❌ Failed to enable dblink${NC}"
-            TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
-        fi
-    fi
-else
-    echo -e "${YELLOW}⚠️  Migration 012 (dblink) not found${NC}"
-fi
 
 # Summary
 echo ""
