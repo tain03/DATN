@@ -23,6 +23,7 @@ INSERT INTO exercises (
     id, title, slug, description, exercise_type, skill_type, difficulty, ielts_level,
     total_questions, total_sections, time_limit_minutes, thumbnail_url,
     audio_url, audio_duration_seconds, audio_transcript,
+    ielts_test_type,
     course_id,
     is_free, is_published, created_by, published_at, total_attempts, average_score
 ) VALUES
@@ -42,6 +43,7 @@ INSERT INTO exercises (
  'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800&h=600&fit=crop',
  'https://www.youtube.com/watch?v=6QMu7-3DMi0', 600, 
  'You will hear a conversation between a student and a housing officer about accommodation...',
+ NULL, -- ielts_test_type (not needed for listening)
  'c1000001-0000-0000-0000-000000000001'::uuid, -- Linked to IELTS Listening Basics course
  true, true, 'b0000001-0000-0000-0000-000000000001'::uuid, NOW() - INTERVAL '60 days', 342, 72.5),
 
@@ -55,6 +57,7 @@ INSERT INTO exercises (
  'https://images.unsplash.com/photo-1589903308904-1010c2294adc?w=800&h=600&fit=crop',
  'https://www.youtube.com/watch?v=ys-1LqlUNCk', 2400,
  'Part 1: You will hear a conversation between a travel agent and a customer...',
+ NULL, -- ielts_test_type (not needed for listening)
  'c1000004-0000-0000-0000-000000000004'::uuid, -- Linked to IELTS Listening Full Test Practice course
  false, true, 'b0000002-0000-0000-0000-000000000002'::uuid, NOW() - INTERVAL '55 days', 289, 68.2),
 
@@ -68,6 +71,7 @@ INSERT INTO exercises (
  'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=600&fit=crop',
  'https://www.youtube.com/watch?v=tml3fxV9w7g', 840,
  'Part 3: You will hear a discussion between two students and their tutor...',
+ NULL, -- ielts_test_type (not needed for listening)
  'c1000003-0000-0000-0000-000000000003'::uuid, -- Linked to IELTS Listening Advanced course
  false, true, 'b0000003-0000-0000-0000-000000000003'::uuid, NOW() - INTERVAL '50 days', 156, 75.8),
 
@@ -81,6 +85,7 @@ INSERT INTO exercises (
  13, 1, NULL,
  'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&h=600&fit=crop',
  NULL, NULL, NULL,
+ 'academic', -- ielts_test_type required for reading exercises
  'c2000001-0000-0000-0000-000000000005'::uuid, -- Linked to IELTS Reading Fundamentals course
  true, true, 'b0000001-0000-0000-0000-000000000001'::uuid, NOW() - INTERVAL '45 days', 456, 65.3),
 
@@ -93,6 +98,7 @@ INSERT INTO exercises (
  40, 3, 60,
  'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&h=600&fit=crop',
  NULL, NULL, NULL,
+ 'academic', -- ielts_test_type required for reading exercises
  'c2000003-0000-0000-0000-000000000007'::uuid, -- Linked to IELTS Academic Reading Advanced course
  false, true, 'b0000002-0000-0000-0000-000000000002'::uuid, NOW() - INTERVAL '40 days', 389, 72.1),
 
@@ -105,6 +111,7 @@ INSERT INTO exercises (
  15, 1, 20,
  'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=600&fit=crop',
  NULL, NULL, NULL,
+ 'academic', -- ielts_test_type required for reading exercises
  'c2000002-0000-0000-0000-000000000006'::uuid, -- Linked to True/False/Not Given Mastery course
  false, true, 'b0000003-0000-0000-0000-000000000003'::uuid, NOW() - INTERVAL '35 days', 234, 68.5);
 
@@ -114,6 +121,7 @@ INSERT INTO exercises (
     id, title, slug, description, exercise_type, skill_type, difficulty, ielts_level,
     total_questions, total_sections, time_limit_minutes, thumbnail_url,
     audio_url, audio_duration_seconds, audio_transcript,
+    ielts_test_type,
     course_id,
     is_free, is_published, created_by, published_at, total_attempts, average_score
 ) VALUES
@@ -127,6 +135,7 @@ INSERT INTO exercises (
  'https://plus.unsplash.com/premium_photo-1681489727671-e4865915197b?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=687',
  'https://www.youtube.com/watch?v=6QMu7-3DMi0', 600,
  'You will hear a conversation about booking accommodation. Complete the registration form with the correct information.',
+ NULL, -- ielts_test_type (not needed for listening)
  'c1000001-0000-0000-0000-000000000001'::uuid, -- Linked to IELTS Listening Basics
  true, true, 'b0000001-0000-0000-0000-000000000001'::uuid, NOW() - INTERVAL '55 days', 289, 71.2),
 
@@ -139,6 +148,7 @@ INSERT INTO exercises (
  'https://images.unsplash.com/photo-1563120145-ecb346208872?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170',
  'https://www.youtube.com/watch?v=ys-1LqlUNCk', 650,
  'Listen to a conversation and choose the correct answer for each question.',
+ NULL, -- ielts_test_type (not needed for listening)
  'c1000001-0000-0000-0000-000000000001'::uuid, -- Linked to IELTS Listening Basics
  true, true, 'b0000002-0000-0000-0000-000000000002'::uuid, NOW() - INTERVAL '50 days', 312, 69.8),
 
@@ -152,6 +162,7 @@ INSERT INTO exercises (
  'https://plus.unsplash.com/premium_photo-1661490813116-3b678da41ff4?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170',
  'https://www.youtube.com/watch?v=tml3fxV9w7g', 1200,
  'Listen to a discussion between two students and their tutor about a research project.',
+ NULL, -- ielts_test_type (not needed for listening)
  'c1000003-0000-0000-0000-000000000003'::uuid, -- Linked to IELTS Listening Advanced
  false, true, 'b0000003-0000-0000-0000-000000000003'::uuid, NOW() - INTERVAL '45 days', 178, 74.3),
 
@@ -164,6 +175,7 @@ INSERT INTO exercises (
  'https://plus.unsplash.com/premium_photo-1664382465450-6dc3c2bae5d0?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=764',
  'https://www.youtube.com/watch?v=oV7qaHKPoK0', 1800,
  'Listen to an academic lecture on a scientific topic and answer the questions.',
+ NULL, -- ielts_test_type (not needed for listening)
  'c1000003-0000-0000-0000-000000000003'::uuid, -- Linked to IELTS Listening Advanced
  false, true, 'b0000001-0000-0000-0000-000000000001'::uuid, NOW() - INTERVAL '40 days', 145, 76.1),
 
@@ -176,6 +188,7 @@ INSERT INTO exercises (
  13, 1, NULL,
  'https://images.unsplash.com/photo-1568667256549-094345857637?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=2030',
  NULL, NULL, NULL,
+ 'academic', -- ielts_test_type required for reading exercises
  'c2000001-0000-0000-0000-000000000005'::uuid, -- Linked to IELTS Reading Fundamentals
  true, true, 'b0000001-0000-0000-0000-000000000001'::uuid, NOW() - INTERVAL '50 days', 423, 67.5),
 
@@ -187,6 +200,7 @@ INSERT INTO exercises (
  13, 1, NULL,
  'https://images.unsplash.com/photo-1683871268982-a19153dbb35d?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170',
  NULL, NULL, NULL,
+ 'academic', -- ielts_test_type required for reading exercises
  'c2000001-0000-0000-0000-000000000005'::uuid, -- Linked to IELTS Reading Fundamentals
  true, true, 'b0000002-0000-0000-0000-000000000002'::uuid, NOW() - INTERVAL '48 days', 387, 66.8),
 
@@ -199,6 +213,7 @@ INSERT INTO exercises (
  15, 1, 20,
  'https://plus.unsplash.com/premium_photo-1750360906456-b28d130fa7f8?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170',
  NULL, NULL, NULL,
+ 'academic', -- ielts_test_type required for reading exercises
  'c2000002-0000-0000-0000-000000000006'::uuid, -- Linked to True/False/Not Given Mastery
  false, true, 'b0000003-0000-0000-0000-000000000003'::uuid, NOW() - INTERVAL '42 days', 198, 72.3),
 
@@ -210,6 +225,7 @@ INSERT INTO exercises (
  14, 1, 18,
  'https://plus.unsplash.com/premium_photo-1750360905827-af6cb76a55bb?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1236',
  NULL, NULL, NULL,
+ 'general_training', -- ielts_test_type required for reading exercises (30% general_training)
  'c2000002-0000-0000-0000-000000000006'::uuid, -- Linked to True/False/Not Given Mastery
  false, true, 'b0000001-0000-0000-0000-000000000001'::uuid, NOW() - INTERVAL '38 days', 267, 70.5);
 
@@ -218,6 +234,7 @@ INSERT INTO exercises (
     id, title, slug, description, exercise_type, skill_type, difficulty, ielts_level,
     total_questions, total_sections, time_limit_minutes, thumbnail_url,
     audio_url, audio_duration_seconds, audio_transcript,
+    ielts_test_type,
     course_id,
     is_free, is_published, created_by, published_at, total_attempts, average_score
 )
@@ -349,6 +366,11 @@ SELECT
         END
     ELSE NULL END,
     CASE WHEN row_number() OVER () <= 25 THEN 'Transcript for listening exercise...' ELSE NULL END,
+    -- ielts_test_type: Required for reading exercises only (academic or general_training)
+    CASE WHEN row_number() OVER () > 25 THEN 
+        -- Reading exercises: 70% academic, 30% general_training
+        CASE WHEN random() > 0.3 THEN 'academic' ELSE 'general_training' END
+    ELSE NULL END,
     -- Link to course (80% linked to courses for tight coupling, 20% standalone)
     -- Exercises are strongly linked to courses for better learning paths
     CASE WHEN random() > 0.2 THEN -- 80% linked to courses

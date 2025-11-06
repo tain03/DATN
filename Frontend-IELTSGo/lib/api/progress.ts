@@ -2,6 +2,27 @@ import { apiClient } from "./apiClient"
 import type { SkillType } from "@/types"
 import { apiCache } from "@/lib/utils/api-cache"
 
+/**
+ * NEW SCORING SYSTEM (November 2025)
+ * 
+ * The platform now separates:
+ * 1. OFFICIAL TEST RESULTS - Real IELTS band scores (0-9) from full tests
+ *    - Source of truth for user's actual band scores
+ *    - Updates learning_progress.{skill}_score fields
+ *    - Displayed as "Band Score"
+ * 
+ * 2. PRACTICE ACTIVITIES - Training exercises with accuracy (%)
+ *    - Drills, part tests, section practices
+ *    - Tracked separately, don't affect official band scores
+ *    - Displayed as "Practice Accuracy"
+ * 
+ * API Endpoints:
+ * - /user/progress - Returns overall progress with official band scores
+ * - /user/test-results - Official test history
+ * - /user/practice-activities - Practice exercise history
+ * - /user/practice-statistics - Aggregated practice stats
+ */
+
 interface ApiResponse<T> {
   success: boolean
   message?: string
@@ -45,11 +66,17 @@ export const progressApi = {
         reading_progress: number
         writing_progress: number
         speaking_progress: number
+        // New scoring system - these come from official_test_results
         listening_score?: number
         reading_score?: number
         writing_score?: number
         speaking_score?: number
         overall_score?: number
+        // Test counts
+        listening_tests_taken?: number
+        reading_tests_taken?: number
+        writing_tests_taken?: number
+        speaking_tests_taken?: number
         current_streak_days: number
         longest_streak_days: number
         last_study_date?: string
@@ -70,12 +97,21 @@ export const progressApi = {
       totalStudyTime: Math.round(data.total_study_hours * 60), // Convert hours to minutes
       currentStreak: data.current_streak_days,
       longestStreak: data.longest_streak_days,
+      // Overall score now comes from official test results average
       averageScore: normalizeScore(data.overall_score),
+      // Skill scores come from latest official test results
       skillScores: {
         listening: normalizeScore(data.listening_score),
         reading: normalizeScore(data.reading_score),
         writing: normalizeScore(data.writing_score),
         speaking: normalizeScore(data.speaking_score),
+      },
+      // Track test counts
+      testsTaken: {
+        listening: data.listening_tests_taken || 0,
+        reading: data.reading_tests_taken || 0,
+        writing: data.writing_tests_taken || 0,
+        speaking: data.speaking_tests_taken || 0,
       }
     }
     
@@ -302,5 +338,114 @@ export const progressApi = {
       strengths: data.strengths || [],
       weaknesses: data.weaknesses || []
     }
+  },
+
+  // ============= NEW SCORING SYSTEM ENDPOINTS =============
+
+  // Get user's official test results history
+  // Uses: GET /api/v1/user/test-results (User Service)
+  getTestResults: async (skillType?: SkillType, page = 1, limit = 20) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    })
+    if (skillType) {
+      params.append('skill', skillType)
+    }
+
+    const response = await apiClient.get<ApiResponse<{
+      results: Array<{
+        id: string
+        user_id: string
+        test_type: string
+        skill_type: string
+        raw_score?: number
+        total_questions?: number
+        band_score: number
+        time_spent_minutes?: number
+        test_date: string
+        test_source?: string
+        created_at: string
+      }>
+      pagination: {
+        page: number
+        limit: number
+        total: number
+        total_pages: number
+      }
+    }>>(`/user/test-results?${params}`)
+
+    return {
+      results: response.data.data.results,
+      pagination: response.data.data.pagination
+    }
+  },
+
+  // Get user's practice activities
+  // Uses: GET /api/v1/user/practice-activities (User Service)
+  getPracticeActivities: async (skillType?: SkillType, page = 1, limit = 20) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    })
+    if (skillType) {
+      params.append('skill', skillType)
+    }
+
+    const response = await apiClient.get<ApiResponse<{
+      activities: Array<{
+        id: string
+        user_id: string
+        skill: string
+        activity_type: string
+        exercise_id?: string
+        exercise_title?: string
+        score?: number
+        band_score?: number
+        correct_answers: number
+        total_questions?: number
+        accuracy_percentage?: number
+        time_spent_seconds?: number
+        completed_at?: string
+        created_at: string
+      }>
+      pagination: {
+        page: number
+        limit: number
+        total: number
+        total_pages: number
+      }
+    }>>(`/user/practice-activities?${params}`)
+
+    return {
+      activities: response.data.data.activities,
+      pagination: response.data.data.pagination
+    }
+  },
+
+  // Get practice statistics
+  // Uses: GET /api/v1/user/practice-statistics (User Service)
+  getPracticeStatistics: async (skillType?: SkillType) => {
+    const params = skillType ? `?skill=${skillType}` : ''
+    const response = await apiClient.get<ApiResponse<{
+      total_activities: number
+      total_time_spent_seconds: number
+      average_accuracy?: number
+      best_accuracy?: number
+      activities_by_type: Array<{
+        activity_type: string
+        count: number
+        average_accuracy?: number
+      }>
+      recent_activities: Array<{
+        id: string
+        skill: string
+        activity_type: string
+        accuracy_percentage?: number
+        completed_at: string
+      }>
+    }>>(`/user/practice-statistics${params}`)
+
+    return response.data.data
   },
 }

@@ -38,38 +38,31 @@ LIMIT 200;
 -- ============================================
 -- 2. EXERCISE_ANALYTICS
 -- ============================================
--- Detailed analytics for exercises based on actual attempts
+-- Daily analytics for exercises based on actual attempts
+-- Note: Schema is simplified - only tracks: total_attempts, completed_attempts, 
+--       average_score, average_completion_time, pass_rate
 
 INSERT INTO exercise_analytics (
-    exercise_id, total_attempts, completed_attempts, abandoned_attempts,
-    average_score, median_score, highest_score, lowest_score,
-    average_completion_time, median_completion_time, actual_difficulty,
-    question_statistics
+    exercise_id, date, total_attempts, completed_attempts,
+    average_score, average_completion_time, pass_rate
 )
 SELECT 
     e.id,
+    CURRENT_DATE,
     COALESCE(attempt_stats.total_attempts, 0),
     COALESCE(attempt_stats.completed_attempts, 0),
-    COALESCE(attempt_stats.abandoned_attempts, 0),
     COALESCE(score_stats.avg_score, 0),
-    COALESCE(score_stats.median_score, 0),
-    COALESCE(score_stats.max_score, 0),
-    COALESCE(score_stats.min_score, 0),
     COALESCE(time_stats.avg_time, 0),
-    COALESCE(time_stats.median_time, 0),
     CASE 
-        WHEN COALESCE(score_stats.avg_score, 0) >= 80 THEN 'easy'
-        WHEN COALESCE(score_stats.avg_score, 0) >= 60 THEN 'medium'
-        ELSE 'hard'
-    END,
-    COALESCE(q_stats.question_stats, '[]'::jsonb)
+        WHEN COALESCE(attempt_stats.completed_attempts, 0) = 0 THEN 0
+        ELSE COALESCE(score_stats.pass_count::DECIMAL / NULLIF(attempt_stats.completed_attempts, 0) * 100, 0)
+    END
 FROM exercises e
 LEFT JOIN (
     SELECT 
         exercise_id,
         COUNT(*) as total_attempts,
-        COUNT(*) FILTER (WHERE status = 'completed') as completed_attempts,
-        COUNT(*) FILTER (WHERE status = 'abandoned') as abandoned_attempts
+        COUNT(*) FILTER (WHERE status = 'completed') as completed_attempts
     FROM user_exercise_attempts
     GROUP BY exercise_id
 ) attempt_stats ON e.id = attempt_stats.exercise_id
@@ -77,9 +70,7 @@ LEFT JOIN (
     SELECT 
         exercise_id,
         AVG(score) as avg_score,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY score) as median_score,
-        MAX(score) as max_score,
-        MIN(score) as min_score
+        COUNT(*) FILTER (WHERE score >= 60) as pass_count -- Assuming 60% is passing
     FROM user_exercise_attempts
     WHERE status = 'completed' AND score IS NOT NULL
     GROUP BY exercise_id
@@ -87,43 +78,17 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT 
         exercise_id,
-        AVG(time_spent_seconds) as avg_time,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY time_spent_seconds) as median_time
+        AVG(time_spent_seconds) as avg_time
     FROM user_exercise_attempts
     WHERE status = 'completed' AND time_spent_seconds IS NOT NULL
     GROUP BY exercise_id
 ) time_stats ON e.id = time_stats.exercise_id
-LEFT JOIN (
-    SELECT 
-        q.exercise_id,
-        jsonb_agg(
-            jsonb_build_object(
-                'question_id', q.id,
-                'correct_rate', COALESCE(
-                    (SELECT COUNT(*)::DECIMAL / NULLIF(COUNT(*), 0)
-                     FROM user_answers ua
-                     JOIN user_exercise_attempts uea ON ua.attempt_id = uea.id
-                     WHERE ua.question_id = q.id 
-                       AND uea.status = 'completed'
-                       AND ua.is_correct = true), 0
-                )
-            )
-        ) as question_stats
-    FROM questions q
-    GROUP BY q.exercise_id
-) q_stats ON e.id = q_stats.exercise_id
-ON CONFLICT (exercise_id) DO UPDATE SET
+ON CONFLICT (exercise_id, date) DO UPDATE SET
     total_attempts = EXCLUDED.total_attempts,
     completed_attempts = EXCLUDED.completed_attempts,
-    abandoned_attempts = EXCLUDED.abandoned_attempts,
     average_score = EXCLUDED.average_score,
-    median_score = EXCLUDED.median_score,
-    highest_score = EXCLUDED.highest_score,
-    lowest_score = EXCLUDED.lowest_score,
     average_completion_time = EXCLUDED.average_completion_time,
-    median_completion_time = EXCLUDED.median_completion_time,
-    actual_difficulty = EXCLUDED.actual_difficulty,
-    question_statistics = EXCLUDED.question_statistics,
+    pass_rate = EXCLUDED.pass_rate,
     updated_at = CURRENT_TIMESTAMP;
 
 -- Summary

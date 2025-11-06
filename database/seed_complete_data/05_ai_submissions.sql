@@ -276,10 +276,20 @@ FROM generate_series(1, 3) part_num
 CROSS JOIN generate_series(1, 15);
 
 -- ============================================
--- 3. WRITING_SUBMISSIONS
+-- 3. WRITING_SUBMISSIONS & EVALUATIONS
 -- ============================================
--- Note: user_id references users from auth_db (not user_profiles from user_db)
+-- ⚠️  DEPRECATED: These tables have been migrated to exercise_service
+-- Writing and Speaking submissions are now stored in exercise_submissions table (exercise_db)
+-- Evaluations are stored as JSONB in exercise_submissions.ai_evaluation_result
+-- 
+-- References:
+-- - /docs/SCORING_SYSTEM_REFACTORING_PLAN.md
+-- - /database/schemas/04_exercise_service.sql (exercise_submissions table)
+--
+-- This section is commented out to avoid errors.
+-- New submissions will be created through exercise-service API.
 
+/*
 INSERT INTO writing_submissions (
     id, user_id, task_type, task_prompt_id, task_prompt_text,
     essay_text, word_count, time_spent_seconds, submitted_from,
@@ -542,14 +552,15 @@ SELECT
     (random() * 3000 + 4000)::INTEGER
 FROM speaking_submissions ss
 WHERE ss.status = 'completed';
+*/
 
 -- Summary
 SELECT 
-    '✅ Phase 5 Complete: AI Submissions Created' as status,
+    '✅ Phase 5 Complete: AI Prompts Created' as status,
     (SELECT COUNT(*) FROM writing_prompts) as total_writing_prompts,
     (SELECT COUNT(*) FROM speaking_prompts) as total_speaking_prompts,
-    (SELECT COUNT(*) FROM writing_submissions) as total_writing_submissions,
-    (SELECT COUNT(*) FROM writing_evaluations) as total_writing_evaluations,
-    (SELECT COUNT(*) FROM speaking_submissions) as total_speaking_submissions,
-    (SELECT COUNT(*) FROM speaking_evaluations) as total_speaking_evaluations;
+    0 as total_writing_submissions, -- Migrated to exercise_submissions
+    0 as total_writing_evaluations, -- Stored in exercise_submissions.ai_evaluation_result
+    0 as total_speaking_submissions, -- Migrated to exercise_submissions
+    0 as total_speaking_evaluations; -- Stored in exercise_submissions.ai_evaluation_result
 

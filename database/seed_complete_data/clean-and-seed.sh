@@ -96,7 +96,7 @@ execute_sql "course_db" "TRUNCATE TABLE video_watch_history, course_reviews, les
 echo -e "${GREEN}✓ course_db cleaned${NC}"
 
 echo -e "${YELLOW}Cleaning user_db...${NC}"
-execute_sql "user_db" "TRUNCATE TABLE study_reminders, user_preferences, user_achievements, study_goals, study_sessions, skill_statistics, learning_progress, user_profiles CASCADE;" 2>/dev/null || echo "  (some tables may not exist yet)"
+execute_sql "user_db" "TRUNCATE TABLE study_reminders, user_preferences, user_achievements, study_goals, study_sessions, official_test_results, practice_activities, skill_statistics, learning_progress, user_profiles CASCADE;" 2>/dev/null || echo "  (some tables may not exist yet)"
 echo -e "${GREEN}✓ user_db cleaned${NC}"
 
 echo -e "${YELLOW}Cleaning auth_db...${NC}"
@@ -212,6 +212,10 @@ echo ""
 
 echo -e "${GREEN}PHASE 2: USER_DB - PROFILES & PROGRESS${NC}"
 run_sql_file_docker "user_db" "$SEED_DIR/02_user_profiles.sql" "User Profiles and Progress"
+echo ""
+
+echo -e "${GREEN}PHASE 2B: USER_DB - OFFICIAL TEST RESULTS${NC}"
+run_sql_file_docker "user_db" "$SEED_DIR/02b_official_test_results.sql" "Official Test Results (Per-Skill Model)"
 echo ""
 
 echo -e "${GREEN}PHASE 3: COURSE_DB - USER ACTIVITIES${NC}"

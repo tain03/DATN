@@ -621,8 +621,8 @@ export interface Notification {
   read_at?: string // Backend format
 }
 
-// Achievement Types
-export interface Achievement {
+// Achievement Types (UI Display Model)
+export interface AchievementUI {
   id: string
   title: string
   description: string
@@ -727,6 +727,78 @@ export interface UserAchievement {
   achievement_description?: string
   earned_at_flat?: string
 }
+
+// Official Test Results (new scoring system)
+export interface OfficialTestResult {
+  id: string
+  user_id: string
+  test_type: "full_test" | "mock_test" | "sectional_test" | "practice"
+  skill_type: "listening" | "reading" | "writing" | "speaking"
+  
+  // Source tracking
+  source_service?: string
+  source_table?: string
+  source_id?: string
+  
+  // Scores
+  raw_score?: number
+  total_questions?: number
+  band_score: number
+  
+  // AI evaluation (for writing/speaking)
+  ai_model_name?: string
+  evaluation_criteria?: Record<string, number>
+  
+  // Timing
+  time_spent_minutes?: number
+  test_date: string
+  test_duration_minutes?: number
+  completion_status?: "completed" | "incomplete" | "abandoned"
+  
+  // Metadata
+  test_source?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+// Practice Activities (new scoring system)
+export interface PracticeActivity {
+  id: string
+  user_id: string
+  skill: "listening" | "reading" | "writing" | "speaking"
+  activity_type: "drill" | "part_test" | "section_practice" | "question_set"
+  
+  // Exercise reference
+  exercise_id?: string
+  exercise_title?: string
+  
+  // Scoring
+  score?: number
+  max_score?: number
+  band_score?: number
+  correct_answers: number
+  total_questions?: number
+  accuracy_percentage?: number
+  
+  // Timing
+  time_spent_seconds?: number
+  started_at?: string
+  completed_at?: string
+  completion_status?: "completed" | "incomplete" | "abandoned" | "in_progress"
+  
+  // AI evaluation
+  ai_evaluated?: boolean
+  ai_feedback_summary?: string
+  
+  // Metadata
+  difficulty_level?: "beginner" | "intermediate" | "advanced" | "expert"
+  tags?: string[]
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
 export type Difficulty = "EASY" | "MEDIUM" | "HARD"
 export type QuestionType =
   | "MULTIPLE_CHOICE"

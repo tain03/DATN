@@ -22,6 +22,8 @@ const ProgressChart = lazy(() => import("@/components/dashboard/progress-chart")
 const SkillProgressCard = lazy(() => import("@/components/dashboard/skill-progress-card").then(m => ({ default: m.SkillProgressCard })))
 const ActivityTimeline = lazy(() => import("@/components/dashboard/activity-timeline").then(m => ({ default: m.ActivityTimeline })))
 const StatCard = lazy(() => import("@/components/dashboard/stat-card").then(m => ({ default: m.StatCard })))
+const TestResultsSection = lazy(() => import("@/components/dashboard/test-results-section").then(m => ({ default: m.TestResultsSection })))
+const ScoringSystemInfo = lazy(() => import("@/components/dashboard/scoring-system-info").then(m => ({ default: m.ScoringSystemInfo })))
 
 export default function DashboardPage() {
   return (
@@ -226,7 +228,7 @@ function DashboardContent() {
               <StatCard
                 title={t('stats.averageScore')}
                 value={stats.avgScore > 0 ? stats.avgScore.toFixed(1) : (summary?.averageScore?.toFixed(1) || "0.0")}
-                description="Điểm trung bình (thang 0-9)"
+                description="Official Test Band Score (0-9)"
                 icon={Target}
               />
               <StatCard
@@ -352,6 +354,11 @@ function DashboardContent() {
           {/* Skills Tab - Only show if user preference allows */}
           {showStats && (
             <TabsContent value="skills" className="space-y-6">
+              {/* Scoring System Info */}
+              <Suspense fallback={<div className="h-20 flex items-center justify-center">Loading...</div>}>
+                <ScoringSystemInfo />
+              </Suspense>
+
               <Suspense fallback={
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[1, 2, 3, 4].map(i => (
@@ -384,6 +391,19 @@ function DashboardContent() {
                     targetScore={user?.targetBandScore || 9}
                     exercisesCompleted={getSkillExerciseCount('speaking')}
                   />
+                </div>
+              </Suspense>
+
+              {/* Test Results & Practice Activities Section */}
+              <Suspense fallback={
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  {[1, 2].map(i => (
+                    <Card key={i}><CardContent className="p-6"><div className="h-[250px] flex items-center justify-center">Loading...</div></CardContent></Card>
+                  ))}
+                </div>
+              }>
+                <div className="mt-6">
+                  <TestResultsSection />
                 </div>
               </Suspense>
             </TabsContent>
