@@ -1,8 +1,6 @@
 package routes
 
 import (
-	"strings"
-
 	"github.com/bisosad1501/DATN/services/ai-service/internal/handlers"
 	"github.com/bisosad1501/DATN/services/ai-service/internal/middleware"
 	"github.com/gin-gonic/gin"
@@ -11,19 +9,6 @@ import (
 func SetupRoutes(handler *handlers.AIHandler, authMiddleware *middleware.AuthMiddleware, rateLimitMiddleware *middleware.RateLimitMiddleware) *gin.Engine {
 	router := gin.Default()
 
-	// Increase max memory for multipart forms (for audio file uploads)
-	router.MaxMultipartMemory = 32 << 20 // 32 MB
-
-	// Disable automatic body parsing for multipart to prevent conflicts
-	router.Use(func(c *gin.Context) {
-		contentType := c.GetHeader("Content-Type")
-		// Skip body binding for multipart requests - we'll parse manually
-		if strings.HasPrefix(contentType, "multipart/form-data") {
-			// Do nothing - let handler parse manually
-		}
-		c.Next()
-	})
-
 	// Health check
 	router.GET("/health", handler.HealthCheck)
 
@@ -31,30 +16,9 @@ func SetupRoutes(handler *handlers.AIHandler, authMiddleware *middleware.AuthMid
 	v1 := router.Group("/api/v1")
 	v1.Use(rateLimitMiddleware.GlobalRateLimit())
 	{
-		// Writing endpoints (protected + submission rate limit)
-		writing := v1.Group("/ai/writing")
-		writing.Use(authMiddleware.AuthRequired())
-		{
-			writing.POST("/submit", rateLimitMiddleware.SubmissionRateLimit(), handler.SubmitWriting)
-			writing.GET("/submissions/:id", handler.GetWritingSubmission)
-			writing.GET("/submissions", handler.GetWritingSubmissions)
-			writing.GET("/prompts", handler.GetWritingPrompts)
-			writing.GET("/prompts/:id", handler.GetWritingPrompt)
-		}
-
-		// Speaking endpoints (protected + submission rate limit)
-		speaking := v1.Group("/ai/speaking")
-		speaking.Use(authMiddleware.AuthRequired())
-		{
-			speaking.POST("/submit", rateLimitMiddleware.SubmissionRateLimit(), handler.SubmitSpeaking)
-			speaking.GET("/submissions", handler.GetSpeakingSubmissions)
-			speaking.GET("/submissions/:id", handler.GetSpeakingSubmission)
-			speaking.GET("/prompts", handler.GetSpeakingPrompts)
-			speaking.GET("/prompts/:id", handler.GetSpeakingPrompt)
-		}
-
 		// Pure Stateless API endpoints (no auth - for internal service-to-service calls)
-		// Phase 5.2: These endpoints don't write to database
+		// AI Service is now a PURE EVALUATION ENGINE
+		// All submission management moved to Exercise Service
 		internal := v1.Group("/ai/internal")
 		{
 			internal.POST("/writing/evaluate", handler.EvaluateWriting)
@@ -67,24 +31,8 @@ func SetupRoutes(handler *handlers.AIHandler, authMiddleware *middleware.AuthMid
 		admin.Use(authMiddleware.AuthRequired())
 		admin.Use(authMiddleware.RequireRole("admin"))
 		{
-			// Cache management (Phase 5.3)
+			// Cache management
 			admin.GET("/cache/stats", handler.GetCacheStatistics)
-
-			// Writing prompts management
-			adminWriting := admin.Group("/writing/prompts")
-			{
-				adminWriting.POST("", handler.CreateWritingPrompt)
-				adminWriting.PUT("/:id", handler.UpdateWritingPrompt)
-				adminWriting.DELETE("/:id", handler.DeleteWritingPrompt)
-			}
-
-			// Speaking prompts management
-			adminSpeaking := admin.Group("/speaking/prompts")
-			{
-				adminSpeaking.POST("", handler.CreateSpeakingPrompt)
-				adminSpeaking.PUT("/:id", handler.UpdateSpeakingPrompt)
-				adminSpeaking.DELETE("/:id", handler.DeleteSpeakingPrompt)
-			}
 		}
 	}
 

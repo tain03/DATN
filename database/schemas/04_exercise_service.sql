@@ -2,9 +2,16 @@
 -- EXERCISE SERVICE DATABASE SCHEMA (CLEAN VERSION)
 -- ============================================================================
 -- Database: exercise_db
--- Purpose: Exercise management, questions, and user attempts
--- Version: 1.0
--- Last Updated: 2025-11-06
+-- Purpose: Exercise management for ALL 4 IELTS skills (Listening, Reading, Writing, Speaking)
+--          Single source of truth for exercises, prompts, questions, and submissions
+-- Version: 2.0
+-- Last Updated: 2025-11-07
+--
+-- KEY FEATURES:
+-- - Manages exercises for all 4 skills (L/R/W/S)
+-- - Stores Writing/Speaking prompts directly in exercises table
+-- - Stores all user submissions (user_exercise_attempts)
+-- - Auto-grades L/R, calls AI service ONLY for W/S evaluation
 --
 -- IMPORTANT: This is a CLEAN schema file that creates the database from scratch.
 -- It is NOT a migration file. Use this to:
@@ -78,10 +85,38 @@ CREATE TABLE exercises (
     is_official_test BOOLEAN DEFAULT false,
     test_category VARCHAR(30) CHECK (test_category IS NULL OR test_category IN ('practice', 'mock_test', 'official_test', 'mini_test')),
     
+    -- Writing exercise fields (added for Phase 4)
+    writing_task_type VARCHAR(20) CHECK (writing_task_type IN ('task1', 'task2')),
+    writing_prompt_text TEXT,
+    writing_visual_type VARCHAR(50), -- 'bar_chart', 'line_graph', 'pie_chart', 'table', 'process_diagram', 'map'
+    writing_visual_url TEXT,
+    writing_word_requirement INTEGER DEFAULT 250, -- Task 1: 150, Task 2: 250
+    
+    -- Speaking exercise fields (added for Phase 4)
+    speaking_part_number INTEGER CHECK (speaking_part_number IN (1, 2, 3)),
+    speaking_prompt_text TEXT,
+    speaking_cue_card_topic VARCHAR(200), -- For Part 2
+    speaking_cue_card_points TEXT[], -- Array of bullet points for Part 2
+    speaking_preparation_time_seconds INTEGER DEFAULT 60, -- Part 2: 1 minute prep
+    speaking_response_time_seconds INTEGER DEFAULT 120, -- Part 2: 2 minutes speaking
+    speaking_follow_up_questions TEXT[], -- For Part 3
+    
     -- Constraint: Reading exercises must have ielts_test_type
     CONSTRAINT chk_reading_ielts_test_type CHECK (
         (skill_type = 'reading' AND ielts_test_type IS NOT NULL) OR
         (skill_type != 'reading' AND ielts_test_type IS NULL)
+    ),
+    
+    -- Constraint: Writing exercises must have task type and prompt
+    CONSTRAINT chk_writing_required_fields CHECK (
+        (skill_type != 'writing') OR 
+        (writing_task_type IS NOT NULL AND writing_prompt_text IS NOT NULL)
+    ),
+    
+    -- Constraint: Speaking exercises must have part number and prompt
+    CONSTRAINT chk_speaking_required_fields CHECK (
+        (skill_type != 'speaking') OR 
+        (speaking_part_number IS NOT NULL AND speaking_prompt_text IS NOT NULL)
     )
 );
 
@@ -94,6 +129,8 @@ CREATE INDEX idx_exercises_slug ON exercises(slug) WHERE deleted_at IS NULL;
 CREATE INDEX idx_exercises_test_category ON exercises(test_category);
 CREATE INDEX idx_exercises_test_type ON exercises(skill_type, ielts_test_type) WHERE skill_type = 'reading';
 CREATE INDEX idx_exercises_is_official_test ON exercises(is_official_test) WHERE is_official_test = true;
+CREATE INDEX idx_exercises_writing_task ON exercises(writing_task_type) WHERE skill_type = 'writing';
+CREATE INDEX idx_exercises_speaking_part ON exercises(speaking_part_number) WHERE skill_type = 'speaking';
 
 -- ----------------------------------------------------------------------------
 -- Exercise Sections Table
