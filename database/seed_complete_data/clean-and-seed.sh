@@ -212,6 +212,7 @@ echo ""
 
 echo -e "${GREEN}PHASE 2: USER_DB - PROFILES & PROGRESS${NC}"
 run_sql_file_docker "user_db" "$SEED_DIR/02_user_profiles.sql" "User Profiles and Progress"
+run_sql_file_docker "user_db" "$SEED_DIR/02_learning_progress_FIXED.sql" "Learning Progress (Band Score Validation)"
 echo ""
 
 echo -e "${GREEN}PHASE 2B: USER_DB - OFFICIAL TEST RESULTS${NC}"
@@ -224,6 +225,7 @@ echo ""
 
 echo -e "${GREEN}PHASE 4: EXERCISE_DB - EXERCISES${NC}"
 run_sql_file_docker "exercise_db" "$SEED_DIR/03_exercises.sql" "Exercises, Questions, and User Attempts"
+run_sql_file_docker "exercise_db" "$SEED_DIR/03_exercises_FIXED.sql" "Writing & Speaking Exercises (Schema Compliant)"
 run_sql_file_docker "exercise_db" "$SEED_DIR/03_exercises_enhanced.sql" "Enhanced Realistic Questions"
 echo ""
 
@@ -246,8 +248,50 @@ run_sql_file_docker "exercise_db" "$SEED_DIR/08b_exercise_additional.sql" "Exerc
 run_sql_file_docker "notification_db" "$SEED_DIR/08c_notification_additional.sql" "Scheduled Notifications"
 echo ""
 
+echo -e "${GREEN}PHASE 9: ENHANCED REALISTIC DATA${NC}"
+run_sql_file_docker "user_db" "$SEED_DIR/09_enhanced_data_simple.sql" "User Follows, Study Sessions, Goals"
+echo ""
+
+echo -e "${GREEN}PHASE 10: FIX DATA TIMELINE & LOGIC${NC}"
+run_sql_file_docker "course_db" "$SEED_DIR/FIX_DATA_TIMELINE.sql" "Ensure Logical Flow & Timeline Consistency"
+echo ""
+
+echo -e "${GREEN}PHASE 11: VALIDATE DATA INTEGRITY${NC}"
+run_sql_file_docker "course_db" "$SEED_DIR/VALIDATE_DATA_INTEGRITY.sql" "Validate All Data Relationships"
+echo ""
+
+echo -e "${GREEN}PHASE 12: FILL MISSING FIELDS${NC}"
+run_sql_file_docker "user_db" "$SEED_DIR/13_fill_missing_fields.sql" "Populate Empty Metadata Fields"
+echo ""
+
+echo -e "${GREEN}PHASE 13: FIX COURSE PROGRESS LOGIC${NC}"
+run_sql_file_docker "course_db" "$SEED_DIR/14_fix_course_progress.sql" "Reset Enrollment Progress (Real-Time Calculation)"
+echo ""
+
+echo -e "${GREEN}PHASE 14: FIX VIDEO RESUME POSITION${NC}"
+run_sql_file_docker "course_db" "$SEED_DIR/15_fix_lesson_position.sql" "Calculate Last Position for Video Resume"
+echo ""
+
+echo -e "${GREEN}PHASE 15: FIX EXERCISE SYNC STATUS${NC}"
+run_sql_file_docker "exercise_db" "$SEED_DIR/16_fix_exercise_sync.sql" "Mark Completed Exercises as Synced"
+echo ""
+
+echo -e "${GREEN}PHASE 16: FIX DATA LOGIC ISSUES${NC}"
+run_sql_file_docker "exercise_db" "$SEED_DIR/17_fix_data_logic.sql" "Fix Writing/Speaking Scores, Streaks, Access Times"
+echo ""
+
+echo -e "${GREEN}PHASE 17: COMPREHENSIVE VALIDATION${NC}"
+run_sql_file_docker "course_db" "$SEED_DIR/COMPREHENSIVE_VALIDATION.sql" "Validate All Data Logic"
+echo ""
+
+echo -e "${GREEN}PHASE 18: PRACTICE ACTIVITIES${NC}"
+echo "Running practice activities seeding script..."
+bash "$SEED_DIR/18_practice_activities.sh"
+echo ""
+
 echo ""
 echo -e "${GREEN}============================================${NC}"
 echo -e "${GREEN}✅ COMPLETE!${NC}"
 echo -e "${GREEN}============================================${NC}"
+
 
