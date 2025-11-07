@@ -19,11 +19,17 @@ func SetupRoutes(router *gin.Engine, handler *handlers.StorageHandler) {
 				// Direct upload (proxy to MinIO)
 				audio.POST("/upload", handler.UploadAudio)
 
-				// Get audio info
-				audio.GET("/info/:object_name", handler.GetAudioInfo)
+				// Get audio info (use *object_name to match full path with slashes)
+				audio.GET("/info/*object_name", handler.GetAudioInfo)
 
-				// Delete audio
-				audio.DELETE("/:object_name", handler.DeleteAudio)
+				// Get presigned URL for audio file (use *object_name to match full path with slashes)
+				audio.GET("/presigned-url/*object_name", handler.GetPresignedURL)
+
+				// Serve audio file directly (stream from MinIO)
+				audio.GET("/file/*object_name", handler.ServeAudioFile)
+
+				// Delete audio (use *object_name to match full path with slashes)
+				audio.DELETE("/*object_name", handler.DeleteAudio)
 			}
 		}
 	}

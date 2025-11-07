@@ -65,14 +65,27 @@ func (h *StorageHandler) UploadAudio(c *gin.Context) {
 		return
 	}
 
+	// Return both URLs: presigned for frontend, internal for backend
+	responseData := gin.H{
+		"audio_url":    result.Data.AudioURL, // Presigned URL (for frontend)
+		"object_name":  result.Data.ObjectName,
+		"content_type": result.Data.ContentType,
+		"size":         result.Data.Size,
+	}
+
+	// Add internal URL if available (for backend services)
+	if result.Data.InternalAudioURL != "" {
+		responseData["internal_audio_url"] = result.Data.InternalAudioURL
+	}
+
+	// Add public URL if available
+	if result.Data.PublicAudioURL != "" {
+		responseData["public_audio_url"] = result.Data.PublicAudioURL
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data": gin.H{
-			"audio_url":    result.Data.AudioURL,
-			"object_name":  result.Data.ObjectName,
-			"content_type": result.Data.ContentType,
-			"size":         result.Data.Size,
-		},
+		"data":    responseData,
 	})
 }
 

@@ -16,6 +16,12 @@ import { exercisesApi } from "@/lib/api/exercises"
 import type { ExerciseDetailResponse } from "@/types"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { useTranslations } from "@/lib/i18n"
+import { 
+  WritingExerciseDetail, 
+  SpeakingExerciseDetail, 
+  ListeningExerciseDetail, 
+  ReadingExerciseDetail 
+} from "@/components/exercises/skill-specific"
 
 export default function ExerciseDetailPage() {
   const params = useParams()
@@ -217,138 +223,11 @@ export default function ExerciseDetailPage() {
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('exercise_information')}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('time_limit')}</p>
-                      <p className="font-medium">
-                        {exercise.time_limit_minutes ? `${exercise.time_limit_minutes} ${t('minutes')}` : t('no_time_limit')}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('number_of_questions')}</p>
-                      <p className="font-medium">{totalQuestions} {t('questions')}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <Target className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('total_points')}</p>
-                      <p className="font-medium">
-                        {exercise.total_points || totalQuestions} {t('points')}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {t('calculated_from')} {totalQuestions} {t('questions')}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <BookOpen className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('number_of_sections')}</p>
-                      <p className="font-medium">{sections.length} {t('sections')}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {exercise.instructions && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h4 className="font-semibold mb-2">{t('instructions')}</h4>
-                      <div 
-                        className="prose prose-sm max-w-none text-muted-foreground"
-                        dangerouslySetInnerHTML={{ __html: exercise.instructions }}
-                      />
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('exercise_structure')}</CardTitle>
-                <CardDescription>
-                  {t('sections_with_total_questions', { sections: sections.length.toString(), total: totalQuestions.toString() })}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {sections && sections.length > 0 ? (
-                    sections.map((sectionData, index) => {
-                      const section = sectionData.section
-                      const questionCount = sectionData.questions?.length || section?.total_questions || 0
-                      return (
-                        <div
-                          key={section?.id || `section-${index}`}
-                          className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              <span className="text-sm font-semibold text-primary">
-                                {index + 1}
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="font-medium">{section?.title}</h4>
-                              {section?.description && (
-                                <p className="text-sm text-muted-foreground">{section.description}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>{questionCount} {t('questions')}</span>
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      {t('no_sections_yet')}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('important_notes')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 mt-0.5 text-green-500" />
-                    <span>{t('read_instructions_carefully')}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 mt-0.5 text-green-500" />
-                    <span>{t('manage_time_effectively')}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 mt-0.5 text-green-500" />
-                    <span>{t('review_answers_before_submit')}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 mt-0.5 text-green-500" />
-                    <span>{t('save_draft_and_continue')}</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+            {/* Skill-Specific Exercise Details */}
+            {exercise.skill_type === 'writing' && <WritingExerciseDetail exercise={exercise} />}
+            {exercise.skill_type === 'speaking' && <SpeakingExerciseDetail exercise={exercise} />}
+            {exercise.skill_type === 'listening' && <ListeningExerciseDetail exercise={exercise} sections={sections} />}
+            {exercise.skill_type === 'reading' && <ReadingExerciseDetail exercise={exercise} sections={sections} />}
           </div>
 
           <div className="space-y-6">

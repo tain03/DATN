@@ -337,6 +337,11 @@ CREATE TABLE user_answers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Unique constraint to prevent duplicate answers for same question in same attempt
+ALTER TABLE user_answers 
+ADD CONSTRAINT user_answers_attempt_question_unique 
+UNIQUE (attempt_id, question_id);
+
 CREATE INDEX idx_user_answers_attempt_id ON user_answers(attempt_id);
 CREATE INDEX idx_user_answers_question_id ON user_answers(question_id);
 CREATE INDEX idx_user_answers_user_id ON user_answers(user_id);

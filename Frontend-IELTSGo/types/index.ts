@@ -420,6 +420,19 @@ export interface Submission {
   device_type?: 'web' | 'android' | 'ios'
   created_at: string
   updated_at: string
+  // Writing/Speaking specific fields
+  essay_text?: string
+  word_count?: number
+  task_type?: string
+  prompt_text?: string
+  audio_url?: string
+  audio_duration_seconds?: number
+  transcript_text?: string
+  speaking_part_number?: number
+  // AI evaluation fields
+  evaluation_status?: 'pending' | 'processing' | 'completed' | 'failed' | 'transcribing' | 'evaluating'
+  ai_feedback?: string
+  detailed_scores?: string | Record<string, any> // JSONB field - can be string or parsed object
 }
 
 export interface SubmissionWithExercise {

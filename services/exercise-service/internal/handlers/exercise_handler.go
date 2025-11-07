@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -230,6 +231,7 @@ func (h *ExerciseHandler) SubmitAnswers(c *gin.Context) {
 
 	err = h.service.SubmitAnswers(submissionID, req.Answers)
 	if err != nil {
+		log.Printf("[Exercise-Handler] Error submitting answers for submission %s: %v", submissionID, err)
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,
 			Error: &ErrorInfo{

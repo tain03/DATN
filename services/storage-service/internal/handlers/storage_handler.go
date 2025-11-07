@@ -5,7 +5,9 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bisosad1501/DATN/services/storage-service/internal/config"
 	"github.com/bisosad1501/DATN/services/storage-service/internal/minio"
@@ -101,30 +103,55 @@ func (h *StorageHandler) UploadAudio(c *gin.Context) {
 		return
 	}
 
-	// Generate internal access URL (for AI service)
+	// Generate internal access URL (for AI service/backend)
 	internalURL := fmt.Sprintf("http://%s/%s/%s",
 		h.config.MinIO.Endpoint,
 		h.minioClient.GetBucketName(),
 		objectName,
 	)
 
+	// Generate presigned URL (for frontend - expires in 7 days)
+	presignedURL, err := h.minioClient.GetPresignedURL(objectName, 7*24*time.Hour)
+	if err != nil {
+		log.Printf("⚠️ Failed to generate presigned URL: %v", err)
+		// Continue without presigned URL - frontend can use API gateway proxy
+		presignedURL = ""
+	}
+
 	log.Printf("✅ Uploaded audio: %s (size: %d bytes)", objectName, header.Size)
+	log.Printf("📎 Internal URL: %s", internalURL)
+	if presignedURL != "" {
+		log.Printf("📎 Presigned URL: %s", presignedURL)
+	}
+
+	responseData := gin.H{
+		"audio_url":       internalURL, // For backend services
+		"public_audio_url": presignedURL, // For frontend (presigned URL)
+		"object_name":     objectName,
+		"content_type":    contentType,
+		"size":            header.Size,
+	}
+
+	// For backward compatibility, if presigned URL exists, use it as primary audio_url for frontend
+	// But keep internal URL for backend
+	if presignedURL != "" {
+		responseData["audio_url"] = presignedURL
+		responseData["internal_audio_url"] = internalURL
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data": gin.H{
-			"audio_url":    internalURL,
-			"object_name":  objectName,
-			"content_type": contentType,
-			"size":         header.Size,
-		},
+		"data":    responseData,
 	})
 }
 
 // DeleteAudio deletes audio file
-// DELETE /api/v1/storage/audio/:object_name
+// DELETE /api/v1/storage/audio/*object_name
 func (h *StorageHandler) DeleteAudio(c *gin.Context) {
 	objectName := c.Param("object_name")
+	// Strip leading slash (Gin adds it when using *param)
+	objectName = strings.TrimPrefix(objectName, "/")
+	
 	if objectName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -149,9 +176,12 @@ func (h *StorageHandler) DeleteAudio(c *gin.Context) {
 }
 
 // GetAudioInfo gets audio file metadata
-// GET /api/v1/storage/audio/info/:object_name
+// GET /api/v1/storage/audio/info/*object_name
 func (h *StorageHandler) GetAudioInfo(c *gin.Context) {
 	objectName := c.Param("object_name")
+	// Strip leading slash (Gin adds it when using *param)
+	objectName = strings.TrimPrefix(objectName, "/")
+	
 	if objectName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -180,6 +210,106 @@ func (h *StorageHandler) GetAudioInfo(c *gin.Context) {
 			"etag":          info.ETag,
 		},
 	})
+}
+
+// GetPresignedURL generates a presigned URL for an audio file
+// GET /api/v1/storage/audio/presigned-url/*object_name
+func (h *StorageHandler) GetPresignedURL(c *gin.Context) {
+	objectName := c.Param("object_name")
+	// Strip leading slash (Gin adds it when using *param)
+	objectName = strings.TrimPrefix(objectName, "/")
+	
+	if objectName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "object_name is required",
+		})
+		return
+	}
+
+	// Parse expiry from query (default 7 days)
+	expiryDays := 7
+	if expiryStr := c.Query("expiry_days"); expiryStr != "" {
+		if days, err := strconv.Atoi(expiryStr); err == nil && days > 0 && days <= 30 {
+			expiryDays = days
+		}
+	}
+
+	// Generate presigned URL (expires in specified days)
+	presignedURL, err := h.minioClient.GetPresignedURL(objectName, time.Duration(expiryDays)*24*time.Hour)
+	if err != nil {
+		log.Printf("❌ Failed to generate presigned URL for %s: %v", objectName, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "failed to generate presigned URL",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"presigned_url": presignedURL,
+			"object_name":   objectName,
+			"expires_in":    expiryDays * 24 * 3600, // seconds
+		},
+	})
+}
+
+// ServeAudioFile streams audio file directly from MinIO
+// GET /api/v1/storage/audio/file/*object_name
+func (h *StorageHandler) ServeAudioFile(c *gin.Context) {
+	objectName := c.Param("object_name")
+	// Strip leading slash (Gin adds it when using *param)
+	objectName = strings.TrimPrefix(objectName, "/")
+	
+	if objectName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "object_name is required",
+		})
+		return
+	}
+
+	// Get object from MinIO
+	obj, err := h.minioClient.GetObject(objectName)
+	if err != nil {
+		log.Printf("❌ Failed to get audio file %s: %v", objectName, err)
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"error":   "audio file not found",
+		})
+		return
+	}
+	defer obj.Close()
+
+	// Get object info for content type and size
+	info, err := h.minioClient.GetObjectInfo(objectName)
+	if err != nil {
+		log.Printf("⚠️ Failed to get object info for %s: %v", objectName, err)
+		// Continue anyway, use default content type
+	}
+
+	// Set content type
+	contentType := "audio/mpeg"
+	if info.ContentType != "" {
+		contentType = info.ContentType
+	} else {
+		// Fallback: detect from extension
+		ext := filepath.Ext(objectName)
+		contentType = getContentType(ext)
+	}
+
+	// Set headers
+	c.Header("Content-Type", contentType)
+	c.Header("Accept-Ranges", "bytes")
+	c.Header("Content-Length", fmt.Sprintf("%d", info.Size))
+	c.Header("Cache-Control", "public, max-age=31536000") // Cache for 1 year
+	
+	// Stream the file
+	c.DataFromReader(http.StatusOK, info.Size, contentType, obj, nil)
+	
+	log.Printf("✅ Served audio file: %s (%s)", objectName, contentType)
 }
 
 // Helper function to get content type from extension

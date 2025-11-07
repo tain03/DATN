@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/bisosad1501/DATN/services/ai-service/internal/service"
 	"github.com/gin-gonic/gin"
@@ -75,9 +76,12 @@ func (h *AIHandler) TranscribeSpeaking(c *gin.Context) {
 // POST /api/v1/ai/speaking/evaluate
 func (h *AIHandler) EvaluateSpeaking(c *gin.Context) {
 	var req struct {
-		AudioURL       string `json:"audio_url" binding:"required"`
-		TranscriptText string `json:"transcript_text"`
-		PartNumber     int    `json:"part_number"`
+		AudioURL       string  `json:"audio_url" binding:"required"`
+		TranscriptText string  `json:"transcript_text"`
+		PromptText     string  `json:"prompt_text"`
+		PartNumber     int     `json:"part_number"`
+		WordCount      int     `json:"word_count"`
+		Duration       float64 `json:"duration"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -85,7 +89,13 @@ func (h *AIHandler) EvaluateSpeaking(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.EvaluateSpeakingPure(req.AudioURL, req.TranscriptText, req.PartNumber)
+	// Calculate word count from transcript if not provided
+	wordCount := req.WordCount
+	if wordCount == 0 && req.TranscriptText != "" {
+		wordCount = len(strings.Fields(req.TranscriptText))
+	}
+
+	result, err := h.service.EvaluateSpeakingPure(req.AudioURL, req.TranscriptText, req.PromptText, req.PartNumber, wordCount, req.Duration)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

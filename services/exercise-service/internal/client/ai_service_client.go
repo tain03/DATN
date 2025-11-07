@@ -87,9 +87,12 @@ type SpeakingTranscriptionResponse struct {
 
 // SpeakingEvaluationRequest represents request to evaluate speaking
 type SpeakingEvaluationRequest struct {
-	AudioURL       string `json:"audio_url"`
-	TranscriptText string `json:"transcript_text"`
-	PartNumber     int    `json:"part_number"` // 1, 2, 3
+	AudioURL       string  `json:"audio_url"`
+	TranscriptText string  `json:"transcript_text"`
+	PromptText     string  `json:"prompt_text"`
+	PartNumber     int     `json:"part_number"` // 1, 2, 3
+	WordCount      int     `json:"word_count"`
+	Duration       float64 `json:"duration"`
 }
 
 // SpeakingEvaluationResponse represents response from speaking evaluation

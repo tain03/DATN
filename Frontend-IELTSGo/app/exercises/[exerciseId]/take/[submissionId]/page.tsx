@@ -19,12 +19,30 @@ import { useToastWithI18n } from "@/lib/hooks/use-toast-with-i18n"
 import { WritingExerciseForm, useWritingExerciseForm } from "@/components/exercises/writing-exercise-form"
 import { SpeakingExerciseForm, useSpeakingExerciseForm } from "@/components/exercises/speaking-exercise-form"
 import { AIEvaluationLoading } from "@/components/exercises/ai-evaluation-loading"
+import { SubmitConfirmationDialog } from "@/components/exercises/submit-confirmation-dialog"
+import { ListeningExerciseTake, ReadingExerciseTake, WritingExerciseTake, SpeakingExerciseTake } from "@/components/exercises/take"
+import { storageApi } from "@/lib/api/storage"
 
 interface ExerciseData {
   exercise: {
     id: string
     title: string
     time_limit_minutes?: number
+    skill_type?: string
+    instructions?: string
+    description?: string
+    writing_task_type?: string
+    writing_prompt_text?: string
+    writing_visual_type?: string
+    writing_visual_url?: string
+    writing_word_requirement?: number
+    speaking_part_number?: number
+    speaking_prompt_text?: string
+    speaking_cue_card_topic?: string
+    speaking_cue_card_points?: string[]
+    speaking_follow_up_questions?: string[]
+    speaking_preparation_time_seconds?: number
+    speaking_response_time_seconds?: number
   }
   sections: ExerciseSection[]
 }
@@ -49,6 +67,8 @@ export default function TakeExercisePage() {
   const [hasTimeLimit, setHasTimeLimit] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [showSectionContent, setShowSectionContent] = useState(true) // Show passage/audio
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false)
+  const [pendingSubmit, setPendingSubmit] = useState(false) // Track if submit is pending confirmation
   
   // AI Evaluation states (for writing/speaking exercises)
   const [essayText, setEssayText] = useState("")
@@ -100,35 +120,52 @@ export default function TakeExercisePage() {
     tRef.current = t
   }, [router, toast, t])
 
+  // Timer ref to store interval ID for cleanup
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
   // Timer - Count UP for exercises without time limit, Countdown for exercises with time limit
   useEffect(() => {
+    // Stop timer if submitting or showing evaluation loading
+    if (submitting || showEvaluationLoading) {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current)
+        timerIntervalRef.current = null
+        timerInitializedRef.current = false
+      }
+      return
+    }
+
     if (!exerciseData) {
-      console.log('[Timer Debug] No exerciseData yet, skipping timer setup')
       return
     }
 
     // Prevent re-initialization if timer already running
     if (timerInitializedRef.current) {
-      console.log('[Timer Debug] Timer already initialized, skipping')
       return
     }
 
     const timeLimitMinutes = exerciseData.exercise.time_limit_minutes
-    console.log('[Timer Debug] timeLimitMinutes:', timeLimitMinutes)
-    console.log('[Timer Debug] hasTimeLimit will be:', timeLimitMinutes && timeLimitMinutes > 0)
     
     if (timeLimitMinutes && timeLimitMinutes > 0) {
       // Exercise has time limit - use countdown timer
       setHasTimeLimit(true)
       const totalSeconds = timeLimitMinutes * 60
-      console.log('[Timer Debug] Setting countdown timer:', totalSeconds, 'seconds')
       setTimeRemaining(totalSeconds)
       timerInitializedRef.current = true
       
       const countdown = setInterval(() => {
+        // Check if we should stop the timer
+        if (submittingRef.current) {
+          clearInterval(countdown)
+          timerIntervalRef.current = null
+          timerInitializedRef.current = false
+          return
+        }
+
         setTimeRemaining((prev) => {
           if (prev === null || prev <= 0) {
             clearInterval(countdown)
+            timerIntervalRef.current = null
             timerInitializedRef.current = false
             // Auto-submit when time runs out
             if (!submittingRef.current && !autoSubmitRef.current) {
@@ -146,13 +183,40 @@ export default function TakeExercisePage() {
                 setSubmitting(true)
                 toastRef.current.info(tRef.current('time_up_auto_submitting') || 'Hết giờ! Đang tự động nộp bài...')
                 
-                const answersArray = Array.from(answersRef.current.entries()).map(([questionId, answer]) => ({
-                  question_id: questionId,
-                  selected_option_id: answer.selectedOptionId || null,
-                  answer_text: answer.answerText || null,
-                }))
+                // Format answers correctly - answers are stored as simple strings/IDs
+                // Need to check question type to format correctly
+                const allQuestionsLocal = exerciseDataRef.current?.sections?.flatMap(s => s.questions || []) || []
+                const answersArray = Array.from(answersRef.current.entries())
+                  .filter(([questionId, answer]) => {
+                    // Filter out empty answers
+                    if (!answer || (typeof answer === 'string' && answer.trim() === '')) {
+                      return false
+                    }
+                    return true
+                  })
+                  .map(([questionId, answer]) => {
+                    const question = allQuestionsLocal.find((q: any) => q.question?.id === questionId)
+                    const questionType = question?.question?.question_type
+                    
+                    if (questionType === "multiple_choice") {
+                      return {
+                        question_id: questionId,
+                        selected_option_id: answer, // answer is already the option ID string
+                        time_spent_seconds: 0,
+                      }
+                    } else {
+                      return {
+                        question_id: questionId,
+                        text_answer: answer, // answer is already the text string
+                        time_spent_seconds: 0,
+                      }
+                    }
+                  })
+                  .filter((answer) => answer !== null && answer !== undefined)
 
-                exercisesApi.submitAnswers(submissionId, answersArray)
+                // Only submit if we have at least one answer
+                if (answersArray.length > 0) {
+                  exercisesApi.submitAnswers(submissionId, answersArray)
                   .then(() => {
                     routerRef.current.push(`/exercises/${exerciseId}/result/${submissionId}`)
                   })
@@ -162,6 +226,11 @@ export default function TakeExercisePage() {
                     setSubmitting(false)
                     autoSubmitRef.current = false
                   })
+                } else {
+                  // No answers to submit
+                  setSubmitting(false)
+                  autoSubmitRef.current = false
+                }
               } else {
                 // For Writing/Speaking, just show warning
                 toastRef.current.warning(tRef.current('time_up') || 'Hết giờ! Vui lòng nộp bài thủ công.')
@@ -169,39 +238,50 @@ export default function TakeExercisePage() {
             }
             return 0
           }
-          const newValue = prev - 1
-          // Debug: Log countdown every 5 seconds
-          if (newValue % 5 === 0) {
-            console.log('[Timer Debug] Countdown:', newValue, 'seconds remaining')
-          }
-          return newValue
+          // Continue countdown
+          return prev - 1
         })
         // Also update timeSpent for tracking
         setTimeSpent((prev) => prev + 1)
       }, 1000)
       
+      timerIntervalRef.current = countdown
+      
       return () => {
-        console.log('[Timer Debug] Cleaning up countdown timer')
-        clearInterval(countdown)
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current)
+          timerIntervalRef.current = null
+        }
         timerInitializedRef.current = false
       }
     } else {
       // Exercise has no time limit - use count up timer
-      console.log('[Timer Debug] No time limit, using count-up timer')
       setHasTimeLimit(false)
       setTimeRemaining(null)
       timerInitializedRef.current = true
       
       const timer = setInterval(() => {
+        // Check if we should stop the timer
+        if (submittingRef.current) {
+          clearInterval(timer)
+          timerIntervalRef.current = null
+          timerInitializedRef.current = false
+          return
+        }
         setTimeSpent((prev) => prev + 1)
       }, 1000)
+      
+      timerIntervalRef.current = timer
+      
       return () => {
-        console.log('[Timer Debug] Cleaning up count-up timer')
-        clearInterval(timer)
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current)
+          timerIntervalRef.current = null
+        }
         timerInitializedRef.current = false
       }
     }
-  }, [exerciseData?.exercise?.time_limit_minutes, submissionId, exerciseId])
+  }, [exerciseData?.exercise?.time_limit_minutes, submissionId, exerciseId, submitting, showEvaluationLoading])
 
   // Show warning toast when time is running low (only once)
   const warningShownRef = useRef(false)
@@ -223,17 +303,6 @@ export default function TakeExercisePage() {
     }
   }, [timeRemaining, submitting, hasTimeLimit, t, toast])
 
-  // Debug: Log timer state (must be before any conditional returns)
-  useEffect(() => {
-    if (exerciseData && hasTimeLimit) {
-      console.log('[Timer Debug] Current state:', {
-        hasTimeLimit,
-        timeRemaining,
-        timeSpent,
-        timeLimitMinutes: exerciseData.exercise.time_limit_minutes
-      })
-    }
-  }, [hasTimeLimit, timeRemaining, timeSpent, exerciseData])
 
   // Fetch exercise data
   useEffect(() => {
@@ -241,9 +310,6 @@ export default function TakeExercisePage() {
       try {
         const data = await exercisesApi.getExerciseById(exerciseId)
         setExerciseData(data)
-        // Debug: Log time_limit_minutes
-        console.log('[Timer Debug] Exercise data:', data)
-        console.log('[Timer Debug] time_limit_minutes:', data?.exercise?.time_limit_minutes)
       } catch (error) {
         console.error("Failed to fetch exercise:", error)
       } finally {
@@ -277,7 +343,7 @@ export default function TakeExercisePage() {
       if (attempts >= maxAttempts) {
         // Timeout - redirect anyway to show result page
         setShowEvaluationLoading(false)
-        const resultUrl = `/exercises/${exerciseId}/result/${submissionId}?ai_submission_id=${currentAISubmissionId || submissionId}`
+        const resultUrl = `/exercises/${exerciseId}/result/${submissionId}`
         router.push(resultUrl)
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current)
@@ -287,40 +353,49 @@ export default function TakeExercisePage() {
       }
 
       try {
-        const response = await aiApi.getWritingSubmission(submissionId)
+        // Use Exercise Service to get submission result (all submissions are now managed there)
+        const response = await exercisesApi.getSubmissionResult(submissionId)
         
-        // Update progress based on status
-        if (response.submission.status === "pending") {
+        // Update progress based on evaluation_status
+        const evaluationStatus = response.submission?.evaluation_status || response.submission?.status || "pending"
+        
+        if (evaluationStatus === "pending") {
           currentStep = 0
           setEvaluationStep(0)
-        } else if (response.submission.status === "processing") {
+        } else if (evaluationStatus === "processing" || evaluationStatus === "evaluating") {
           currentStep = Math.min(2, attempts / 10) // Step 1-2 after 10-20 attempts
           setEvaluationStep(Math.floor(currentStep))
-        } else if (response.submission.status === "completed") {
+        } else if (evaluationStatus === "completed" || response.submission?.status === "completed") {
           // Evaluation complete - navigate to result page
           setShowEvaluationLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
           }
-          const resultUrl = `/exercises/${exerciseId}/result/${submissionId}?ai_submission_id=${submissionId}`
+          const resultUrl = `/exercises/${exerciseId}/result/${submissionId}`
           router.push(resultUrl)
           return
-        } else if (response.submission.status === "failed") {
+        } else if (evaluationStatus === "failed") {
           // Evaluation failed - still redirect to show error
           setShowEvaluationLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
           }
-          const resultUrl = `/exercises/${exerciseId}/result/${submissionId}?ai_submission_id=${submissionId}`
+          const resultUrl = `/exercises/${exerciseId}/result/${submissionId}`
           router.push(resultUrl)
           return
         }
 
         attempts++
         setEvaluationProgress(Math.min(95, (attempts / maxAttempts) * 100))
-      } catch (error) {
+      } catch (error: any) {
+        // If 404, the submission might not be ready yet - continue polling
+        if (error.response?.status === 404) {
+          attempts++
+          setEvaluationProgress(Math.min(95, (attempts / maxAttempts) * 100))
+          return
+        }
         console.error("[Polling] Failed to check status:", error)
         attempts++
         // Continue polling on error (might be temporary)
@@ -332,7 +407,7 @@ export default function TakeExercisePage() {
     
     // Initial poll
     poll()
-  }, [exerciseId, submissionId, router, currentAISubmissionId])
+  }, [exerciseId, submissionId, router])
 
   // Polling function to check speaking submission status
   const pollSpeakingSubmissionStatus = useCallback(async (submissionId: string) => {
@@ -344,7 +419,7 @@ export default function TakeExercisePage() {
       if (attempts >= maxAttempts) {
         // Timeout - redirect anyway to show result page
         setShowEvaluationLoading(false)
-        const resultUrl = `/exercises/${exerciseId}/result/${submissionId}?ai_submission_id=${currentAISubmissionId || submissionId}`
+        const resultUrl = `/exercises/${exerciseId}/result/${submissionId}`
         router.push(resultUrl)
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current)
@@ -354,43 +429,52 @@ export default function TakeExercisePage() {
       }
 
       try {
-        const response = await aiApi.getSpeakingSubmission(submissionId)
+        // Use Exercise Service to get submission result (all submissions are now managed there)
+        const response = await exercisesApi.getSubmissionResult(submissionId)
         
-        // Update progress based on status
-        if (response.submission.status === "pending") {
+        // Update progress based on evaluation_status
+        const evaluationStatus = response.submission?.evaluation_status || response.submission?.status || "pending"
+        
+        if (evaluationStatus === "pending") {
           currentStep = 0
           setEvaluationStep(0)
-        } else if (response.submission.status === "transcribing") {
+        } else if (evaluationStatus === "transcribing") {
           currentStep = 1
           setEvaluationStep(1)
-        } else if (response.submission.status === "processing") {
+        } else if (evaluationStatus === "evaluating" || evaluationStatus === "processing") {
           currentStep = 2
           setEvaluationStep(2)
-        } else if (response.submission.status === "completed") {
+        } else if (evaluationStatus === "completed" || response.submission?.status === "completed") {
           // Evaluation complete - navigate to result page
           setShowEvaluationLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
           }
-          const resultUrl = `/exercises/${exerciseId}/result/${submissionId}?ai_submission_id=${submissionId}`
+          const resultUrl = `/exercises/${exerciseId}/result/${submissionId}`
           router.push(resultUrl)
           return
-        } else if (response.submission.status === "failed") {
+        } else if (evaluationStatus === "failed") {
           // Evaluation failed - still redirect to show error
           setShowEvaluationLoading(false)
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
           }
-          const resultUrl = `/exercises/${exerciseId}/result/${submissionId}?ai_submission_id=${submissionId}`
+          const resultUrl = `/exercises/${exerciseId}/result/${submissionId}`
           router.push(resultUrl)
           return
         }
 
         attempts++
         setEvaluationProgress(Math.min(95, (attempts / maxAttempts) * 100))
-      } catch (error) {
+      } catch (error: any) {
+        // If 404, the submission might not be ready yet - continue polling
+        if (error.response?.status === 404) {
+          attempts++
+          setEvaluationProgress(Math.min(95, (attempts / maxAttempts) * 100))
+          return
+        }
         console.error("[Polling] Failed to check status:", error)
         attempts++
         // Continue polling on error (might be temporary)
@@ -402,7 +486,7 @@ export default function TakeExercisePage() {
     
     // Initial poll
     poll()
-  }, [exerciseId, submissionId, router, currentAISubmissionId])
+  }, [exerciseId, submissionId, router])
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -450,26 +534,44 @@ export default function TakeExercisePage() {
 
   const handleSubmit = async (autoSubmit = false) => {
     // Skip confirmation for auto-submit (when time runs out)
-    if (!autoSubmit && !confirm(t('are_you_sure_you_want_to_submit_you_cann'))) {
+    if (!autoSubmit) {
+      setPendingSubmit(true)
+      setShowSubmitDialog(true)
       return
     }
 
+    // Proceed with submission (for auto-submit or after confirmation)
+    await performSubmit()
+  }
+
+  const performSubmit = async () => {
     try {
       setSubmitting(true)
+      setShowSubmitDialog(false)
+      setPendingSubmit(false)
 
-      // For Writing/Speaking exercises, submit to AI service first for evaluation
-      if (isAIExercise) {
-        const promptText = 
-          exerciseData.sections[0]?.section?.instructions || 
-          exerciseData.exercise.instructions || 
-          exerciseData.exercise.description || 
-          ""
+      // For Writing/Speaking exercises, submit to Exercise Service (which handles AI evaluation)
+      if (isAIExercise && exerciseData) {
+        // Get prompt text from exercise data
+        let promptText = ""
+        if (isSpeakingExercise) {
+          promptText = exerciseData.exercise.speaking_prompt_text || ""
+        } else if (isWritingExercise) {
+          promptText = exerciseData.exercise.writing_prompt_text || ""
+        }
         
-        let aiSubmissionId: string | null = null
-
+        // Fallback to section instructions or exercise description if prompt not available
+        if (!promptText) {
+          promptText = 
+            exerciseData.sections[0]?.section?.instructions || 
+            exerciseData.exercise.instructions || 
+            exerciseData.exercise.description || 
+            ""
+        }
+        
         if (isWritingExercise) {
-          const titleLower = exerciseData.exercise.title?.toLowerCase() || ""
-          const taskType: "task1" | "task2" = (titleLower.includes("task 1") || titleLower.includes("task1")) ? "task1" : "task2"
+          // Use writing_task_type from exercise data, fallback to task2
+          const taskType: "task1" | "task2" = (exerciseData.exercise.writing_task_type as "task1" | "task2") || "task2"
 
           // Validate essay before submitting
           if (!essayText.trim()) {
@@ -507,60 +609,27 @@ export default function TakeExercisePage() {
             // Only include task_prompt_id if we have a valid ID (not null/undefined)
             // When omitted, backend will create prompt from task_prompt_text
 
-            // Submit to AI service for evaluation
-            const aiResponse = await aiApi.submitWriting(payload)
-            aiSubmissionId = aiResponse.submission.id
-            setCurrentAISubmissionId(aiResponse.submission.id)
-
-            // Also submit to exercise service to record the attempt
-            await exercisesApi.submitAnswers(submissionId, [])
+            // Submit to Exercise Service (which handles AI evaluation internally)
+            await exercisesApi.submitExercise(submissionId, {
+              writing_data: {
+                essay_text: essayText.trim(),
+                word_count: wordCount,
+                task_type: taskType,
+                prompt_text: promptText.trim(),
+              },
+              time_spent_seconds: timeSpent,
+            })
 
             // Show loading screen and start polling
             setShowEvaluationLoading(true)
             setEvaluationStep(0) // Start at step 0
-            pollWritingSubmissionStatus(aiResponse.submission.id)
-          } catch (aiError: any) {
-            console.error("[AI Submission] Failed:", aiError)
-            const errorMessage = aiError.response?.data?.error || aiError.message || tAI("failed_to_submit_ai_evaluation") || "Failed to submit for AI evaluation"
-            
-            // Check if it's a timeout error
-            if (aiError.code === 'ECONNABORTED' || aiError.message?.includes('timeout')) {
-              // Submission might have succeeded but response timed out
-              // Try to check recent submissions
-              try {
-                const recentSubmissions = await aiApi.getWritingSubmissions(5, 0)
-                const recentSubmission = recentSubmissions.submissions.find((s) => {
-                  const submittedAt = new Date(s.submitted_at).getTime()
-                  const now = Date.now()
-                  return (now - submittedAt) < 10000 // Within 10 seconds
-                })
-                if (recentSubmission) {
-                  aiSubmissionId = recentSubmission.id
-                  setCurrentAISubmissionId(recentSubmission.id)
-                  setShowEvaluationLoading(true)
-                  setEvaluationStep(0)
-                  pollWritingSubmissionStatus(recentSubmission.id)
-                  await exercisesApi.submitAnswers(submissionId, [])
-                  return // Exit early, polling will handle navigation
-                }
-              } catch (pollError) {
-                console.error("[AI Submission] Failed to poll recent submissions:", pollError)
-              }
-            }
-            
-            console.error("[AI Submission] Error details:", {
-              status: aiError.response?.status,
-              error: errorMessage,
-              payload: {
-                task_type: taskType,
-                task_prompt_text_length: promptText.trim().length,
-                essay_text_length: essayText.trim().length,
-                word_count: wordCount
-              }
-            })
-            // If AI service fails, still submit to exercise service but show warning
-            await exercisesApi.submitAnswers(submissionId, [])
-            toast.error(`${errorMessage} (${tAI("exercise_attempt_recorded") || "Exercise attempt recorded"})`)
+            pollWritingSubmissionStatus(submissionId)
+            return // Exit early, polling will handle navigation
+          } catch (error: any) {
+            console.error("[Writing Submission] Failed:", error)
+            const errorMessage = error.response?.data?.error || error.message || tAI("failed_to_submit") || "Failed to submit essay"
+            toast.error(errorMessage)
+            setSubmitting(false)
           }
         } else if (isSpeakingExercise) {
           if (!audioFile) {
@@ -569,10 +638,9 @@ export default function TakeExercisePage() {
             return
           }
 
-          const titleLower = exerciseData.exercise.title?.toLowerCase() || ""
-          let partNumber: 1 | 2 | 3 = 1
-          if (titleLower.includes("part 2") || titleLower.includes("part2")) partNumber = 2
-          else if (titleLower.includes("part 3") || titleLower.includes("part3")) partNumber = 3
+          // Use speaking_part_number from exercise data (from database)
+          // Fallback to 1 if not available
+          const partNumber: 1 | 2 | 3 = (exerciseData?.exercise?.speaking_part_number as 1 | 2 | 3) || 1
 
           try {
             // Validate prompt text is not empty
@@ -582,89 +650,72 @@ export default function TakeExercisePage() {
               return
             }
 
-            // Create FormData for audio file
-            const formData = new FormData()
-            formData.append("part_number", partNumber.toString())
-            // Note: task_prompt_id is optional when task_prompt_text is provided
-            // Backend will handle creating prompt if needed
-            formData.append("task_prompt_text", promptText.trim())
-            formData.append("audio_file", audioFile)
+            // Step 1: Upload audio file to storage service to get audio_url
+            toast.info(tAI("uploading_audio") || "Uploading audio file...")
+            const audioUrl = await storageApi.uploadAudio(audioFile)
+            toast.success(tAI("audio_uploaded") || "Audio uploaded successfully")
 
-            // Submit to AI service for evaluation
-            const aiResponse = await aiApi.submitSpeaking(formData)
-            aiSubmissionId = aiResponse.submission.id
-            setCurrentAISubmissionId(aiResponse.submission.id)
-
-            // Also submit to exercise service to record the attempt
-            await exercisesApi.submitAnswers(submissionId, [])
+            // Step 2: Submit to Exercise Service (which handles AI evaluation internally)
+            await exercisesApi.submitExercise(submissionId, {
+              speaking_data: {
+                audio_url: audioUrl,
+                audio_duration_seconds: audioDuration,
+                speaking_part_number: partNumber,
+              },
+              time_spent_seconds: timeSpent,
+            })
 
             // Show loading screen and start polling
             setShowEvaluationLoading(true)
             setEvaluationStep(0) // Start at step 0
-            pollSpeakingSubmissionStatus(aiResponse.submission.id)
-          } catch (aiError: any) {
-            console.error("[AI Submission] Failed:", aiError)
-            
-            // Check if it's a timeout error
-            if (aiError.code === 'ECONNABORTED' || aiError.message?.includes('timeout')) {
-              // Submission might have succeeded but response timed out
-              // Try to check recent submissions
-              try {
-                const recentSubmissions = await aiApi.getSpeakingSubmissions(5, 0)
-                const recentSubmission = recentSubmissions.submissions.find((s) => {
-                  const submittedAt = new Date(s.submitted_at).getTime()
-                  const now = Date.now()
-                  return (now - submittedAt) < 10000 // Within 10 seconds
-                })
-                if (recentSubmission) {
-                  aiSubmissionId = recentSubmission.id
-                  setCurrentAISubmissionId(recentSubmission.id)
-                  setShowEvaluationLoading(true)
-                  setEvaluationStep(0)
-                  pollSpeakingSubmissionStatus(recentSubmission.id)
-                  await exercisesApi.submitAnswers(submissionId, [])
-                  return // Exit early, polling will handle navigation
-                }
-              } catch (pollError) {
-                console.error("[AI Submission] Failed to poll recent submissions:", pollError)
-              }
-            }
-            
-            // If AI service fails, still submit to exercise service but show warning
-            await exercisesApi.submitAnswers(submissionId, [])
-            toast.error(aiError.response?.data?.error || tAI("failed_to_submit_ai_evaluation_but_recorded") || "Failed to submit for AI evaluation, but exercise attempt recorded")
+            pollSpeakingSubmissionStatus(submissionId)
+            return // Exit early, polling will handle navigation
+          } catch (error: any) {
+            console.error("[Speaking Submission] Failed:", error)
+            const errorMessage = error.response?.data?.error || error.message || tAI("failed_to_submit") || "Failed to submit audio"
+            toast.error(errorMessage)
+            setSubmitting(false)
           }
         }
-
-        // Only navigate if not showing loading screen (polling will handle navigation when complete)
-        if (!showEvaluationLoading && aiSubmissionId) {
-          const resultUrl = `/exercises/${exerciseId}/result/${submissionId}?ai_submission_id=${aiSubmissionId}`
-          router.push(resultUrl)
-        } else if (!showEvaluationLoading) {
-          // Fallback: navigate without AI submission ID
-          router.push(`/exercises/${exerciseId}/result/${submissionId}`)
-        }
+        
+        // If we get here, something went wrong - don't continue
         return
       }
 
       // Original logic for Listening/Reading exercises with questions
-      const formattedAnswers = Array.from(answers.entries()).map(([questionId, answer]) => {
-        const question = allQuestions.find((q) => q.question.id === questionId)
+      const formattedAnswers = Array.from(answers.entries())
+        .filter(([questionId, answer]) => {
+          // Filter out empty answers
+          if (!answer || (typeof answer === 'string' && answer.trim() === '')) {
+            return false
+          }
+          return true
+        })
+        .map(([questionId, answer]) => {
+          const question = allQuestions.find((q) => q.question.id === questionId)
 
-        if (question?.question.question_type === "multiple_choice") {
-          return {
-            question_id: questionId,
-            selected_option_id: answer,
-            time_spent_seconds: 0, // Will be calculated by backend from started_at to completed_at
+          if (!question) {
+            console.warn(`Question ${questionId} not found in allQuestions`)
           }
-        } else {
-          return {
-            question_id: questionId,
-            text_answer: answer,
-            time_spent_seconds: 0, // Will be calculated by backend from started_at to completed_at
+
+          if (question?.question.question_type === "multiple_choice") {
+            return {
+              question_id: questionId,
+              selected_option_id: answer,
+              time_spent_seconds: 0, // Will be calculated by backend from started_at to completed_at
+            }
+          } else {
+            return {
+              question_id: questionId,
+              text_answer: answer,
+              time_spent_seconds: 0, // Will be calculated by backend from started_at to completed_at
+            }
           }
-        }
-      })
+        })
+        .filter((answer) => answer !== null && answer !== undefined)
+
+      // Log submission (even if empty, backend will handle it)
+      console.log(`[Submit] Submitting ${formattedAnswers.length} answers for submission ${submissionId}`)
 
       // Submit answers
       await exercisesApi.submitAnswers(submissionId, formattedAnswers)
@@ -723,153 +774,121 @@ export default function TakeExercisePage() {
     )
   }
 
-  // For Writing/Speaking exercises, render AI forms instead of questions
-  if (isAIExercise) {
-    // Get prompt from first section instructions or exercise description
-    const promptText = 
-      exerciseData.sections[0]?.section?.instructions || 
-      exerciseData.exercise.instructions || 
-      exerciseData.exercise.description || 
-      ""
+  // Helper to get dialog type
+  const getDialogType = () => {
+    if (isWritingExercise) return "writing"
+    if (isSpeakingExercise) return "speaking"
+    return "exercise"
+  }
 
-    // Determine task type/part number
+  // For Writing/Speaking exercises, render optimized components
+  if (isAIExercise) {
+    // Get prompt text for Speaking/Writing from exercise data
+    let promptText = ""
+    if (isSpeakingExercise) {
+      promptText = exerciseData.exercise.speaking_prompt_text || ""
+    } else if (isWritingExercise) {
+      promptText = exerciseData.exercise.writing_prompt_text || ""
+    }
+    
+    // Fallback to section instructions or exercise description if prompt not available
+    if (!promptText) {
+      promptText = 
+        exerciseData.sections[0]?.section?.instructions || 
+        exerciseData.exercise.instructions || 
+        exerciseData.exercise.description || 
+        ""
+    }
+
+    // Determine task type/part number from exercise data (from database)
     let taskType: "task1" | "task2" = "task2"
     let partNumber: 1 | 2 | 3 = 1
     
     if (isWritingExercise) {
-      const titleLower = exerciseData.exercise.title?.toLowerCase() || ""
-      taskType = (titleLower.includes("task 1") || titleLower.includes("task1")) ? "task1" : "task2"
+      // Use writing_task_type from exercise data, fallback to task2
+      taskType = (exerciseData.exercise.writing_task_type as "task1" | "task2") || "task2"
     } else if (isSpeakingExercise) {
-      const titleLower = exerciseData.exercise.title?.toLowerCase() || ""
-      if (titleLower.includes("part 2") || titleLower.includes("part2")) partNumber = 2
-      else if (titleLower.includes("part 3") || titleLower.includes("part3")) partNumber = 3
+      // Use speaking_part_number from exercise data (required field), fallback to 1
+      partNumber = (exerciseData.exercise.speaking_part_number as 1 | 2 | 3) || 1
     }
+
+    // Get cue card points and follow-up questions for Speaking
+    // Try from exercise first, then from section
+    const cueCardPoints = exerciseData.exercise.speaking_cue_card_points || []
+    const followUpQuestions = exerciseData.exercise.speaking_follow_up_questions || []
 
     return (
       <>
+        {/* Submit Confirmation Dialog */}
+        <SubmitConfirmationDialog
+          open={showSubmitDialog}
+          onOpenChange={(open) => {
+            setShowSubmitDialog(open)
+            if (!open) {
+              setPendingSubmit(false)
+            }
+          }}
+          onConfirm={performSubmit}
+          type={getDialogType()}
+        />
         {/* AI Evaluation Loading Screen */}
         {showEvaluationLoading && (
           <AIEvaluationLoading
             type={isWritingExercise ? "writing" : "speaking"}
-            submissionId={currentAISubmissionId || undefined}
+            submissionId={submissionId}
             progress={evaluationProgress}
             currentStep={evaluationStep}
-            totalSteps={isWritingExercise ? 4 : 4}
+            totalSteps={4}
           />
         )}
-        
         <AppLayout>
-          <PageContainer maxWidth="5xl" className="py-4">
-          {/* Header with Timer */}
-          <Card className="mb-4">
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold">{exerciseData.exercise.title}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {isWritingExercise ? "Writing Exercise" : "Speaking Exercise"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className={`flex items-center gap-2 ${isTimeVeryLow() ? 'text-red-600 dark:text-red-400 animate-pulse' : isTimeRunningLow() ? 'text-orange-600 dark:text-orange-400' : ''}`}>
-                    <Clock className="w-4 h-4" />
-                    <span className="font-mono text-lg">
-                      {hasTimeLimit ? (
-                        <>
-                          {timeRemaining !== null && timeRemaining > 0 ? (
-                            <>
-                              {getDisplayTime()}
-                              {isTimeVeryLow() && ' ⚠️'}
-                            </>
-                          ) : (
-                            t('time_up') || 'Hết giờ'
-                          )}
-                        </>
-                      ) : (
-                        getDisplayTime()
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <PageContainer maxWidth="7xl" className="py-4">
+            {/* Writing Exercise */}
+            {isWritingExercise && (
+              <WritingExerciseTake
+                exercise={{
+                  ...exerciseData.exercise,
+                  writing_task_type: exerciseData.exercise.writing_task_type || taskType,
+                  writing_prompt_text: exerciseData.exercise.writing_prompt_text || promptText,
+                  writing_visual_type: exerciseData.exercise.writing_visual_type,
+                  writing_visual_url: exerciseData.exercise.writing_visual_url,
+                  writing_word_requirement: exerciseData.exercise.writing_word_requirement,
+                }}
+                taskType={taskType}
+                prompt={exerciseData.exercise.writing_prompt_text || promptText}
+                timeRemaining={timeRemaining}
+                hasTimeLimit={hasTimeLimit}
+                timeSpent={timeSpent}
+                value={essayText}
+                onChange={(text) => setEssayText(text)}
+                onSubmit={() => handleSubmit(false)}
+                submitting={submitting}
+              />
+            )}
 
-          {/* Writing Form */}
-          {isWritingExercise && (
-            <WritingExerciseForm
-              prompt={promptText}
-              taskType={taskType}
-              value={essayText}
-              onChange={(text) => setEssayText(text)}
-              onSubmit={(text) => setEssayText(text)}
-              submitting={submitting}
-              timeSpentSeconds={timeSpent}
-            />
-          )}
-
-          {/* Speaking Form */}
-          {isSpeakingExercise && (
-            <SpeakingExerciseForm
-              prompt={promptText}
-              partNumber={partNumber}
-              onSubmit={(file, duration) => {
-                setAudioFile(file)
-                setAudioDuration(duration)
-              }}
-              onFileChange={(file, duration) => {
-                setAudioFile(file)
-                setAudioDuration(duration)
-              }}
-              submitting={submitting}
-            />
-          )}
-
-          {/* Submit Button */}
-          <Card className="mt-6">
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  {submitting && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{tAI('submitting') || "Đang nộp bài và đánh giá AI..."}</span>
-                    </div>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    {isWritingExercise 
-                      ? (tAI('tip_check_grammar') || "Kiểm tra ngữ pháp và chính tả trước khi nộp")
-                      : (tAI('tip_speak_clearly') || "Đảm bảo đã ghi âm hoặc tải lên file audio")
-                    }
-                  </p>
-                </div>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={
-                    submitting || 
-                    (isWritingExercise && (essayText.trim().length === 0 || wordCount < (taskType === "task1" ? 150 : 250))) || 
-                    (isSpeakingExercise && !audioFile)
-                  }
-                  size="lg"
-                  className="ml-4"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {tAI('submitting') || "Đang nộp..."}
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      {tAI('submit_for_evaluation') || "Nộp để đánh giá"}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </PageContainer>
-      </AppLayout>
+            {/* Speaking Exercise */}
+            {isSpeakingExercise && (
+              <SpeakingExerciseTake
+                exercise={exerciseData.exercise}
+                partNumber={partNumber}
+                prompt={promptText}
+                cueCardPoints={cueCardPoints}
+                followUpQuestions={followUpQuestions}
+                timeRemaining={timeRemaining}
+                hasTimeLimit={hasTimeLimit}
+                timeSpent={timeSpent}
+                audioFile={audioFile}
+                audioDuration={audioDuration}
+                onFileChange={(file, duration) => {
+                  setAudioFile(file)
+                  setAudioDuration(duration)
+                }}
+                onSubmit={() => handleSubmit(false)}
+                submitting={submitting}
+              />
+            )}
+          </PageContainer>
+        </AppLayout>
       </>
     )
   }
@@ -899,298 +918,170 @@ export default function TakeExercisePage() {
   const progress = ((currentQuestionIndex + 1) / allQuestions.length) * 100
   const answeredCount = answers.size
 
+  // Determine skill type and render appropriate component
+  const isListening = skillType === 'listening'
+  const isReading = skillType === 'reading'
+
+  // Render skill-specific components for Listening
+  if (isListening) {
+    return (
+      <>
+        {/* Submit Confirmation Dialog */}
+        <SubmitConfirmationDialog
+          open={showSubmitDialog}
+          onOpenChange={(open) => {
+            setShowSubmitDialog(open)
+            if (!open) {
+              setPendingSubmit(false)
+            }
+          }}
+          onConfirm={performSubmit}
+          type="exercise"
+        />
+        <AppLayout>
+          <PageContainer maxWidth="7xl" className="py-4">
+            <ListeningExerciseTake
+            exercise={exerciseData.exercise}
+            sections={exerciseData.sections}
+            currentQuestionIndex={currentQuestionIndex}
+            answers={answers}
+            timeRemaining={timeRemaining}
+            hasTimeLimit={hasTimeLimit}
+            answeredCount={answeredCount}
+            totalQuestions={allQuestions.length}
+            progress={progress}
+            onAnswerChange={handleAnswerChange}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            onSubmit={() => handleSubmit(false)}
+            submitting={submitting}
+          />
+          
+          {/* Question Navigator */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-sm">{t('question_navigator')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-10 gap-2">
+                {allQuestions.map((q, index) => (
+                  <button
+                    key={q.question.id}
+                    onClick={() => setCurrentQuestionIndex(index)}
+                    className={`
+                      p-2 rounded text-sm font-medium transition-all
+                      ${index === currentQuestionIndex ? "bg-primary text-primary-foreground" : ""}
+                      ${
+                        answers.has(q.question.id)
+                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
+                          : "bg-muted hover:bg-muted/80"
+                      }
+                    `}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </PageContainer>
+      </AppLayout>
+      </>
+    )
+  }
+
+  if (isReading) {
+    return (
+      <>
+        {/* Submit Confirmation Dialog */}
+        <SubmitConfirmationDialog
+          open={showSubmitDialog}
+          onOpenChange={(open) => {
+            setShowSubmitDialog(open)
+            if (!open) {
+              setPendingSubmit(false)
+            }
+          }}
+          onConfirm={performSubmit}
+          type="exercise"
+        />
+        <AppLayout>
+          <PageContainer maxWidth="7xl" className="py-4">
+            <ReadingExerciseTake
+            exercise={exerciseData.exercise}
+            sections={exerciseData.sections}
+            currentQuestionIndex={currentQuestionIndex}
+            answers={answers}
+            timeRemaining={timeRemaining}
+            hasTimeLimit={hasTimeLimit}
+            answeredCount={answeredCount}
+            totalQuestions={allQuestions.length}
+            progress={progress}
+            onAnswerChange={handleAnswerChange}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            onSubmit={() => handleSubmit(false)}
+            submitting={submitting}
+          />
+          
+          {/* Question Navigator */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-sm">{t('question_navigator')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-10 gap-2">
+                {allQuestions.map((q, index) => (
+                  <button
+                    key={q.question.id}
+                    onClick={() => setCurrentQuestionIndex(index)}
+                    className={`
+                      p-2 rounded text-sm font-medium transition-all
+                      ${index === currentQuestionIndex ? "bg-primary text-primary-foreground" : ""}
+                      ${
+                        answers.has(q.question.id)
+                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
+                          : "bg-muted hover:bg-muted/80"
+                      }
+                    `}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </PageContainer>
+      </AppLayout>
+      </>
+    )
+  }
+
+  // Fallback to original layout for other skill types (should not happen for Listening/Reading)
   return (
-    <AppLayout>
-      <PageContainer maxWidth="5xl" className="py-4">
-        {/* Header with Timer */}
-        <Card className="mb-4">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">{exerciseData.exercise.title}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {t('question_of', { current: (currentQuestionIndex + 1).toString(), total: allQuestions.length.toString() })}
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className={`flex items-center gap-2 ${isTimeVeryLow() ? 'text-red-600 dark:text-red-400 animate-pulse' : isTimeRunningLow() ? 'text-orange-600 dark:text-orange-400' : ''}`}>
-                  <Clock className="w-4 h-4" />
-                  <span className="font-mono text-lg">
-                    {hasTimeLimit ? (
-                      <>
-                        {timeRemaining !== null && timeRemaining > 0 ? (
-                          <>
-                            {getDisplayTime()}
-                            {isTimeVeryLow() && ' ⚠️'}
-                          </>
-                        ) : (
-                          t('time_up') || 'Hết giờ'
-                        )}
-                      </>
-                    ) : (
-                      getDisplayTime()
-                    )}
-                  </span>
-                </div>
-                <Badge variant="outline">
-                  {answeredCount}/{allQuestions.length} {t('answered')}
-                </Badge>
-              </div>
-            </div>
-            <Progress value={progress} className="mt-3 h-2" />
-          </CardContent>
-        </Card>
-
-        {/* Section Content (Passage for Reading, Audio for Listening) */}
-        {currentSection && (currentSection.passage_content || currentSection.audio_url || currentSection.instructions) && (
-          <div className="mb-4">
-            {/* Toggle Button */}
-            <div className="flex justify-end mb-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSectionContent(!showSectionContent)}
-              >
-                {showSectionContent ? (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-2" />
-                    {t('hide_section_content')}
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    {t('show_section_content')}
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {showSectionContent && (
-              <>
-                {/* Section Instructions */}
-                {currentSection.instructions && (
-                  <Card className="mb-4 border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        📋 {t('instructions')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div
-                        className="prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: currentSection.instructions }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Reading Passage */}
-                {currentSection.passage_content && (
-                  <Card className="mb-4">
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                        📖 {currentSection.passage_title || t('reading_passage_label')}
-                      </CardTitle>
-                      {currentSection.passage_word_count && (
-                        <p className="text-sm text-muted-foreground">
-                          {t('word_count', { count: currentSection.passage_word_count.toString() })}
-                        </p>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      <div
-                        className="prose prose-sm max-w-none leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: currentSection.passage_content }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Listening Audio */}
-                {currentSection.audio_url && (
-                  <Card className="mb-4 border-purple-200 bg-purple-50/50 dark:bg-purple-950/20">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        🎧 {t('audio')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <audio
-                        controls
-                        className="w-full"
-                        src={currentSection.audio_url}
-                      >
-                        {t('browser_no_audio_support')}
-                      </audio>
-                      {currentSection.transcript && (
-                        <details className="mt-4">
-                          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
-                            {t('view_transcript')}
-                          </summary>
-                          <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
-                            {currentSection.transcript}
-                          </div>
-                        </details>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Question */}
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle className="text-xl">
-              {t('question')} {currentQuestion.question.question_number}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Question Text */}
-            <div className="text-lg">{currentQuestion.question.question_text}</div>
-
-            {/* Context */}
-            {currentQuestion.question.context_text && (
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm">{currentQuestion.question.context_text}</p>
-              </div>
-            )}
-
-            {/* Image */}
-            {currentQuestion.question.image_url && (
-              <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
-                <Image
-                  src={currentQuestion.question.image_url}
-                  alt="Question"
-                  fill
-                  className="object-contain rounded-lg"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 900px"
-                />
-              </div>
-            )}
-
-            {/* Answer Input */}
-            <div className="mt-6">
-              {currentQuestion.question.question_type === "multiple_choice" ? (
-                <div className="space-y-3">
-                  {currentQuestion.options?.map((option) => (
-                    <label
-                      key={option.id}
-                      className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        answers.get(currentQuestion.question.id) === option.id
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={`question-${currentQuestion.question.id}`}
-                        value={option.id}
-                        checked={answers.get(currentQuestion.question.id) === option.id}
-                        onChange={(e) =>
-                          handleAnswerChange(currentQuestion.question.id, e.target.value)
-                        }
-                        className="mt-1 mr-3"
-                      />
-                      <div className="flex-1">
-                        <span className="font-medium mr-2">{option.option_label}.</span>
-                        <span>{option.option_text}</span>
-                        {option.option_image_url && (
-                          <img
-                            src={option.option_image_url}
-                            alt={option.option_label}
-                            className="mt-2 max-w-xs rounded"
-                          />
-                        )}
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <input
-                  type="text"
-                  value={answers.get(currentQuestion.question.id) || ""}
-                  onChange={(e) =>
-                    handleAnswerChange(currentQuestion.question.id, e.target.value)
-                  }
-                  placeholder={t('type_your_answer_here')}
-                  className="w-full p-3 border-2 rounded-lg focus:border-primary outline-none"
-                />
-              )}
-            </div>
-
-            {/* Tips */}
-            {currentQuestion.question.tips && (
-              <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">💡 {t('tip')}:</p>
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  {currentQuestion.question.tips}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Navigation */}
-        <div className="flex justify-between mb-6">
-          <Button onClick={handlePrevious} disabled={currentQuestionIndex === 0} variant="outline">
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            {t('previous')}
-          </Button>
-
-          {currentQuestionIndex === allQuestions.length - 1 ? (
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('submitting')}
-                </>
-              ) : (
-                <>
-                  <Flag className="w-4 h-4 mr-2" />
-                  {t('submit_exercise')}
-                </>
-              )}
-            </Button>
-          ) : (
-            <Button onClick={handleNext}>
-              {t('next')}
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          )}
-        </div>
-
-        {/* Question Navigator */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">{t('question_navigator')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-10 gap-2">
-              {allQuestions.map((q, index) => (
-                <button
-                  key={q.question.id}
-                  onClick={() => setCurrentQuestionIndex(index)}
-                  className={`
-                    p-2 rounded text-sm font-medium transition-all
-                    ${index === currentQuestionIndex ? "bg-primary text-primary-foreground" : ""}
-                    ${
-                      answers.has(q.question.id)
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
-                        : "bg-muted hover:bg-muted/80"
-                    }
-                  `}
-                >
-                  {index + 1}
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </PageContainer>
-    </AppLayout>
+    <>
+      {/* Submit Confirmation Dialog */}
+      <SubmitConfirmationDialog
+        open={showSubmitDialog}
+        onOpenChange={(open) => {
+          setShowSubmitDialog(open)
+          if (!open) {
+            setPendingSubmit(false)
+          }
+        }}
+        onConfirm={performSubmit}
+        type="exercise"
+      />
+      <AppLayout>
+        <PageContainer maxWidth="7xl" className="py-4">
+          <Card>
+            <CardContent className="py-4">
+              <p>Unsupported exercise type</p>
+            </CardContent>
+          </Card>
+        </PageContainer>
+      </AppLayout>
+    </>
   )
 }
 

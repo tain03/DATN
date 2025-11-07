@@ -14,11 +14,12 @@ type ServerConfig struct {
 }
 
 type MinIOConfig struct {
-	Endpoint   string
-	AccessKey  string
-	SecretKey  string
-	BucketName string
-	UseSSL     bool
+	Endpoint      string // Internal endpoint (minio:9000) for backend services
+	PublicEndpoint string // Public endpoint (localhost:9000) for frontend presigned URLs
+	AccessKey     string
+	SecretKey     string
+	BucketName    string
+	UseSSL        bool
 }
 
 func LoadConfig() *Config {
@@ -27,11 +28,12 @@ func LoadConfig() *Config {
 			Port: getEnv("PORT", "8087"),
 		},
 		MinIO: MinIOConfig{
-			Endpoint:   getEnv("MINIO_ENDPOINT", "minio:9000"),
-			AccessKey:  getEnv("MINIO_ACCESS_KEY", "ielts_admin"),
-			SecretKey:  getEnv("MINIO_SECRET_KEY", "ielts_minio_password_2025"),
-			BucketName: getEnv("MINIO_BUCKET_NAME", "ielts-audio"),
-			UseSSL:     getEnv("MINIO_USE_SSL", "false") == "true",
+			Endpoint:       getEnv("MINIO_ENDPOINT", "minio:9000"),
+			PublicEndpoint: getEnv("MINIO_PUBLIC_ENDPOINT", "localhost:9000"), // For presigned URLs accessible from browser
+			AccessKey:      getEnv("MINIO_ACCESS_KEY", "ielts_admin"),
+			SecretKey:      getEnv("MINIO_SECRET_KEY", "ielts_minio_password_2025"),
+			BucketName:     getEnv("MINIO_BUCKET_NAME", "ielts-audio"),
+			UseSSL:         getEnv("MINIO_USE_SSL", "false") == "true",
 		},
 	}
 }

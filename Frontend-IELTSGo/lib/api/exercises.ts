@@ -105,7 +105,7 @@ export const exercisesApi = {
     return response.data.data
   },
 
-  // Submit answers for a submission
+  // Submit answers for a submission (Listening/Reading)
   submitAnswers: async (submissionId: string, answers: Array<{
     question_id: string
     selected_option_id?: string
@@ -113,6 +113,32 @@ export const exercisesApi = {
     time_spent_seconds?: number
   }>): Promise<void> => {
     await apiClient.put(`/submissions/${submissionId}/answers`, { answers })
+  },
+
+  // Submit exercise (unified for all skills - Writing/Speaking use this)
+  submitExercise: async (submissionId: string, data: {
+    // For Writing
+    writing_data?: {
+      essay_text: string
+      word_count: number
+      task_type: string
+      prompt_text: string
+    }
+    // For Speaking
+    speaking_data?: {
+      audio_url: string
+      audio_duration_seconds: number
+      speaking_part_number: number
+    }
+    // Common
+    time_spent_seconds?: number
+    is_official_test?: boolean
+  }): Promise<{ success: boolean }> => {
+    const response = await apiClient.post<{ success: boolean }>(
+      `/submissions/${submissionId}/submit`,
+      data
+    )
+    return response.data
   },
 
   // Get submission result

@@ -37,7 +37,7 @@ func main() {
 
 	// Initialize layers
 	exerciseRepo := repository.NewExerciseRepository(db)
-	exerciseService := service.NewExerciseService(exerciseRepo, userServiceClient, notificationClient, aiServiceClient)
+	exerciseService := service.NewExerciseService(exerciseRepo, userServiceClient, notificationClient, aiServiceClient, storageServiceClient)
 	exerciseHandler := handlers.NewExerciseHandler(exerciseService)
 	storageHandler := handlers.NewStorageHandler(storageServiceClient)
 	authMiddleware := middleware.NewAuthMiddleware(cfg)

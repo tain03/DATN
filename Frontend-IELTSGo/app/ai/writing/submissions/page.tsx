@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button"
 import { FileText, Calendar, Target, Eye, TrendingUp, Clock } from "lucide-react"
 import { PageLoading } from "@/components/ui/page-loading"
 import { EmptyState } from "@/components/ui/empty-state"
-import { aiApi } from "@/lib/api/ai"
-import type { WritingSubmission } from "@/types/ai"
+import { exercisesApi } from "@/lib/api/exercises"
+import type { SubmissionWithExercise } from "@/types"
 import { useTranslations } from "@/lib/i18n"
 
 export default function WritingSubmissionsPage() {
@@ -28,16 +28,24 @@ function WritingSubmissionsContent() {
   const t = useTranslations("ai")
   const tCommon = useTranslations("common")
 
-  const [submissions, setSubmissions] = useState<WritingSubmission[]>([])
+  const [submissions, setSubmissions] = useState<SubmissionWithExercise[]>([])
   const [loading, setLoading] = useState(true)
-  const [offset, setOffset] = useState(0)
+  const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const limit = 20
 
   const fetchSubmissions = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await aiApi.getWritingSubmissions(limit, offset)
+      const response = await exercisesApi.getMySubmissions(
+        {
+          skill: ['writing'],
+          sort_by: 'date',
+          sort_order: 'desc',
+        },
+        page,
+        limit
+      )
       setSubmissions(response.submissions || [])
       setTotal(response.total || 0)
     } catch (error) {
@@ -45,7 +53,7 @@ function WritingSubmissionsContent() {
     } finally {
       setLoading(false)
     }
-  }, [offset])
+  }, [page])
 
   useEffect(() => {
     fetchSubmissions()
@@ -101,63 +109,74 @@ function WritingSubmissionsContent() {
           />
         ) : (
           <div className="space-y-4">
-            {submissions.map((submission) => (
-              <Card
-                key={submission.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => router.push(`/ai/writing/submissions/${submission.id}`)}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-1">
-                        {submission.task_type === "task1" ? "Task 1" : "Task 2"}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(submission.submitted_at)}
-                      </CardDescription>
-                    </div>
-                    <Badge className={getStatusColor(submission.status)}>
-                      {submission.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t("word_count") || "Word count"}</p>
-                      <p className="text-lg font-semibold">{submission.word_count}</p>
-                    </div>
-                    {submission.time_spent_seconds && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">{tCommon("time") || "Time spent"}</p>
-                        <p className="text-lg font-semibold">
-                          {Math.floor(submission.time_spent_seconds / 60)}m {submission.time_spent_seconds % 60}s
-                        </p>
+            {submissions.map((item) => {
+              const submission = item.submission
+              const exercise = item.exercise
+              const evaluationStatus = submission.evaluation_status || submission.status
+              const taskType = submission.task_type || "task2"
+              
+              return (
+                <Card
+                  key={submission.id}
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => router.push(`/exercises/${exercise.id}/result/${submission.id}`)}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg mb-1">
+                          {exercise.title || `${taskType === "task1" ? "Task 1" : "Task 2"} Writing`}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-2">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(submission.completed_at || submission.created_at)}
+                        </CardDescription>
                       </div>
-                    )}
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t("task_type") || "Task type"}</p>
-                      <p className="text-lg font-semibold">{submission.task_type}</p>
+                      <Badge className={getStatusColor(evaluationStatus)}>
+                        {evaluationStatus}
+                      </Badge>
                     </div>
-                    <div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/ai/writing/submissions/${submission.id}`)
-                        }}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        {t("view_details") || "View Details"}
-                      </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {submission.word_count && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t("word_count") || "Word count"}</p>
+                          <p className="text-lg font-semibold">{submission.word_count}</p>
+                        </div>
+                      )}
+                      {submission.time_spent_seconds && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">{tCommon("time") || "Time spent"}</p>
+                          <p className="text-lg font-semibold">
+                            {Math.floor(submission.time_spent_seconds / 60)}m {submission.time_spent_seconds % 60}s
+                          </p>
+                        </div>
+                      )}
+                      {submission.band_score && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t("band_score") || "Band Score"}</p>
+                          <p className="text-lg font-semibold">{submission.band_score.toFixed(1)}</p>
+                        </div>
+                      )}
+                      <div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/exercises/${exercise.id}/result/${submission.id}`)
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          {t("view_details") || "View Details"}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         )}
 
@@ -166,21 +185,18 @@ function WritingSubmissionsContent() {
           <div className="mt-8 flex justify-center gap-2">
             <Button
               variant="outline"
-              onClick={() => setOffset(Math.max(0, offset - limit))}
-              disabled={offset === 0}
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
             >
               {tCommon("previous")}
             </Button>
             <span className="flex items-center px-4">
-              {tCommon("page_of", {
-                page: Math.floor(offset / limit) + 1,
-                totalPages: Math.ceil(total / limit),
-              })}
+              Page {page} of {Math.ceil(total / limit)}
             </span>
             <Button
               variant="outline"
-              onClick={() => setOffset(offset + limit)}
-              disabled={offset + limit >= total}
+              onClick={() => setPage(page + 1)}
+              disabled={page * limit >= total}
             >
               {tCommon("next")}
             </Button>

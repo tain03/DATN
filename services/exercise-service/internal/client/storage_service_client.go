@@ -62,10 +62,12 @@ type AudioInfoResponse struct {
 type UploadAudioResponse struct {
 	Success bool `json:"success"`
 	Data    struct {
-		AudioURL    string `json:"audio_url"`
-		ObjectName  string `json:"object_name"`
-		ContentType string `json:"content_type"`
-		Size        int64  `json:"size"`
+		AudioURL         string `json:"audio_url"`          // Presigned URL (for frontend) or internal URL
+		PublicAudioURL   string `json:"public_audio_url"`   // Presigned URL (for frontend)
+		InternalAudioURL string `json:"internal_audio_url"` // Internal URL (for backend/AI service)
+		ObjectName       string `json:"object_name"`
+		ContentType      string `json:"content_type"`
+		Size             int64  `json:"size"`
 	} `json:"data"`
 	Error string `json:"error,omitempty"`
 }
@@ -86,6 +88,44 @@ func (c *StorageServiceClient) GetAudioInfo(objectName string) (*AudioInfoRespon
 	}
 
 	var result AudioInfoResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if !result.Success {
+		return nil, fmt.Errorf("storage service error: %s", result.Error)
+	}
+
+	return &result, nil
+}
+
+// PresignedURLResponse represents presigned URL response
+type PresignedURLResponse struct {
+	Success bool `json:"success"`
+	Data    struct {
+		PresignedURL string `json:"presigned_url"`
+		ObjectName   string `json:"object_name"`
+		ExpiresIn    int    `json:"expires_in"` // seconds
+	} `json:"data"`
+	Error string `json:"error,omitempty"`
+}
+
+// GetPresignedURL gets a presigned URL for an audio file
+func (c *StorageServiceClient) GetPresignedURL(objectName string, expiryDays int) (*PresignedURLResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/storage/audio/presigned-url/%s?expiry_days=%d", c.baseURL, objectName, expiryDays)
+
+	resp, err := c.httpClient.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call storage service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var result PresignedURLResponse
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}

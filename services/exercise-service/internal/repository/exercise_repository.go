@@ -454,7 +454,7 @@ func (r *ExerciseRepository) CreateSubmission(userID, exerciseID uuid.UUID, devi
 func (r *ExerciseRepository) SaveSubmissionAnswers(submissionID uuid.UUID, answers []models.SubmitAnswerItem) error {
 	tx, err := r.db.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -464,18 +464,44 @@ func (r *ExerciseRepository) SaveSubmissionAnswers(submissionID uuid.UUID, answe
 		SELECT user_id FROM user_exercise_attempts WHERE id = $1
 	`, submissionID).Scan(&userID)
 	if err != nil {
-		return err
+		return fmt.Errorf("submission not found: %s: %w", submissionID, err)
+	}
+
+	log.Printf("[Exercise-Repo] Saving %d answers for submission %s (user: %s)", len(answers), submissionID, userID)
+
+	// If no answers provided, just return (will be graded as 0 points)
+	if len(answers) == 0 {
+		log.Printf("[Exercise-Repo] No answers provided for submission %s, will be graded as 0 points", submissionID)
+		return tx.Commit()
+	}
+
+	// Get exercise_id from submission to validate questions belong to this exercise
+	var exerciseID uuid.UUID
+	err = tx.QueryRow(`
+		SELECT exercise_id FROM user_exercise_attempts WHERE id = $1
+	`, submissionID).Scan(&exerciseID)
+	if err != nil {
+		return fmt.Errorf("failed to get exercise_id from submission: %w", err)
 	}
 
 	for _, answer := range answers {
-		// Get question details for grading
+		// Get question details for grading and validate it belongs to the exercise
 		var questionType string
 		var points float64
+		var questionExerciseID uuid.UUID
 		err := tx.QueryRow(`
-			SELECT question_type, points FROM questions WHERE id = $1
-		`, answer.QuestionID).Scan(&questionType, &points)
+			SELECT question_type, points, exercise_id FROM questions WHERE id = $1
+		`, answer.QuestionID).Scan(&questionType, &points, &questionExerciseID)
 		if err != nil {
-			return err
+			log.Printf("[Exercise-Repo] Error fetching question %s: %v", answer.QuestionID, err)
+			return fmt.Errorf("question not found: %s: %w", answer.QuestionID, err)
+		}
+
+		// Validate question belongs to the exercise
+		if questionExerciseID != exerciseID {
+			log.Printf("[Exercise-Repo] Question %s does not belong to exercise %s (belongs to %s)", 
+				answer.QuestionID, exerciseID, questionExerciseID)
+			return fmt.Errorf("question %s does not belong to exercise %s", answer.QuestionID, exerciseID)
 		}
 
 		isCorrect := false
@@ -533,8 +559,7 @@ func (r *ExerciseRepository) SaveSubmissionAnswers(submissionID uuid.UUID, answe
 			}
 		}
 
-		// FIX #12: Use UPSERT to prevent duplicate answers for same question
-		// Save user answer with conflict handling (last answer wins)
+		// UPSERT: Insert or update answer (atomic operation with unique constraint)
 		_, err = tx.Exec(`
 			INSERT INTO user_answers (
 				id, attempt_id, question_id, user_id, answer_text, selected_option_id,
@@ -546,12 +571,14 @@ func (r *ExerciseRepository) SaveSubmissionAnswers(submissionID uuid.UUID, answe
 				is_correct = EXCLUDED.is_correct,
 				points_earned = EXCLUDED.points_earned,
 				time_spent_seconds = COALESCE(EXCLUDED.time_spent_seconds, user_answers.time_spent_seconds),
-				answered_at = EXCLUDED.answered_at
+				answered_at = EXCLUDED.answered_at,
+				updated_at = CURRENT_TIMESTAMP
 		`, uuid.New(), submissionID, answer.QuestionID, userID, answer.TextAnswer,
 			answer.SelectedOptionID, isCorrect, pointsEarned, answer.TimeSpentSeconds,
 			time.Now())
 		if err != nil {
-			return err
+			log.Printf("[Exercise-Repo] Error upserting answer for question %s: %v", answer.QuestionID, err)
+			return fmt.Errorf("failed to upsert answer: %w", err)
 		}
 	}
 
@@ -778,6 +805,8 @@ func (r *ExerciseRepository) CompleteSubmission(submissionID uuid.UUID) error {
 func (r *ExerciseRepository) GetSubmissionResult(submissionID uuid.UUID) (*models.SubmissionResultResponse, error) {
 	// Get attempt
 	var submission models.UserExerciseAttempt
+	var audioURL sql.NullString
+	var transcriptText sql.NullString
 	err := r.db.QueryRow(`
 		SELECT id, user_id, exercise_id, attempt_number, status, total_questions,
 			questions_answered, correct_answers, score, band_score, 
@@ -792,11 +821,23 @@ func (r *ExerciseRepository) GetSubmissionResult(submissionID uuid.UUID) (*model
 		&submission.BandScore, &submission.TimeLimitMinutes, &submission.TimeSpentSeconds,
 		&submission.StartedAt, &submission.CompletedAt, &submission.DeviceType,
 		&submission.CreatedAt, &submission.UpdatedAt,
-		&submission.EssayText, &submission.AudioURL, &submission.TranscriptText,
+		&submission.EssayText, &audioURL, &transcriptText,
 		&submission.EvaluationStatus, &submission.AIFeedback, &submission.DetailedScores,
 	)
 	if err != nil {
 		return nil, err
+	}
+	
+	// Handle NULL values for audio_url and transcript_text
+	if audioURL.Valid && audioURL.String != "" {
+		submission.AudioURL = &audioURL.String
+		log.Printf("📎 [GetSubmissionResult] Audio URL from DB: %s", audioURL.String)
+	} else {
+		log.Printf("⚠️ [GetSubmissionResult] Audio URL is NULL or empty")
+	}
+	
+	if transcriptText.Valid && transcriptText.String != "" {
+		submission.TranscriptText = &transcriptText.String
 	}
 
 	// Get exercise
@@ -1924,6 +1965,20 @@ func (r *ExerciseRepository) UpdateSubmissionEvaluationStatus(submissionID uuid.
 	return err
 }
 
+// MarkSubmissionAsSubmitted marks submission as submitted with completed_at timestamp
+// This ensures completed_at is set when user submits (for Writing/Speaking), not when AI evaluation completes
+func (r *ExerciseRepository) MarkSubmissionAsSubmitted(submissionID uuid.UUID) error {
+	query := `
+		UPDATE user_exercise_attempts
+		SET completed_at = COALESCE(completed_at, NOW()),
+		    status = CASE WHEN status = 'in_progress' THEN 'submitted' ELSE status END,
+		    updated_at = NOW()
+		WHERE id = $1
+	`
+	_, err := r.db.Exec(query, submissionID)
+	return err
+}
+
 // UpdateSubmissionTranscript updates the transcript text
 func (r *ExerciseRepository) UpdateSubmissionTranscript(submissionID uuid.UUID, transcript string) error {
 	query := `
@@ -1943,6 +1998,8 @@ func (r *ExerciseRepository) UpdateSubmissionWithAIResult(submissionID uuid.UUID
 	}
 	detailedScoresStr := string(detailedScoresJSON)
 
+	// FIX: Only set completed_at if it's not already set (to avoid violating check_attempt_sync_after_completed constraint)
+	// For Writing/Speaking, completed_at should be set when user submits, not when AI evaluation completes
 	query := `
 		UPDATE user_exercise_attempts
 		SET band_score = $1,
@@ -1950,7 +2007,7 @@ func (r *ExerciseRepository) UpdateSubmissionWithAIResult(submissionID uuid.UUID
 		    ai_feedback = $3,
 		    evaluation_status = 'completed',
 		    status = 'completed',
-		    completed_at = NOW(),
+		    completed_at = COALESCE(completed_at, NOW()),
 		    updated_at = NOW()
 		WHERE id = $4
 	`

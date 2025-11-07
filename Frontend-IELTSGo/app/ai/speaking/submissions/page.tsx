@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Mic, Calendar, Target, Eye, Clock } from "lucide-react"
 import { PageLoading } from "@/components/ui/page-loading"
 import { EmptyState } from "@/components/ui/empty-state"
-import { aiApi } from "@/lib/api/ai"
-import type { SpeakingSubmission } from "@/types/ai"
+import { exercisesApi } from "@/lib/api/exercises"
+import type { SubmissionWithExercise } from "@/types"
 import { useTranslations } from "@/lib/i18n"
 
 export default function SpeakingSubmissionsPage() {
@@ -28,16 +28,24 @@ function SpeakingSubmissionsContent() {
   const t = useTranslations("ai")
   const tCommon = useTranslations("common")
 
-  const [submissions, setSubmissions] = useState<SpeakingSubmission[]>([])
+  const [submissions, setSubmissions] = useState<SubmissionWithExercise[]>([])
   const [loading, setLoading] = useState(true)
-  const [offset, setOffset] = useState(0)
+  const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const limit = 20
 
   const fetchSubmissions = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await aiApi.getSpeakingSubmissions(limit, offset)
+      const response = await exercisesApi.getMySubmissions(
+        {
+          skill: ['speaking'],
+          sort_by: 'date',
+          sort_order: 'desc',
+        },
+        page,
+        limit
+      )
       setSubmissions(response.submissions || [])
       setTotal(response.total || 0)
     } catch (error) {
@@ -45,7 +53,7 @@ function SpeakingSubmissionsContent() {
     } finally {
       setLoading(false)
     }
-  }, [offset])
+  }, [page])
 
   useEffect(() => {
     fetchSubmissions()
@@ -109,61 +117,74 @@ function SpeakingSubmissionsContent() {
           />
         ) : (
           <div className="space-y-4">
-            {submissions.map((submission) => (
-              <Card
-                key={submission.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => router.push(`/ai/speaking/submissions/${submission.id}`)}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-1">
-                        Part {submission.part_number}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(submission.submitted_at)}
-                      </CardDescription>
-                    </div>
-                    <Badge className={getStatusColor(submission.status)}>
-                      {submission.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t("duration") || "Duration"}</p>
-                      <p className="text-lg font-semibold">{formatDuration(submission.audio_duration_seconds)}</p>
-                    </div>
-                    {submission.transcript_word_count && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">{t("word_count") || "Word count"}</p>
-                        <p className="text-lg font-semibold">{submission.transcript_word_count}</p>
+            {submissions.map((item) => {
+              const submission = item.submission
+              const exercise = item.exercise
+              const evaluationStatus = submission.evaluation_status || submission.status
+              const partNumber = submission.speaking_part_number || 1
+              
+              return (
+                <Card
+                  key={submission.id}
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => router.push(`/exercises/${exercise.id}/result/${submission.id}`)}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg mb-1">
+                          {exercise.title || `Speaking Part ${partNumber}`}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-2">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(submission.completed_at || submission.created_at)}
+                        </CardDescription>
                       </div>
-                    )}
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t("part_number") || "Part"}</p>
-                      <p className="text-lg font-semibold">Part {submission.part_number}</p>
+                      <Badge className={getStatusColor(evaluationStatus)}>
+                        {evaluationStatus}
+                      </Badge>
                     </div>
-                    <div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/ai/speaking/submissions/${submission.id}`)
-                        }}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        {t("view_details") || "View Details"}
-                      </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {submission.audio_duration_seconds && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t("duration") || "Duration"}</p>
+                          <p className="text-lg font-semibold">{formatDuration(submission.audio_duration_seconds)}</p>
+                        </div>
+                      )}
+                      {submission.transcript_text && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t("transcript") || "Transcript"}</p>
+                          <p className="text-lg font-semibold">
+                            {submission.transcript_text.split(' ').length} {t("words") || "words"}
+                          </p>
+                        </div>
+                      )}
+                      {submission.band_score && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">{t("band_score") || "Band Score"}</p>
+                          <p className="text-lg font-semibold">{submission.band_score.toFixed(1)}</p>
+                        </div>
+                      )}
+                      <div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/exercises/${exercise.id}/result/${submission.id}`)
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          {t("view_details") || "View Details"}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         )}
 
@@ -172,21 +193,18 @@ function SpeakingSubmissionsContent() {
           <div className="mt-8 flex justify-center gap-2">
             <Button
               variant="outline"
-              onClick={() => setOffset(Math.max(0, offset - limit))}
-              disabled={offset === 0}
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
             >
               {tCommon("previous")}
             </Button>
             <span className="flex items-center px-4">
-              {tCommon("page_of", {
-                page: Math.floor(offset / limit) + 1,
-                totalPages: Math.ceil(total / limit),
-              })}
+              Page {page} of {Math.ceil(total / limit)}
             </span>
             <Button
               variant="outline"
-              onClick={() => setOffset(offset + limit)}
-              disabled={offset + limit >= total}
+              onClick={() => setPage(page + 1)}
+              disabled={page * limit >= total}
             >
               {tCommon("next")}
             </Button>

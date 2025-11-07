@@ -78,6 +78,8 @@ apiClient.interceptors.response.use(
         (originalRequest.url?.includes("/progress") || 
          originalRequest.url?.includes("/admin/analytics") ||
          originalRequest.url?.includes("/admin/activities") ||
+         originalRequest.url?.includes("/ai/writing/submissions") ||
+         originalRequest.url?.includes("/ai/speaking/submissions") ||
          (originalRequest.url?.includes("/submissions/") && originalRequest.url?.includes("/result")))
 
       // Don't log 403 errors for private profiles (expected behavior)

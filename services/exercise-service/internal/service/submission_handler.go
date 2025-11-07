@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	sharedClient "github.com/bisosad1501/DATN/shared/pkg/client"
 	"github.com/bisosad1501/DATN/shared/pkg/ielts"
@@ -86,8 +87,11 @@ func (s *ExerciseService) handleListeningReadingSubmission(
 		log.Printf("⚠️ Failed to update band score: %v", err)
 	}
 
-	// 6. Record to user service (async)
+	// 6. Record to user service (async) - for practice activities and test results
 	go s.recordToUserService(submission.ID, exercise, bandScore)
+
+	// 7. Handle exercise completion (update user stats and send notification)
+	go s.handleExerciseCompletion(submission.ID)
 
 	return nil
 }
@@ -120,6 +124,12 @@ func (s *ExerciseService) handleWritingSubmission(
 		return fmt.Errorf("save writing data: %w", err)
 	}
 
+	// FIX: Set completed_at when user submits (not when AI evaluation completes)
+	// This ensures timestamp consistency for sync constraints
+	if err := s.repo.MarkSubmissionAsSubmitted(submission.ID); err != nil {
+		return fmt.Errorf("mark submission as submitted: %w", err)
+	}
+
 	// Set pending status
 	if err := s.repo.UpdateSubmissionEvaluationStatus(submission.ID, "pending"); err != nil {
 		return fmt.Errorf("update evaluation status: %w", err)
@@ -145,14 +155,28 @@ func (s *ExerciseService) handleSpeakingSubmission(
 	}
 
 	// 2. Save audio data
+	// Frontend sends presigned URL (if available) or public URL
+	// We save this URL as-is for frontend access
+	// For AI service, we'll convert it to internal URL later
+	audioURL := req.SpeakingData.AudioURL
+	
+	// Log the URL we're saving
+	log.Printf("💾 Saving audio URL to database: %s", audioURL)
+	
 	err := s.repo.UpdateSubmissionSpeakingData(
 		submission.ID,
-		req.SpeakingData.AudioURL,
+		audioURL, // Save the URL from frontend (presigned if available)
 		req.SpeakingData.AudioDurationSeconds,
 		req.SpeakingData.SpeakingPartNumber,
 	)
 	if err != nil {
 		return fmt.Errorf("save speaking data: %w", err)
+	}
+
+	// FIX: Set completed_at when user submits (not when AI evaluation completes)
+	// This ensures timestamp consistency for sync constraints
+	if err := s.repo.MarkSubmissionAsSubmitted(submission.ID); err != nil {
+		return fmt.Errorf("mark submission as submitted: %w", err)
 	}
 
 	// Set processing status
@@ -161,8 +185,32 @@ func (s *ExerciseService) handleSpeakingSubmission(
 	}
 
 	// 3. Start async processing (transcribe + evaluate)
+	// For AI service, we need internal URL (not presigned, and use minio:9000 instead of localhost:9000)
+	// Convert presigned URL to internal URL:
+	// 1. Remove query parameters (if presigned URL)
+	// 2. Replace localhost:9000 with minio:9000 (for Docker network access)
+	audioURLForAI := audioURL
+	
+	if strings.Contains(audioURL, "?") {
+		// Extract base URL (remove query parameters)
+		// Presigned URL format: http://minio:9000/bucket/object?X-Amz-Algorithm=...
+		// Internal URL format: http://minio:9000/bucket/object
+		parts := strings.Split(audioURL, "?")
+		if len(parts) > 0 {
+			audioURLForAI = parts[0]
+			log.Printf("📎 Removed query parameters from URL: %s", audioURLForAI)
+		}
+	}
+	
+	// Replace localhost:9000 with minio:9000 for internal access
+	if strings.Contains(audioURLForAI, "localhost:9000") {
+		audioURLForAI = strings.Replace(audioURLForAI, "localhost:9000", "minio:9000", 1)
+		log.Printf("📎 Converted localhost to minio for internal access: %s", audioURLForAI)
+	}
+	
+	log.Printf("📎 Using audio URL for AI service: %s (original: %s)", audioURLForAI, audioURL)
 	speakingPart := req.SpeakingData.SpeakingPartNumber
-	go s.evaluateSpeakingAsync(submission.ID, exercise, req.SpeakingData.AudioURL, &speakingPart)
+	go s.evaluateSpeakingAsync(submission.ID, exercise, audioURLForAI, &speakingPart)
 
 	return nil
 }
@@ -261,6 +309,9 @@ func (s *ExerciseService) evaluateWritingAsync(
 
 	// Record to user service
 	go s.recordToUserService(submissionID, exercise, overallBand)
+
+	// Handle exercise completion (update user stats and send notification)
+	go s.handleExerciseCompletion(submissionID)
 }
 
 // evaluateSpeakingAsync performs async speaking transcription + evaluation
@@ -278,6 +329,8 @@ func (s *ExerciseService) evaluateSpeakingAsync(
 	}()
 
 	log.Printf("🔄 Starting speaking evaluation for submission %s", submissionID)
+	log.Printf("📎 Audio URL: %s", audioURL)
+	log.Printf("📎 Part Number: %v", partNumber)
 
 	// Check if AI client exists
 	if s.aiServiceClient == nil {
@@ -286,10 +339,18 @@ func (s *ExerciseService) evaluateSpeakingAsync(
 		return
 	}
 
+	// Validate audio URL is not empty
+	if audioURL == "" {
+		log.Printf("❌ Audio URL is empty for submission %s", submissionID)
+		s.repo.UpdateSubmissionEvaluationStatus(submissionID, "failed")
+		return
+	}
+
 	// Step 1: Transcribe audio with retry
 	var transcriptResult *aiClient.SpeakingTranscriptionResponse
 	err := RetryWithBackoff(AIServiceRetryConfig(), func() error {
 		var transcribeErr error
+		log.Printf("🎤 Transcribing audio from URL: %s", audioURL)
 		transcriptResult, transcribeErr = s.aiServiceClient.TranscribeSpeaking(aiClient.SpeakingTranscriptionRequest{
 			AudioURL: audioURL,
 		})
@@ -308,6 +369,18 @@ func (s *ExerciseService) evaluateSpeakingAsync(
 		return
 	}
 
+	// Log transcript result
+	if transcriptResult != nil && transcriptResult.Data.TranscriptText != "" {
+		transcriptPreview := transcriptResult.Data.TranscriptText
+		if len(transcriptPreview) > 200 {
+			transcriptPreview = transcriptPreview[:200] + "..."
+		}
+		log.Printf("✅ Transcription successful. Transcript preview: %s", transcriptPreview)
+		log.Printf("📊 Transcript length: %d characters", len(transcriptResult.Data.TranscriptText))
+	} else {
+		log.Printf("⚠️ Transcription returned empty transcript")
+	}
+
 	// Update submission with transcript
 	err = s.repo.UpdateSubmissionTranscript(submissionID, transcriptResult.Data.TranscriptText)
 	if err != nil {
@@ -321,13 +394,57 @@ func (s *ExerciseService) evaluateSpeakingAsync(
 		partNum = *partNumber
 	}
 
+	// Validate transcript is not empty
+	if transcriptResult.Data.TranscriptText == "" || len(transcriptResult.Data.TranscriptText) < 10 {
+		log.Printf("❌ Transcript is empty or too short (%d chars) for submission %s", len(transcriptResult.Data.TranscriptText), submissionID)
+		s.repo.UpdateSubmissionEvaluationStatus(submissionID, "failed")
+		// Update with error feedback
+		s.repo.UpdateSubmissionWithAIResult(submissionID, &models.AIEvaluationResult{
+			OverallBandScore: 0.0,
+			DetailedScores: map[string]interface{}{
+				"fluency":          0.0,
+				"lexical_resource": 0.0,
+				"grammar":          0.0,
+				"pronunciation":    0.0,
+			},
+			Feedback: "Không có câu trả lời nào được cung cấp, do đó không thể đánh giá khả năng nói của thí sinh. Để cải thiện, hãy cố gắng trả lời đầy đủ và rõ ràng các câu hỏi trong bài thi. Điều này sẽ giúp bạn có cơ hội thể hiện khả năng ngôn ngữ của mình tốt hơn.",
+			CriteriaScores: map[string]float64{
+				"fluency":          0.0,
+				"lexical_resource": 0.0,
+				"grammar":          0.0,
+				"pronunciation":    0.0,
+			},
+		})
+		return
+	}
+
+	// Get prompt text from exercise
+	promptText := ""
+	if exercise.SpeakingPromptText != nil {
+		promptText = *exercise.SpeakingPromptText
+	}
+
+	// Calculate word count from transcript
+	wordCount := len(strings.Fields(transcriptResult.Data.TranscriptText))
+
+	// Get audio duration from submission (if available)
+	submission, err := s.repo.GetSubmissionByID(submissionID)
+	duration := 0.0
+	if err == nil && submission.AudioDurationSeconds != nil {
+		duration = float64(*submission.AudioDurationSeconds)
+	}
+
 	var evalResult *aiClient.SpeakingEvaluationResponse
 	err = RetryWithBackoff(AIServiceRetryConfig(), func() error {
 		var evalErr error
+		log.Printf("📝 Evaluating speaking with transcript length: %d, part: %d, word count: %d, duration: %.1fs", len(transcriptResult.Data.TranscriptText), partNum, wordCount, duration)
 		evalResult, evalErr = s.aiServiceClient.EvaluateSpeaking(aiClient.SpeakingEvaluationRequest{
 			AudioURL:       audioURL,
 			TranscriptText: transcriptResult.Data.TranscriptText,
+			PromptText:     promptText,
 			PartNumber:     partNum,
+			WordCount:      wordCount,
+			Duration:       duration,
 		})
 
 		if evalErr != nil && IsRetryableError(evalErr) {
@@ -346,6 +463,12 @@ func (s *ExerciseService) evaluateSpeakingAsync(
 
 	// Use the overall band from AI service
 	overallBand := evalResult.Data.OverallBand
+	log.Printf("📊 Evaluation result: Band Score = %.1f", overallBand)
+	log.Printf("📊 Criteria scores: Fluency=%.1f, Lexical=%.1f, Grammar=%.1f, Pronunciation=%.1f",
+		evalResult.Data.CriteriaScores.FluencyCoherence,
+		evalResult.Data.CriteriaScores.LexicalResource,
+		evalResult.Data.CriteriaScores.GrammaticalRange,
+		evalResult.Data.CriteriaScores.Pronunciation)
 
 	// Prepare detailed scores
 	detailedScores := map[string]interface{}{
@@ -380,6 +503,9 @@ func (s *ExerciseService) evaluateSpeakingAsync(
 
 	// Record to user service
 	go s.recordToUserService(submissionID, exercise, overallBand)
+
+	// Handle exercise completion (update user stats and send notification)
+	go s.handleExerciseCompletion(submissionID)
 }
 
 // recordToUserService records results to user service (for all 4 skills)

@@ -251,6 +251,25 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config, authMiddleware *middleware.A
 	}
 
 	// ============================================
+		// STORAGE SERVICE
+		// ============================================
+		storageGroup := v1.Group("/storage")
+		{
+			audio := storageGroup.Group("/audio")
+			{
+				// Protected routes (require auth)
+				audio.POST("/upload", authMiddleware.ValidateToken(), proxy.ReverseProxy(cfg.Services.ExerciseService))              // Upload audio (proxy to Storage Service)
+				audio.GET("/info/*object_name", authMiddleware.ValidateToken(), proxy.ReverseProxy(cfg.Services.ExerciseService))    // Get audio info
+				audio.GET("/presigned-url/*object_name", authMiddleware.ValidateToken(), proxy.ReverseProxy(cfg.Services.StorageService)) // Get presigned URL (direct to Storage Service)
+				
+				// Public route (no auth required) - for HTML5 audio player
+				// NOTE: This is safe because audio files are already protected during upload
+				// Only users who own the submission can get the audio URL
+				audio.GET("/file/*object_name", proxy.ReverseProxy(cfg.Services.StorageService))
+			}
+		}
+
+	// ============================================
 	// NOTIFICATION SERVICE - All protected
 	// ============================================
 	notificationGroup := v1.Group("/notifications")
