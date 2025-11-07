@@ -549,6 +549,175 @@ func (s *UserService) UnlockAchievement(userID uuid.UUID, achievementID uuid.UUI
 	return s.repo.UnlockAchievement(userID, achievementID)
 }
 
+// CheckAndUnlockAchievements checks user progress and auto-unlocks eligible achievements
+func (s *UserService) CheckAndUnlockAchievements(userID uuid.UUID) error {
+	log.Printf("[User-Service] 🏆 Checking achievements for user %s", userID)
+
+	// 1. Get all achievements
+	allAchievements, err := s.repo.GetAllAchievements()
+	if err != nil {
+		log.Printf("❌ Failed to get achievements: %v", err)
+		return fmt.Errorf("failed to get achievements: %w", err)
+	}
+
+	// 2. Get already earned achievements
+	earnedAchievements, err := s.repo.GetUserAchievements(userID)
+	if err != nil {
+		log.Printf("❌ Failed to get user achievements: %v", err)
+		return fmt.Errorf("failed to get user achievements: %w", err)
+	}
+
+	// Create set of earned achievement IDs for fast lookup
+	earnedSet := make(map[int]bool)
+	for _, earned := range earnedAchievements {
+		earnedSet[earned.AchievementID] = true
+	}
+
+	// 3. Get user's current progress data
+	progress, err := s.repo.GetLearningProgress(userID)
+	if err != nil {
+		log.Printf("⚠️ Failed to get learning progress: %v", err)
+		// Continue with empty progress
+		progress = &models.LearningProgress{
+			UserID: userID,
+		}
+	}
+
+	// Get skill statistics for skill-specific achievements
+	skillStats, err := s.repo.GetAllSkillStatistics(userID)
+	if err != nil {
+		log.Printf("⚠️ Failed to get skill statistics: %v", err)
+		skillStats = make(map[string]*models.SkillStatistics)
+	}
+
+	// 4. Check each achievement
+	unlockedCount := 0
+	for _, achievement := range allAchievements {
+		// Skip if already earned
+		if earnedSet[achievement.ID] {
+			continue
+		}
+
+		// Check if criteria is met
+		criteriaMet := false
+		switch achievement.CriteriaType {
+		case "completion":
+			criteriaMet = s.checkCompletionCriteria(achievement, progress, skillStats)
+		case "streak":
+			criteriaMet = s.checkStreakCriteria(achievement, progress)
+		case "score":
+			criteriaMet = s.checkScoreCriteria(achievement, progress)
+		default:
+			log.Printf("⚠️ Unknown criteria type: %s for achievement %s", achievement.CriteriaType, achievement.Code)
+		}
+
+		// Unlock achievement if criteria met
+		if criteriaMet {
+			// Note: Achievement ID is INT in database, but repo expects UUID
+			// We use a workaround by converting int ID to UUID deterministically
+			// TODO: Refactor achievement ID to be consistent (either all INT or all UUID)
+			err := s.repo.UnlockAchievementByID(userID, achievement.ID)
+			if err != nil {
+				log.Printf("❌ Failed to unlock achievement %s (ID: %d): %v", achievement.Code, achievement.ID, err)
+				continue
+			}
+
+			log.Printf("✅ Achievement unlocked: %s (%s) - %d points", achievement.Name, achievement.Code, achievement.Points)
+			unlockedCount++
+
+			// Send achievement notification (async)
+			go s.sendAchievementNotification(userID, &achievement)
+		}
+	}
+
+	if unlockedCount > 0 {
+		log.Printf("🎉 User %s unlocked %d new achievements!", userID, unlockedCount)
+	} else {
+		log.Printf("📊 No new achievements for user %s", userID)
+	}
+
+	return nil
+}
+
+// Helper functions to check achievement criteria
+
+// checkCompletionCriteria checks if user has completed enough activities
+func (s *UserService) checkCompletionCriteria(achievement models.Achievement, progress *models.LearningProgress, skillStats map[string]*models.SkillStatistics) bool {
+	switch achievement.Code {
+	case "first_lesson":
+		// Check if user completed at least 1 lesson OR 1 exercise
+		return progress.TotalLessonsCompleted >= achievement.CriteriaValue || 
+			   progress.TotalExercisesCompleted >= achievement.CriteriaValue
+
+	case "listening_master":
+		// Check if user completed 100 listening exercises
+		if listeningStats, ok := skillStats["listening"]; ok {
+			return listeningStats.CompletedPractices >= achievement.CriteriaValue
+		}
+		return false
+
+	default:
+		// Generic completion check - use total exercises completed
+		return int(progress.TotalExercisesCompleted) >= achievement.CriteriaValue
+	}
+}
+
+// checkStreakCriteria checks if user has maintained required streak
+func (s *UserService) checkStreakCriteria(achievement models.Achievement, progress *models.LearningProgress) bool {
+	return int(progress.CurrentStreakDays) >= achievement.CriteriaValue
+}
+
+// checkScoreCriteria checks if user has achieved required band score
+func (s *UserService) checkScoreCriteria(achievement models.Achievement, progress *models.LearningProgress) bool {
+	// Achievement criteria_value is stored as integer (60 for 6.0, 70 for 7.0)
+	// Convert to actual band score by dividing by 10
+	requiredBandScore := float64(achievement.CriteriaValue) / 10.0
+
+	// Check if user has achieved the required score in ANY skill or overall
+	if progress.OverallScore != nil && *progress.OverallScore >= requiredBandScore {
+		return true
+	}
+	if progress.ListeningScore != nil && *progress.ListeningScore >= requiredBandScore {
+		return true
+	}
+	if progress.ReadingScore != nil && *progress.ReadingScore >= requiredBandScore {
+		return true
+	}
+	if progress.WritingScore != nil && *progress.WritingScore >= requiredBandScore {
+		return true
+	}
+	if progress.SpeakingScore != nil && *progress.SpeakingScore >= requiredBandScore {
+		return true
+	}
+
+	return false
+}
+
+// sendAchievementNotification sends a notification when achievement is unlocked
+func (s *UserService) sendAchievementNotification(userID uuid.UUID, achievement *models.Achievement) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("❌ PANIC in sendAchievementNotification: %v", r)
+		}
+	}()
+
+	if s.notificationClient == nil {
+		log.Printf("⚠️ Notification client not available, skipping notification")
+		return
+	}
+
+	// Send notification via Notification Service
+	err := s.notificationClient.SendAchievementNotification(
+		userID.String(),
+		achievement.Name,
+	)
+	if err != nil {
+		log.Printf("⚠️ Failed to send achievement notification: %v", err)
+	} else {
+		log.Printf("📬 Sent achievement notification for %s (+%d points)", achievement.Name, achievement.Points)
+	}
+}
+
 // ============= User Preferences =============
 
 // GetPreferences retrieves user preferences (creates default if not exists)
@@ -1036,7 +1205,25 @@ func (s *UserService) UpdateProgress(userID uuid.UUID, updates map[string]interf
 	}
 
 	// Use repository method for atomic update
-	return s.repo.UpdateLearningProgressAtomic(userID, updates)
+	err = s.repo.UpdateLearningProgressAtomic(userID, updates)
+	if err != nil {
+		return err
+	}
+
+	// Check achievements after progress update (async)
+	// This handles achievements for streaks, exercises, and scores
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("❌ PANIC in CheckAndUnlockAchievements from UpdateProgress: %v", r)
+			}
+		}()
+		if err := s.CheckAndUnlockAchievements(userID); err != nil {
+			log.Printf("⚠️  Failed to check achievements after progress update: %v", err)
+		}
+	}()
+
+	return nil
 }
 
 // UpdateSkillStatistics updates skill-specific statistics
@@ -1326,6 +1513,18 @@ func (s *UserService) RecordPracticeActivity(activity *models.PracticeActivity) 
 		if err := s.repo.UpdateLearningProgress(activity.UserID, updates); err != nil {
 			log.Printf("⚠️  Failed to update exercises completed: %v", err)
 		}
+
+		// 4. Check and unlock achievements (async to avoid blocking)
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("❌ PANIC in CheckAndUnlockAchievements: %v", r)
+				}
+			}()
+			if err := s.CheckAndUnlockAchievements(activity.UserID); err != nil {
+				log.Printf("⚠️  Failed to check achievements: %v", err)
+			}
+		}()
 	}
 
 	log.Printf("✅ Recorded practice activity for user %s: skill=%s, type=%s",

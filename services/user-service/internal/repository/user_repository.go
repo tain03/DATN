@@ -1433,7 +1433,7 @@ func (r *UserRepository) GetAllAchievements() ([]models.Achievement, error) {
 	return achievements, nil
 }
 
-// UnlockAchievement unlocks an achievement for a user
+// UnlockAchievement unlocks an achievement for a user (UUID version)
 func (r *UserRepository) UnlockAchievement(userID uuid.UUID, achievementID uuid.UUID) error {
 	query := `
 		INSERT INTO user_achievements (id, user_id, achievement_id, earned_at)
@@ -1445,6 +1445,28 @@ func (r *UserRepository) UnlockAchievement(userID uuid.UUID, achievementID uuid.
 	if err != nil {
 		return fmt.Errorf("failed to unlock achievement: %w", err)
 	}
+	return nil
+}
+
+// UnlockAchievementByID unlocks an achievement for a user (INT ID version)
+func (r *UserRepository) UnlockAchievementByID(userID uuid.UUID, achievementID int) error {
+	query := `
+		INSERT INTO user_achievements (user_id, achievement_id, earned_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (user_id, achievement_id) DO NOTHING
+		RETURNING id
+	`
+	var insertedID int64
+	err := r.db.DB.QueryRow(query, userID, achievementID).Scan(&insertedID)
+	if err != nil {
+		// If error is "no rows", it means conflict (already unlocked)
+		if err.Error() == "sql: no rows in result set" {
+			log.Printf("ℹ️  Achievement %d already unlocked for user %s", achievementID, userID)
+			return nil
+		}
+		return fmt.Errorf("failed to unlock achievement: %w", err)
+	}
+	log.Printf("✅ Achievement %d unlocked for user %s (row ID: %d)", achievementID, userID, insertedID)
 	return nil
 }
 
