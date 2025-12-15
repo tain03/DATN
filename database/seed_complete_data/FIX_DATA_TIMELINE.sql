@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- FIX DATA TIMELINE & LOGIC ISSUES
 -- ============================================
 -- Purpose: Repair timeline violations and ensure logical flow
@@ -22,7 +22,7 @@ BEGIN
     AND ce.enrollment_date < c.created_at;
     
     GET DIAGNOSTICS fixed_count = ROW_COUNT;
-    RAISE NOTICE '✅ Fixed % enrollments with invalid timestamps', fixed_count;
+    RAISE NOTICE 'âœ… Fixed % enrollments with invalid timestamps', fixed_count;
 END $$;
 
 -- ============================================
@@ -40,7 +40,7 @@ BEGIN
     AND last_accessed_at < completed_at;
     
     GET DIAGNOSTICS fixed_count = ROW_COUNT;
-    RAISE NOTICE '✅ Fixed % enrollments where completion > last access', fixed_count;
+    RAISE NOTICE 'âœ… Fixed % enrollments where completion > last access', fixed_count;
 END $$;
 
 -- ============================================
@@ -68,7 +68,7 @@ BEGIN
     WHERE lp.id = lf.lp_id;
     
     GET DIAGNOSTICS fixed_count = ROW_COUNT;
-    RAISE NOTICE '✅ Fixed % lesson progress records with invalid timestamps', fixed_count;
+    RAISE NOTICE 'âœ… Fixed % lesson progress records with invalid timestamps', fixed_count;
 END $$;
 
 -- ============================================
@@ -85,7 +85,7 @@ BEGIN
     AND last_accessed_at IS NOT NULL;
     
     GET DIAGNOSTICS fixed_count = ROW_COUNT;
-    RAISE NOTICE '✅ Fixed % completed lessons without completion timestamp', fixed_count;
+    RAISE NOTICE 'âœ… Fixed % completed lessons without completion timestamp', fixed_count;
 END $$;
 
 -- ============================================
@@ -107,7 +107,7 @@ BEGIN
     AND (lp.progress_percentage < 100 OR lp.video_watched_seconds = 0);
     
     GET DIAGNOSTICS fixed_count = ROW_COUNT;
-    RAISE NOTICE '✅ Fixed % completed lessons with incomplete progress', fixed_count;
+    RAISE NOTICE 'âœ… Fixed % completed lessons with incomplete progress', fixed_count;
 END $$;
 
 \c exercise_db
@@ -127,7 +127,7 @@ BEGIN
     AND completed_at < started_at;
     
     GET DIAGNOSTICS fixed_count = ROW_COUNT;
-    RAISE NOTICE '✅ Fixed % exercise attempts with invalid completion times', fixed_count;
+    RAISE NOTICE 'âœ… Fixed % exercise attempts with invalid completion times', fixed_count;
 END $$;
 
 -- ============================================
@@ -164,7 +164,7 @@ BEGIN
         updated_count := updated_count + 1;
     END LOOP;
     
-    RAISE NOTICE '✅ Updated analytics for % exercises', updated_count;
+    RAISE NOTICE 'âœ… Updated analytics for % exercises', updated_count;
 END $$;
 
 \c user_db
@@ -185,7 +185,7 @@ BEGIN
     AND ABS(EXTRACT(EPOCH FROM (ended_at - started_at))/60 - duration_minutes) > 1;
     
     GET DIAGNOSTICS fixed_count = ROW_COUNT;
-    RAISE NOTICE '✅ Fixed % study sessions with duration mismatch', fixed_count;
+    RAISE NOTICE 'âœ… Fixed % study sessions with duration mismatch', fixed_count;
 END $$;
 
 -- ============================================
@@ -216,9 +216,9 @@ BEGIN
     RAISE NOTICE 'Completed before last access: %', issue2;
     
     IF issue1 = 0 AND issue2 = 0 THEN
-        RAISE NOTICE '✅ ALL TIMELINE ISSUES RESOLVED';
+        RAISE NOTICE 'âœ… ALL TIMELINE ISSUES RESOLVED';
     ELSE
-        RAISE NOTICE '⚠️  Some issues remain';
+        RAISE NOTICE 'âš ï¸  Some issues remain';
     END IF;
     RAISE NOTICE '============================================';
 END $$;

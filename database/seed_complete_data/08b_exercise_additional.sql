@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 8: ADDITIONAL MISSING TABLES & RELATIONSHIPS
 -- ============================================
 -- Purpose: Seed data for tables that were missing
@@ -93,7 +93,7 @@ ON CONFLICT (exercise_id, date) DO UPDATE SET
 
 -- Summary
 SELECT 
-    '✅ Exercise DB Phase 8 Complete' as status,
+    'âœ… Exercise DB Phase 8 Complete' as status,
     (SELECT COUNT(*) FROM exercise_tag_mapping) as exercise_tag_mappings_count,
     (SELECT COUNT(*) FROM exercise_analytics) as exercise_analytics_count;
 

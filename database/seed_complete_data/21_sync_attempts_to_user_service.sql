@@ -1,12 +1,12 @@
--- ============================================
+﻿-- ============================================
 -- SYNC EXERCISE ATTEMPTS TO USER SERVICE
 -- ============================================
 -- Purpose: Sync completed exercise attempts to user_db tables
--- Databases: exercise_db → user_db
+-- Databases: exercise_db â†’ user_db
 -- 
 -- SYNCS:
--- 1. Completed attempts → practice_activities (drills, mini-tests)
--- 2. Official test attempts → official_test_results (full tests)
+-- 1. Completed attempts â†’ practice_activities (drills, mini-tests)
+-- 2. Official test attempts â†’ official_test_results (full tests)
 -- 3. Update sync status in user_exercise_attempts
 -- ============================================
 
@@ -436,7 +436,7 @@ LIMIT 10;
 -- ============================================
 
 SELECT 
-    '✅ Phase Complete: Exercise Attempts Synced to User Service' as status,
+    'âœ… Phase Complete: Exercise Attempts Synced to User Service' as status,
     (SELECT COUNT(*) FROM user_exercise_attempts 
      WHERE user_service_sync_status = 'synced') as synced_count,
     (SELECT COUNT(*) FROM user_exercise_attempts 

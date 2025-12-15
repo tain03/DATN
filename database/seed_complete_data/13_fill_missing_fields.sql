@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- FILL MISSING FIELDS WITH REALISTIC DATA
 -- ============================================
 -- Purpose: Add data to empty/sparse fields
@@ -37,7 +37,7 @@ BEGIN
     WHERE lp.user_id = ta.user_id;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % learning_progress records with test data', updated_count;
+    RAISE NOTICE 'âœ… Updated % learning_progress records with test data', updated_count;
 END $$;
 
 \c exercise_db
@@ -65,7 +65,7 @@ BEGIN
     AND e.total_points IS NULL;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % exercises with total_points', updated_count;
+    RAISE NOTICE 'âœ… Updated % exercises with total_points', updated_count;
     
     -- Add passing_score (70% of total_points)
     UPDATE exercises
@@ -75,7 +75,7 @@ BEGIN
     AND total_points > 0;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % exercises with passing_score', updated_count;
+    RAISE NOTICE 'âœ… Updated % exercises with passing_score', updated_count;
     
     -- Add average_completion_time from actual attempts
     WITH time_calc AS (
@@ -96,7 +96,7 @@ BEGIN
     AND e.average_completion_time IS NULL;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % exercises with average_completion_time', updated_count;
+    RAISE NOTICE 'âœ… Updated % exercises with average_completion_time', updated_count;
     
     -- Add passage_count for reading exercises
     WITH passage_calc AS (
@@ -118,7 +118,7 @@ BEGIN
     AND e.passage_count IS NULL;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % reading exercises with passage_count', updated_count;
+    RAISE NOTICE 'âœ… Updated % reading exercises with passage_count', updated_count;
     
     -- Add test_category for exercises
     UPDATE exercises
@@ -131,7 +131,7 @@ BEGIN
     WHERE test_category IS NULL;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % exercises with test_category', updated_count;
+    RAISE NOTICE 'âœ… Updated % exercises with test_category', updated_count;
 END $$;
 
 -- ============================================
@@ -151,7 +151,7 @@ BEGIN
     AND writing_visual_type IS NULL;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % writing task1 exercises with visual data', updated_count;
+    RAISE NOTICE 'âœ… Updated % writing task1 exercises with visual data', updated_count;
 END $$;
 
 -- ============================================
@@ -176,7 +176,7 @@ BEGIN
     AND speaking_cue_card_topic IS NULL;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % speaking part2 exercises with cue card', updated_count;
+    RAISE NOTICE 'âœ… Updated % speaking part2 exercises with cue card', updated_count;
     
     -- Add follow-up questions for Part 3
     UPDATE exercises
@@ -190,7 +190,7 @@ BEGIN
     AND speaking_follow_up_questions IS NULL;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % speaking part3 exercises with follow-up questions', updated_count;
+    RAISE NOTICE 'âœ… Updated % speaking part3 exercises with follow-up questions', updated_count;
 END $$;
 
 -- ============================================

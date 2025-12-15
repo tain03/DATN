@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- AI_DB - EVALUATION CACHE (NEW SCHEMA)
 -- ============================================
 -- Purpose: Seed AI evaluation cache for performance optimization
@@ -15,13 +15,13 @@
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ai_evaluation_cache') THEN
-        RAISE NOTICE '⚠️  Table ai_evaluation_cache does not exist. Skipping AI cache seeding.';
+        RAISE NOTICE 'âš ï¸  Table ai_evaluation_cache does not exist. Skipping AI cache seeding.';
         RAISE NOTICE '   Run database/schemas/05_ai_service.sql first to create tables.';
         RAISE NOTICE '====================================================';
         RETURN;
     END IF;
     
-    RAISE NOTICE '✓ Table ai_evaluation_cache exists. Proceeding with seed data...';
+    RAISE NOTICE 'âœ“ Table ai_evaluation_cache exists. Proceeding with seed data...';
     
 -- ============================================
 -- AI EVALUATION CACHE - Writing Samples
@@ -205,7 +205,7 @@ BEGIN
     -- Skip if table doesn't exist
     IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ai_evaluation_cache') THEN
         RAISE NOTICE '============================================';
-        RAISE NOTICE '⚠️  AI DB Summary: Schema not applied';
+        RAISE NOTICE 'âš ï¸  AI DB Summary: Schema not applied';
         RAISE NOTICE '   No tables found in ai_db';
         RAISE NOTICE '   Run: docker exec -i ielts_postgres psql -U ielts_admin -d ai_db < database/schemas/05_ai_service.sql';
         RAISE NOTICE '============================================';
@@ -219,7 +219,7 @@ BEGIN
     SELECT SUM(hit_count) INTO total_hits FROM ai_evaluation_cache;
     
     RAISE NOTICE '============================================';
-    RAISE NOTICE '✅ AI Evaluation Cache Summary:';
+    RAISE NOTICE 'âœ… AI Evaluation Cache Summary:';
     RAISE NOTICE '  Total cached evaluations: %', total_cache;
     RAISE NOTICE '  - Writing evaluations: %', writing_cache;
     RAISE NOTICE '  - Speaking evaluations: %', speaking_cache;

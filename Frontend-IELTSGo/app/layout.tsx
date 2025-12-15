@@ -27,7 +27,29 @@ export const metadata: Metadata = {
   title: "IELTSGo - Chinh phục IELTS",
   description: "Nền tảng học IELTS toàn diện với khóa học, bài tập và theo dõi tiến độ",
   keywords: ["IELTS", "Học Tiếng Anh", "Luyện Thi", "Khóa Học Trực Tuyến"],
-  generator: 'v0.app'
+  generator: 'v0.app',
+  // Performance: viewport and theme color
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#101615' },
+  ],
+  // SEO improvements
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'vi_VN',
+    siteName: 'IELTSGo',
+    title: 'IELTSGo - Chinh phục IELTS',
+    description: 'Nền tảng học IELTS toàn diện với khóa học, bài tập và theo dõi tiến độ',
+  },
 }
 
 export default function RootLayout({

@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- FIXED LEARNING_PROGRESS WITH VALID BAND SCORES
 -- ============================================
 -- Purpose: Fix learning_progress records to ensure all band scores are within valid range
@@ -189,7 +189,7 @@ BEGIN
     IF invalid_count > 0 THEN
         RAISE WARNING 'Found % learning_progress records with invalid band scores', invalid_count;
     ELSE
-        RAISE NOTICE '✓ All band scores are within valid range (0.0-9.0)';
+        RAISE NOTICE 'âœ“ All band scores are within valid range (0.0-9.0)';
     END IF;
 END $$;
 
@@ -208,7 +208,7 @@ BEGIN
     IF invalid_progress > 0 THEN
         RAISE WARNING 'Found % learning_progress records with invalid progress percentages', invalid_progress;
     ELSE
-        RAISE NOTICE '✓ All progress percentages are within valid range (0-100)';
+        RAISE NOTICE 'âœ“ All progress percentages are within valid range (0-100)';
     END IF;
 END $$;
 
@@ -226,7 +226,7 @@ BEGIN
     IF missing_count > 0 THEN
         RAISE WARNING '% users are missing learning_progress records', missing_count;
     ELSE
-        RAISE NOTICE '✓ All users have learning_progress records';
+        RAISE NOTICE 'âœ“ All users have learning_progress records';
     END IF;
 END $$;
 
@@ -247,7 +247,7 @@ BEGIN
     IF mismatch_count > 0 THEN
         RAISE WARNING '% records have overall_score not matching average of skills', mismatch_count;
     ELSE
-        RAISE NOTICE '✓ Overall scores match average of individual skills';
+        RAISE NOTICE 'âœ“ Overall scores match average of individual skills';
     END IF;
 END $$;
 

@@ -1,10 +1,10 @@
--- ============================================================================
+﻿-- ============================================================================
 -- PHASE 18: PRACTICE ACTIVITIES - Comprehensive Practice Tracking
 -- ============================================================================
 -- Purpose: Populate practice_activities table with realistic user practice history
 -- Logic: 
---   1. Convert ALL completed user_exercise_attempts → practice_activities
---   2. Add additional drill/section_practice activities (không phải full test)
+--   1. Convert ALL completed user_exercise_attempts â†’ practice_activities
+--   2. Add additional drill/section_practice activities (khÃ´ng pháº£i full test)
 --   3. Ensure timeline logic: practice times within user's study period
 --   4. Activity types: 'drill', 'part_test', 'section_practice', 'question_set'
 --   5. Skills: listening, reading, writing, speaking
@@ -40,12 +40,12 @@ CREATE TEMP TABLE temp_exercise_attempts (
 COPY temp_exercise_attempts FROM '/tmp/exercise_attempts.csv' WITH CSV HEADER;
 
 -- Show temp table count
-SELECT '✅ Loaded exercise attempts: ' || COUNT(*)::text as step FROM temp_exercise_attempts;
+SELECT 'âœ… Loaded exercise attempts: ' || COUNT(*)::text as step FROM temp_exercise_attempts;
 
 -- ============================================================================
 -- PART 1: Insert from Completed Exercise Attempts (Full Tests/Exercises)
 -- ============================================================================
--- Map user_exercise_attempts → practice_activities
+-- Map user_exercise_attempts â†’ practice_activities
 -- activity_type = 'part_test' for full exercises
 
 INSERT INTO practice_activities (
@@ -146,7 +146,7 @@ WHERE uea.completed_at IS NOT NULL;
 
 -- Show insert count
 SELECT 
-    '✅ Inserted from user_exercise_attempts' as step,
+    'âœ… Inserted from user_exercise_attempts' as step,
     COUNT(*) as count 
 FROM practice_activities;
 
@@ -297,7 +297,7 @@ WHERE EXISTS (SELECT 1 FROM study_sessions WHERE user_id = ds.user_id);
 
 -- Show new count
 SELECT 
-    '✅ Added drill activities' as step,
+    'âœ… Added drill activities' as step,
     COUNT(*) FILTER (WHERE activity_type = 'drill') as drills,
     COUNT(*) FILTER (WHERE activity_type = 'section_practice') as section_practice,
     COUNT(*) FILTER (WHERE activity_type = 'question_set') as question_sets,
@@ -385,7 +385,7 @@ FROM section_sessions ss;
 
 -- Check 1: All practice_activities have valid timeline
 SELECT 
-    '✅ Timeline Check' as validation,
+    'âœ… Timeline Check' as validation,
     COUNT(*) as total,
     COUNT(*) FILTER (WHERE completed_at >= started_at) as valid_timeline,
     COUNT(*) FILTER (WHERE completed_at < started_at) as invalid_timeline
@@ -393,7 +393,7 @@ FROM practice_activities;
 
 -- Check 2: All have valid band scores
 SELECT 
-    '✅ Band Score Check' as validation,
+    'âœ… Band Score Check' as validation,
     COUNT(*) FILTER (WHERE band_score IS NOT NULL) as has_band_score,
     COUNT(*) FILTER (WHERE band_score < 0 OR band_score > 9) as invalid_band_score,
     ROUND(AVG(band_score), 2) as avg_band_score,
@@ -403,7 +403,7 @@ FROM practice_activities;
 
 -- Check 3: Activity type distribution
 SELECT 
-    '✅ Activity Distribution' as validation,
+    'âœ… Activity Distribution' as validation,
     activity_type,
     COUNT(*) as count,
     ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as percentage
@@ -413,7 +413,7 @@ ORDER BY count DESC;
 
 -- Check 4: Skill distribution
 SELECT 
-    '✅ Skill Distribution' as validation,
+    'âœ… Skill Distribution' as validation,
     skill,
     COUNT(*) as count,
     ROUND(AVG(band_score), 2) as avg_band_score,
@@ -424,7 +424,7 @@ ORDER BY count DESC;
 
 -- Check 5: User practice summary
 SELECT 
-    '✅ User Summary' as validation,
+    'âœ… User Summary' as validation,
     COUNT(DISTINCT user_id) as total_users,
     ROUND(AVG(activities_per_user), 2) as avg_activities_per_user,
     MAX(activities_per_user) as max_activities_per_user,
@@ -439,7 +439,7 @@ FROM (
 
 -- Check 6: AI evaluation coverage
 SELECT 
-    '✅ AI Evaluation' as validation,
+    'âœ… AI Evaluation' as validation,
     skill,
     COUNT(*) FILTER (WHERE ai_evaluated = true) as ai_evaluated,
     COUNT(*) FILTER (WHERE ai_evaluated = false) as not_evaluated,
@@ -453,7 +453,7 @@ SELECT
     '===========================================' as separator
 UNION ALL
 SELECT 
-    '✅ PRACTICE ACTIVITIES SEEDED SUCCESSFULLY'
+    'âœ… PRACTICE ACTIVITIES SEEDED SUCCESSFULLY'
 UNION ALL
 SELECT 
     '===========================================' 

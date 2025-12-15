@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- ADD TIMESTAMP VALIDATION CONSTRAINTS
 -- ============================================
 -- Purpose: Add check constraints AFTER all data is seeded and fixed
@@ -94,6 +94,6 @@ ALTER TABLE push_notifications
 
 \c postgres;
 
-SELECT '✅ Timestamp Validation Constraints Added' as status,
+SELECT 'âœ… Timestamp Validation Constraints Added' as status,
        'Data integrity protected against future illogical timestamps' as description;
 

@@ -11,9 +11,10 @@ interface CacheEntry<T> {
 
 class ApiCache {
   private cache: Map<string, CacheEntry<any>> = new Map()
-  
-  // Default TTL: 30 seconds for dynamic data, 5 minutes for static data
-  private defaultTTL = 30000 // 30 seconds
+
+  // Default TTL: 60 seconds for dynamic data, 5 minutes for static data
+  // Increased from 30s to reduce network requests during navigation
+  private defaultTTL = 60000 // 60 seconds
 
   /**
    * Get cached data if available and not expired
@@ -78,11 +79,11 @@ class ApiCache {
    * Generate cache key from API endpoint and params
    */
   generateKey(endpoint: string, params?: Record<string, any>): string {
-    const paramString = params 
+    const paramString = params
       ? Object.keys(params)
-          .sort()
-          .map(key => `${key}=${JSON.stringify(params[key])}`)
-          .join('&')
+        .sort()
+        .map(key => `${key}=${JSON.stringify(params[key])}`)
+        .join('&')
       : ''
     return `${endpoint}${paramString ? `?${paramString}` : ''}`
   }
@@ -106,8 +107,8 @@ export async function cachedFetch<T>(
     // Fetch fresh data in background (stale-while-revalidate)
     fetchFn()
       .then(data => apiCache.set(cacheKey, data, ttl))
-      .catch(() => {}) // Silently fail, keep using stale data
-    
+      .catch(() => { }) // Silently fail, keep using stale data
+
     return cached
   }
 

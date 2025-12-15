@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- FIX REMAINING DATA LOGIC ISSUES
 -- ============================================
 -- Purpose: Fix all validation failures from comprehensive check
@@ -25,7 +25,7 @@ BEGIN
       AND (total_points = 0 OR passing_score IS NULL);
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % writing/speaking exercises with band score logic', updated_count;
+    RAISE NOTICE 'âœ… Updated % writing/speaking exercises with band score logic', updated_count;
     RAISE NOTICE '   total_points = 9.0 (max band score)';
     RAISE NOTICE '   passing_score = 5.0 (minimum passing band)';
 END $$;
@@ -47,7 +47,7 @@ BEGIN
     WHERE current_streak_days > longest_streak_days;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Fixed % users with current_streak > longest_streak', updated_count;
+    RAISE NOTICE 'âœ… Fixed % users with current_streak > longest_streak', updated_count;
     RAISE NOTICE '   Set longest_streak = MAX(longest, current)';
 END $$;
 
@@ -68,7 +68,7 @@ BEGIN
     WHERE last_accessed_at < first_accessed_at;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Fixed % lessons with last_accessed < first_accessed', updated_count;
+    RAISE NOTICE 'âœ… Fixed % lessons with last_accessed < first_accessed', updated_count;
     RAISE NOTICE '   Set last_accessed = MAX(last, first)';
     RAISE NOTICE '';
     RAISE NOTICE '============================================';

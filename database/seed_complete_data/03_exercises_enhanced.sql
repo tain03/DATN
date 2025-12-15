@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- ENHANCED REALISTIC IELTS QUESTIONS
 -- ============================================
 -- Purpose: Add detailed, realistic IELTS questions with proper options and answers
@@ -39,7 +39,7 @@ STUDENT: Hi, I''m looking for accommodation near the university.
 OFFICER: I see. What type of accommodation are you interested in?
 STUDENT: Well, I''d prefer a shared apartment if possible. Something affordable.
 OFFICER: Of course. What''s your budget per week?
-STUDENT: I''m hoping to spend around £120 per week, maximum £150.
+STUDENT: I''m hoping to spend around Â£120 per week, maximum Â£150.
 OFFICER: Right. And which area would you prefer?
 STUDENT: I''d like to be close to the university, maybe within walking distance.
 OFFICER: We have a few options. Can I take your details first?
@@ -94,11 +94,11 @@ OFFICER: Perfect. I''ll send you some options later today.',
         v_exercise_id,
         v_section_id,
         2,
-        'How much does the student want to pay per week? Write £_____ per week.',
+        'How much does the student want to pay per week? Write Â£_____ per week.',
         'fill_in_blank',
         1.0,
         'easy',
-        'The student says "I''m hoping to spend around £120 per week, maximum £150", so the answer is 120.',
+        'The student says "I''m hoping to spend around Â£120 per week, maximum Â£150", so the answer is 120.',
         'Pay attention to numbers. Sometimes speakers mention more than one number, so listen for the specific amount requested.',
         2
     );
@@ -442,7 +442,7 @@ SELECT
     uuid_generate_v4(),
     q.id,
     '120',
-    ARRAY['£120', '120 pounds', 'one hundred and twenty'],
+    ARRAY['Â£120', '120 pounds', 'one hundred and twenty'],
     true
 FROM questions q
 WHERE q.exercise_id = 'e1000001-0000-0000-0000-000000000001' AND q.question_number = 2;
@@ -522,5 +522,5 @@ BEGIN
     WHERE exercise_id = v_exercise_id;
 END $$;
 
-SELECT '✅ Enhanced realistic questions added for Exercise 1' as status;
+SELECT 'âœ… Enhanced realistic questions added for Exercise 1' as status;
 

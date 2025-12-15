@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- ENHANCED REALISTIC DATA - Simple Addition
 -- ============================================
 -- Purpose: Add more realistic data to existing users
@@ -37,7 +37,7 @@ BEGIN
         END LOOP;
     END LOOP;
     
-    RAISE NOTICE '✅ User Follows: Added % follow relationships', follow_count;
+    RAISE NOTICE 'âœ… User Follows: Added % follow relationships', follow_count;
 END $$;
 
 -- ============================================
@@ -96,7 +96,7 @@ BEGIN
         END LOOP;
     END LOOP;
     
-    RAISE NOTICE '✅ Study Sessions: Added % realistic study sessions', session_count;
+    RAISE NOTICE 'âœ… Study Sessions: Added % realistic study sessions', session_count;
 END $$;
 
 -- ============================================
@@ -136,7 +136,7 @@ BEGIN
         goal_count := goal_count + 1;
     END LOOP;
     
-    RAISE NOTICE '✅ Study Goals: Added % goals', goal_count;
+    RAISE NOTICE 'âœ… Study Goals: Added % goals', goal_count;
 END $$;
 
 -- ============================================
@@ -153,7 +153,7 @@ BEGIN
     SELECT COUNT(*) INTO total_goals FROM study_goals;
     
     RAISE NOTICE '============================================';
-    RAISE NOTICE '✅ Enhanced User Data Summary:';
+    RAISE NOTICE 'âœ… Enhanced User Data Summary:';
     RAISE NOTICE '  Total follow relationships: %', total_follows;
     RAISE NOTICE '  Total study sessions: %', total_sessions;
     RAISE NOTICE '  Total study goals: %', total_goals;

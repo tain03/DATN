@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- SOCIAL INTERACTIONS & REALISTIC ACTIVITY
 -- ============================================
 -- Purpose: Add user follows, realistic study patterns, streaks
@@ -124,7 +124,7 @@ BEGIN
         END LOOP;
     END LOOP;
     
-    RAISE NOTICE '✅ User Follows: Created % follow relationships', follow_count;
+    RAISE NOTICE 'âœ… User Follows: Created % follow relationships', follow_count;
 END $$;
 
 -- ============================================
@@ -208,7 +208,7 @@ BEGIN
         END LOOP;
     END LOOP;
     
-    RAISE NOTICE '✅ Study Sessions: Created % realistic study sessions with peak hour patterns', session_count;
+    RAISE NOTICE 'âœ… Study Sessions: Created % realistic study sessions with peak hour patterns', session_count;
 END $$;
 
 -- ============================================
@@ -314,7 +314,7 @@ BEGIN
         ) ON CONFLICT (user_id) DO NOTHING;
     END LOOP;
     
-    RAISE NOTICE '✅ Learning Progress: Created realistic band scores for 150 users';
+    RAISE NOTICE 'âœ… Learning Progress: Created realistic band scores for 150 users';
 END $$;
 
 -- ============================================
@@ -387,7 +387,7 @@ BEGIN
         END IF;
     END LOOP;
     
-    RAISE NOTICE '✅ Study Goals: Created % realistic goals', goal_count;
+    RAISE NOTICE 'âœ… Study Goals: Created % realistic goals', goal_count;
 END $$;
 
 -- ============================================
@@ -410,7 +410,7 @@ BEGIN
     SELECT ROUND(AVG(duration_minutes), 1) INTO avg_session_duration FROM study_sessions;
     
     RAISE NOTICE '============================================';
-    RAISE NOTICE '✅ Social & Activity Summary:';
+    RAISE NOTICE 'âœ… Social & Activity Summary:';
     RAISE NOTICE '  Total users: %', total_users;
     RAISE NOTICE '  Total follow relationships: %', total_follows;
     RAISE NOTICE '  Total study sessions: %', total_sessions;

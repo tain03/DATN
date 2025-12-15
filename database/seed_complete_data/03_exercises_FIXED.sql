@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- FIXED EXERCISES WITH PROPER CONSTRAINTS
 -- ============================================
 -- Purpose: Add/Update exercises with all required fields per schema constraints
@@ -309,7 +309,7 @@ BEGIN
     IF invalid_writing_count > 0 THEN
         RAISE WARNING 'Found % writing exercises with missing required fields', invalid_writing_count;
     ELSE
-        RAISE NOTICE '✓ All writing exercises have required fields';
+        RAISE NOTICE 'âœ“ All writing exercises have required fields';
     END IF;
 END $$;
 
@@ -326,7 +326,7 @@ BEGIN
     IF invalid_speaking_count > 0 THEN
         RAISE WARNING 'Found % speaking exercises with missing required fields', invalid_speaking_count;
     ELSE
-        RAISE NOTICE '✓ All speaking exercises have required fields';
+        RAISE NOTICE 'âœ“ All speaking exercises have required fields';
     END IF;
 END $$;
 
@@ -343,6 +343,6 @@ BEGIN
     IF invalid_reading_count > 0 THEN
         RAISE WARNING 'Found % reading exercises with missing ielts_test_type', invalid_reading_count;
     ELSE
-        RAISE NOTICE '✓ All reading exercises have ielts_test_type';
+        RAISE NOTICE 'âœ“ All reading exercises have ielts_test_type';
     END IF;
 END $$;

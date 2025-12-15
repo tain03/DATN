@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 3: COURSE_DB - USER ACTIVITIES
 -- ============================================
 -- Purpose: Create course enrollments, progress, reviews, and watch history
@@ -270,51 +270,51 @@ SELECT
         ELSE 'Exceeded my expectations'
     END,
     CASE (random() * 45)::INTEGER
-        WHEN 0 THEN 'Khóa học rất hay và hữu ích. Tôi đã học được nhiều điều mới. Giảng viên giải thích rất rõ ràng và dễ hiểu. Các bài tập thực hành giúp tôi cải thiện đáng kể. Đặc biệt thích phần giải thích chi tiết từng đáp án.'
+        WHEN 0 THEN 'KhÃ³a há»c ráº¥t hay vÃ  há»¯u Ã­ch. TÃ´i Ä‘Ã£ há»c Ä‘Æ°á»£c nhiá»u Ä‘iá»u má»›i. Giáº£ng viÃªn giáº£i thÃ­ch ráº¥t rÃµ rÃ ng vÃ  dá»… hiá»ƒu. CÃ¡c bÃ i táº­p thá»±c hÃ nh giÃºp tÃ´i cáº£i thiá»‡n Ä‘Ã¡ng ká»ƒ. Äáº·c biá»‡t thÃ­ch pháº§n giáº£i thÃ­ch chi tiáº¿t tá»«ng Ä‘Ã¡p Ã¡n.'
         WHEN 1 THEN 'Content is comprehensive and well-structured. The practice exercises are very helpful. I improved my score significantly after taking this course. My listening score jumped from 6.0 to 7.5. Highly recommend to anyone serious about IELTS!'
         WHEN 2 THEN 'The course covers all the essential topics. Video quality is excellent and subtitles are accurate. The instructor speaks clearly and uses real exam examples. Worth every penny!'
-        WHEN 3 THEN 'Giảng viên nhiệt tình, bài giảng chất lượng cao. Tôi đã đạt được mục tiêu band 7.0 nhờ khóa học này. Các tips và strategies rất thực tế và áp dụng được ngay. Cảm ơn rất nhiều!'
+        WHEN 3 THEN 'Giáº£ng viÃªn nhiá»‡t tÃ¬nh, bÃ i giáº£ng cháº¥t lÆ°á»£ng cao. TÃ´i Ä‘Ã£ Ä‘áº¡t Ä‘Æ°á»£c má»¥c tiÃªu band 7.0 nhá» khÃ³a há»c nÃ y. CÃ¡c tips vÃ  strategies ráº¥t thá»±c táº¿ vÃ  Ã¡p dá»¥ng Ä‘Æ°á»£c ngay. Cáº£m Æ¡n ráº¥t nhiá»u!'
         WHEN 4 THEN 'Good course for beginners. The explanations are clear and the pace is comfortable. However, some advanced topics could be explained in more detail. Overall satisfied with the content and would recommend to others.'
         WHEN 5 THEN 'The course helped me understand IELTS format better. Practice tests are very similar to real exams - this was crucial for my preparation. Great preparation material with realistic expectations.'
-        WHEN 6 THEN 'Khóa học tốt nhưng một số bài học có thể cải thiện thêm về chất lượng video. Nói chung là đáng giá và hữu ích cho người mới bắt đầu. Tôi đã học được nhiều từ vựng và ngữ pháp quan trọng.'
+        WHEN 6 THEN 'KhÃ³a há»c tá»‘t nhÆ°ng má»™t sá»‘ bÃ i há»c cÃ³ thá»ƒ cáº£i thiá»‡n thÃªm vá» cháº¥t lÆ°á»£ng video. NÃ³i chung lÃ  Ä‘Ã¡ng giÃ¡ vÃ  há»¯u Ã­ch cho ngÆ°á»i má»›i báº¯t Ä‘áº§u. TÃ´i Ä‘Ã£ há»c Ä‘Æ°á»£c nhiá»u tá»« vá»±ng vÃ  ngá»¯ phÃ¡p quan trá»ng.'
         WHEN 7 THEN 'Clear explanations and good examples throughout. The instructor speaks clearly and uses helpful visual aids. Very professional approach. The practice exercises are challenging but manageable.'
         WHEN 8 THEN 'I recommend this course to anyone preparing for IELTS. The strategies taught are very effective and easy to apply. My listening score improved from 6.0 to 7.5 after 2 months of consistent practice.'
         WHEN 9 THEN 'The course materials are comprehensive and well-organized. I especially like the downloadable resources and practice exercises. The answer keys with explanations are incredibly helpful for self-study.'
-        WHEN 10 THEN 'Tuyệt vời! Khóa học này đã giúp tôi tự tin hơn rất nhiều. Giảng viên hỗ trợ nhiệt tình và giải đáp mọi thắc mắc nhanh chóng. Cộng đồng học viên cũng rất tích cực và hỗ trợ lẫn nhau.'
+        WHEN 10 THEN 'Tuyá»‡t vá»i! KhÃ³a há»c nÃ y Ä‘Ã£ giÃºp tÃ´i tá»± tin hÆ¡n ráº¥t nhiá»u. Giáº£ng viÃªn há»— trá»£ nhiá»‡t tÃ¬nh vÃ  giáº£i Ä‘Ã¡p má»i tháº¯c máº¯c nhanh chÃ³ng. Cá»™ng Ä‘á»“ng há»c viÃªn cÅ©ng ráº¥t tÃ­ch cá»±c vÃ  há»— trá»£ láº«n nhau.'
         WHEN 11 THEN 'Perfect for self-study. The video lessons are well-paced and the exercises are challenging but manageable. Great value for money! I completed the course in 6 weeks and felt much more confident.'
-        WHEN 12 THEN 'Khóa học có cấu trúc logic, dễ theo dõi từ đầu đến cuối. Tôi đã học được nhiều tips và tricks hữu ích mà không thấy ở các khóa học khác. Đặc biệt phần phân tích lỗi sai rất chi tiết.'
+        WHEN 12 THEN 'KhÃ³a há»c cÃ³ cáº¥u trÃºc logic, dá»… theo dÃµi tá»« Ä‘áº§u Ä‘áº¿n cuá»‘i. TÃ´i Ä‘Ã£ há»c Ä‘Æ°á»£c nhiá»u tips vÃ  tricks há»¯u Ã­ch mÃ  khÃ´ng tháº¥y á»Ÿ cÃ¡c khÃ³a há»c khÃ¡c. Äáº·c biá»‡t pháº§n phÃ¢n tÃ­ch lá»—i sai ráº¥t chi tiáº¿t.'
         WHEN 13 THEN 'Excellent course structure. The step-by-step approach really helped me understand complex topics. My reading score improved significantly from 6.5 to 8.0. The passage analysis techniques are game-changing.'
         WHEN 14 THEN 'Great course overall. The content is relevant and up-to-date. Would love to see more advanced content added in the future. Keep up the good work! The instructor''s teaching style is engaging and effective.'
         WHEN 15 THEN 'After completing this course, I felt much more prepared for the actual exam. The mock tests are very realistic and the feedback provided is constructive. My writing improved from 5.5 to 7.0!'
-        WHEN 16 THEN 'Khóa học này đã giúp tôi vượt qua nỗi sợ hãi về IELTS. Các bài học được thiết kế rất khoa học, từ cơ bản đến nâng cao. Tôi đặc biệt thích phần luyện tập với audio chất lượng cao.'
+        WHEN 16 THEN 'KhÃ³a há»c nÃ y Ä‘Ã£ giÃºp tÃ´i vÆ°á»£t qua ná»—i sá»£ hÃ£i vá» IELTS. CÃ¡c bÃ i há»c Ä‘Æ°á»£c thiáº¿t káº¿ ráº¥t khoa há»c, tá»« cÆ¡ báº£n Ä‘áº¿n nÃ¢ng cao. TÃ´i Ä‘áº·c biá»‡t thÃ­ch pháº§n luyá»‡n táº­p vá»›i audio cháº¥t lÆ°á»£ng cao.'
         WHEN 17 THEN 'The course exceeded my expectations. Every lesson is packed with valuable information. The practice questions are challenging and closely mirror the actual exam format. Worth every cent!'
-        WHEN 18 THEN 'Tôi đã thử nhiều khóa học IELTS nhưng khóa này là tốt nhất. Giảng viên có kinh nghiệm và biết cách truyền đạt kiến thức. Các ví dụ thực tế giúp tôi hiểu sâu hơn về cách làm bài.'
+        WHEN 18 THEN 'TÃ´i Ä‘Ã£ thá»­ nhiá»u khÃ³a há»c IELTS nhÆ°ng khÃ³a nÃ y lÃ  tá»‘t nháº¥t. Giáº£ng viÃªn cÃ³ kinh nghiá»‡m vÃ  biáº¿t cÃ¡ch truyá»n Ä‘áº¡t kiáº¿n thá»©c. CÃ¡c vÃ­ dá»¥ thá»±c táº¿ giÃºp tÃ´i hiá»ƒu sÃ¢u hÆ¡n vá» cÃ¡ch lÃ m bÃ i.'
         WHEN 19 THEN 'This course is perfect for intermediate learners. The content is comprehensive without being overwhelming. I appreciated the detailed explanations for each question type. My speaking confidence improved dramatically.'
-        WHEN 20 THEN 'Khóa học rất thực tế và áp dụng được ngay. Tôi đã áp dụng các strategies vào bài thi thật và đạt được kết quả tốt. Cảm ơn giảng viên và team đã tạo ra khóa học chất lượng như vậy.'
+        WHEN 20 THEN 'KhÃ³a há»c ráº¥t thá»±c táº¿ vÃ  Ã¡p dá»¥ng Ä‘Æ°á»£c ngay. TÃ´i Ä‘Ã£ Ã¡p dá»¥ng cÃ¡c strategies vÃ o bÃ i thi tháº­t vÃ  Ä‘áº¡t Ä‘Æ°á»£c káº¿t quáº£ tá»‘t. Cáº£m Æ¡n giáº£ng viÃªn vÃ  team Ä‘Ã£ táº¡o ra khÃ³a há»c cháº¥t lÆ°á»£ng nhÆ° váº­y.'
         WHEN 21 THEN 'The course materials are professionally prepared. I liked how each module builds upon the previous one. The practice tests are excellent preparation for the real exam. Highly recommend!'
-        WHEN 22 THEN 'Tôi đã học được rất nhiều từ khóa học này. Các bài giảng ngắn gọn nhưng đầy đủ thông tin. Giảng viên giải thích rõ ràng và có nhiều ví dụ minh họa. Đây là khoản đầu tư đáng giá.'
+        WHEN 22 THEN 'TÃ´i Ä‘Ã£ há»c Ä‘Æ°á»£c ráº¥t nhiá»u tá»« khÃ³a há»c nÃ y. CÃ¡c bÃ i giáº£ng ngáº¯n gá»n nhÆ°ng Ä‘áº§y Ä‘á»§ thÃ´ng tin. Giáº£ng viÃªn giáº£i thÃ­ch rÃµ rÃ ng vÃ  cÃ³ nhiá»u vÃ­ dá»¥ minh há»a. ÄÃ¢y lÃ  khoáº£n Ä‘áº§u tÆ° Ä‘Ã¡ng giÃ¡.'
         WHEN 23 THEN 'Excellent course! The instructor breaks down complex topics into simple, digestible parts. The practice exercises are relevant and the answer explanations are thorough. My overall band score improved by 1.0!'
-        WHEN 24 THEN 'Khóa học này đã giúp tôi hiểu rõ format và yêu cầu của từng phần thi IELTS. Các chiến lược làm bài rất hiệu quả. Tôi đặc biệt thích phần luyện tập với đề thi thật từ Cambridge.'
+        WHEN 24 THEN 'KhÃ³a há»c nÃ y Ä‘Ã£ giÃºp tÃ´i hiá»ƒu rÃµ format vÃ  yÃªu cáº§u cá»§a tá»«ng pháº§n thi IELTS. CÃ¡c chiáº¿n lÆ°á»£c lÃ m bÃ i ráº¥t hiá»‡u quáº£. TÃ´i Ä‘áº·c biá»‡t thÃ­ch pháº§n luyá»‡n táº­p vá»›i Ä‘á» thi tháº­t tá»« Cambridge.'
         WHEN 25 THEN 'The course is well-structured and covers all aspects of IELTS preparation. The video lessons are engaging and the practice materials are comprehensive. I felt much more confident after completing this course.'
-        WHEN 26 THEN 'Tuyệt vời! Khóa học này phù hợp với cả người mới bắt đầu và người đã có nền tảng. Tôi đã học được nhiều từ vựng học thuật và cách sử dụng chúng trong bài thi. Rất hài lòng!'
+        WHEN 26 THEN 'Tuyá»‡t vá»i! KhÃ³a há»c nÃ y phÃ¹ há»£p vá»›i cáº£ ngÆ°á»i má»›i báº¯t Ä‘áº§u vÃ  ngÆ°á»i Ä‘Ã£ cÃ³ ná»n táº£ng. TÃ´i Ä‘Ã£ há»c Ä‘Æ°á»£c nhiá»u tá»« vá»±ng há»c thuáº­t vÃ  cÃ¡ch sá»­ dá»¥ng chÃºng trong bÃ i thi. Ráº¥t hÃ i lÃ²ng!'
         WHEN 27 THEN 'This course provides excellent value. The instructor is knowledgeable and the content is up-to-date with current IELTS trends. The practice tests helped me identify my weak areas. Highly recommended!'
-        WHEN 28 THEN 'Khóa học có nhiều điểm mạnh: nội dung đa dạng, giảng viên nhiệt tình, bài tập thực hành phong phú. Tôi đã cải thiện được điểm số đáng kể. Đây là khóa học tốt nhất mà tôi từng học.'
+        WHEN 28 THEN 'KhÃ³a há»c cÃ³ nhiá»u Ä‘iá»ƒm máº¡nh: ná»™i dung Ä‘a dáº¡ng, giáº£ng viÃªn nhiá»‡t tÃ¬nh, bÃ i táº­p thá»±c hÃ nh phong phÃº. TÃ´i Ä‘Ã£ cáº£i thiá»‡n Ä‘Æ°á»£c Ä‘iá»ƒm sá»‘ Ä‘Ã¡ng ká»ƒ. ÄÃ¢y lÃ  khÃ³a há»c tá»‘t nháº¥t mÃ  tÃ´i tá»«ng há»c.'
         WHEN 29 THEN 'The course helped me develop a systematic approach to IELTS preparation. The step-by-step guidance is invaluable. My reading comprehension improved significantly, and I can now handle complex passages confidently.'
-        WHEN 30 THEN 'Tôi rất hài lòng với khóa học này. Các bài giảng được chuẩn bị kỹ lưỡng, từ vựng và ngữ pháp được giải thích chi tiết. Giảng viên luôn sẵn sàng hỗ trợ học viên. Cảm ơn rất nhiều!'
+        WHEN 30 THEN 'TÃ´i ráº¥t hÃ i lÃ²ng vá»›i khÃ³a há»c nÃ y. CÃ¡c bÃ i giáº£ng Ä‘Æ°á»£c chuáº©n bá»‹ ká»¹ lÆ°á»¡ng, tá»« vá»±ng vÃ  ngá»¯ phÃ¡p Ä‘Æ°á»£c giáº£i thÃ­ch chi tiáº¿t. Giáº£ng viÃªn luÃ´n sáºµn sÃ ng há»— trá»£ há»c viÃªn. Cáº£m Æ¡n ráº¥t nhiá»u!'
         WHEN 31 THEN 'This course is a game-changer for IELTS preparation. The strategies taught are practical and immediately applicable. I improved my writing from 6.0 to 7.5 after following the course recommendations.'
-        WHEN 32 THEN 'Khóa học này đã giúp tôi đạt được mục tiêu band 7.0. Các bài học được sắp xếp hợp lý, từ dễ đến khó. Tôi đặc biệt thích phần luyện tập với nhiều đề thi đa dạng. Rất đáng học!'
+        WHEN 32 THEN 'KhÃ³a há»c nÃ y Ä‘Ã£ giÃºp tÃ´i Ä‘áº¡t Ä‘Æ°á»£c má»¥c tiÃªu band 7.0. CÃ¡c bÃ i há»c Ä‘Æ°á»£c sáº¯p xáº¿p há»£p lÃ½, tá»« dá»… Ä‘áº¿n khÃ³. TÃ´i Ä‘áº·c biá»‡t thÃ­ch pháº§n luyá»‡n táº­p vá»›i nhiá»u Ä‘á» thi Ä‘a dáº¡ng. Ráº¥t Ä‘Ã¡ng há»c!'
         WHEN 33 THEN 'The course content is comprehensive and well-researched. The instructor provides clear explanations and practical tips. The practice exercises are challenging but achievable. Great investment for IELTS preparation!'
-        WHEN 34 THEN 'Tôi đã học được rất nhiều từ khóa học này. Các chiến lược làm bài rất hiệu quả và dễ áp dụng. Giảng viên có kinh nghiệm và biết cách truyền đạt kiến thức một cách dễ hiểu nhất.'
+        WHEN 34 THEN 'TÃ´i Ä‘Ã£ há»c Ä‘Æ°á»£c ráº¥t nhiá»u tá»« khÃ³a há»c nÃ y. CÃ¡c chiáº¿n lÆ°á»£c lÃ m bÃ i ráº¥t hiá»‡u quáº£ vÃ  dá»… Ã¡p dá»¥ng. Giáº£ng viÃªn cÃ³ kinh nghiá»‡m vÃ  biáº¿t cÃ¡ch truyá»n Ä‘áº¡t kiáº¿n thá»©c má»™t cÃ¡ch dá»… hiá»ƒu nháº¥t.'
         WHEN 35 THEN 'This course exceeded my expectations. The quality of the content is excellent and the instructor is very knowledgeable. I appreciated the detailed feedback on practice exercises. My confidence level increased significantly.'
-        WHEN 36 THEN 'Khóa học này phù hợp với mọi trình độ. Tôi đã bắt đầu từ Band 5.5 và đạt được 7.0 sau khi hoàn thành khóa học. Các bài giảng rất chi tiết và có nhiều ví dụ minh họa cụ thể.'
+        WHEN 36 THEN 'KhÃ³a há»c nÃ y phÃ¹ há»£p vá»›i má»i trÃ¬nh Ä‘á»™. TÃ´i Ä‘Ã£ báº¯t Ä‘áº§u tá»« Band 5.5 vÃ  Ä‘áº¡t Ä‘Æ°á»£c 7.0 sau khi hoÃ n thÃ nh khÃ³a há»c. CÃ¡c bÃ i giáº£ng ráº¥t chi tiáº¿t vÃ  cÃ³ nhiá»u vÃ­ dá»¥ minh há»a cá»¥ thá»ƒ.'
         WHEN 37 THEN 'The course structure is logical and easy to follow. Each module focuses on specific skills and provides ample practice opportunities. The mock tests are realistic and helped me prepare effectively for the exam.'
-        WHEN 38 THEN 'Tôi rất biết ơn khóa học này. Các tips và tricks được chia sẻ rất thực tế và hữu ích. Tôi đã áp dụng vào bài thi và đạt được kết quả tốt. Đây là khóa học tốt nhất mà tôi từng học.'
+        WHEN 38 THEN 'TÃ´i ráº¥t biáº¿t Æ¡n khÃ³a há»c nÃ y. CÃ¡c tips vÃ  tricks Ä‘Æ°á»£c chia sáº» ráº¥t thá»±c táº¿ vÃ  há»¯u Ã­ch. TÃ´i Ä‘Ã£ Ã¡p dá»¥ng vÃ o bÃ i thi vÃ  Ä‘áº¡t Ä‘Æ°á»£c káº¿t quáº£ tá»‘t. ÄÃ¢y lÃ  khÃ³a há»c tá»‘t nháº¥t mÃ  tÃ´i tá»«ng há»c.'
         WHEN 39 THEN 'This course is perfect for anyone serious about IELTS. The content is comprehensive, the instruction is clear, and the practice materials are excellent. I improved my overall score by 1.5 bands!'
-        WHEN 40 THEN 'Khóa học này đã giúp tôi hiểu rõ hơn về cấu trúc bài thi IELTS. Các bài tập thực hành rất đa dạng và phong phú. Giảng viên giải thích rõ ràng và có nhiều ví dụ minh họa cụ thể.'
+        WHEN 40 THEN 'KhÃ³a há»c nÃ y Ä‘Ã£ giÃºp tÃ´i hiá»ƒu rÃµ hÆ¡n vá» cáº¥u trÃºc bÃ i thi IELTS. CÃ¡c bÃ i táº­p thá»±c hÃ nh ráº¥t Ä‘a dáº¡ng vÃ  phong phÃº. Giáº£ng viÃªn giáº£i thÃ­ch rÃµ rÃ ng vÃ  cÃ³ nhiá»u vÃ­ dá»¥ minh há»a cá»¥ thá»ƒ.'
         WHEN 41 THEN 'The course provides excellent preparation for IELTS. The instructor is experienced and the content is well-organized. I particularly liked the detailed explanations for each question type. Highly recommend!'
-        WHEN 42 THEN 'Tôi đã học được rất nhiều từ khóa học này. Các chiến lược làm bài rất hiệu quả và dễ áp dụng. Giảng viên có kinh nghiệm và biết cách truyền đạt kiến thức một cách dễ hiểu nhất.'
+        WHEN 42 THEN 'TÃ´i Ä‘Ã£ há»c Ä‘Æ°á»£c ráº¥t nhiá»u tá»« khÃ³a há»c nÃ y. CÃ¡c chiáº¿n lÆ°á»£c lÃ m bÃ i ráº¥t hiá»‡u quáº£ vÃ  dá»… Ã¡p dá»¥ng. Giáº£ng viÃªn cÃ³ kinh nghiá»‡m vÃ  biáº¿t cÃ¡ch truyá»n Ä‘áº¡t kiáº¿n thá»©c má»™t cÃ¡ch dá»… hiá»ƒu nháº¥t.'
         WHEN 43 THEN 'This course is worth every penny. The quality of instruction is excellent and the practice materials are comprehensive. I felt much more confident after completing this course and achieved my target score.'
-        ELSE 'Khóa học này đã giúp tôi đạt được mục tiêu của mình. Các bài giảng chất lượng cao và có nhiều ví dụ thực tế. Tôi đặc biệt thích phần luyện tập với nhiều đề thi đa dạng. Rất đáng học!'
+        ELSE 'KhÃ³a há»c nÃ y Ä‘Ã£ giÃºp tÃ´i Ä‘áº¡t Ä‘Æ°á»£c má»¥c tiÃªu cá»§a mÃ¬nh. CÃ¡c bÃ i giáº£ng cháº¥t lÆ°á»£ng cao vÃ  cÃ³ nhiá»u vÃ­ dá»¥ thá»±c táº¿. TÃ´i Ä‘áº·c biá»‡t thÃ­ch pháº§n luyá»‡n táº­p vá»›i nhiá»u Ä‘á» thi Ä‘a dáº¡ng. Ráº¥t Ä‘Ã¡ng há»c!'
     END,
     (random() * 25)::INTEGER,
     is_approved_val,
@@ -383,7 +383,7 @@ WHERE vwh.total_seconds > 0
 
 -- Summary
 SELECT 
-    '✅ Phase 3 Complete: Course Activities Created' as status,
+    'âœ… Phase 3 Complete: Course Activities Created' as status,
     (SELECT COUNT(*) FROM course_enrollments) as total_enrollments,
     (SELECT COUNT(*) FROM lesson_progress) as total_lesson_progress,
     (SELECT COUNT(*) FROM video_watch_history) as total_watch_history,

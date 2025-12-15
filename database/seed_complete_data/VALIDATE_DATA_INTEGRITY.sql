@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- DATA INTEGRITY & FLOW VALIDATION
 -- ============================================
 -- Purpose: Check for logical inconsistencies and timeline violations
@@ -23,10 +23,10 @@ BEGIN
     WHERE ce.enrollment_date < c.created_at;
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 1: % enrollments created before course existed', violation_count;
+        RAISE NOTICE 'âŒ Issue 1: % enrollments created before course existed', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 1: No enrollments before course creation';
+        RAISE NOTICE 'âœ… Issue 1: No enrollments before course creation';
     END IF;
     
     -- 2. Lesson progress without enrollment
@@ -41,10 +41,10 @@ BEGIN
     );
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 2: % lesson progress records without course enrollment', violation_count;
+        RAISE NOTICE 'âŒ Issue 2: % lesson progress records without course enrollment', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 2: All lesson progress has corresponding enrollment';
+        RAISE NOTICE 'âœ… Issue 2: All lesson progress has corresponding enrollment';
     END IF;
     
     -- 3. Lesson progress before enrollment
@@ -56,10 +56,10 @@ BEGIN
     WHERE lp.first_accessed_at < ce.enrollment_date;
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 3: % lessons accessed before enrollment', violation_count;
+        RAISE NOTICE 'âŒ Issue 3: % lessons accessed before enrollment', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 3: All lesson access after enrollment';
+        RAISE NOTICE 'âœ… Issue 3: All lesson access after enrollment';
     END IF;
     
     -- 4. Completed lessons but enrollment shows 0% progress
@@ -68,10 +68,10 @@ BEGIN
     WHERE ce.lessons_completed > 0 AND ce.progress_percentage = 0;
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 4: % enrollments with completed lessons but 0%% progress', violation_count;
+        RAISE NOTICE 'âŒ Issue 4: % enrollments with completed lessons but 0%% progress', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 4: Progress percentage matches completed lessons';
+        RAISE NOTICE 'âœ… Issue 4: Progress percentage matches completed lessons';
     END IF;
     
     -- 5. Completed after last accessed (WRONG - should complete THEN access later to review)
@@ -82,17 +82,17 @@ BEGIN
     AND ce.completed_at > ce.last_accessed_at;
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 5: % courses completed after last access (impossible)', violation_count;
+        RAISE NOTICE 'âŒ Issue 5: % courses completed after last access (impossible)', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 5: Completion dates are logical';
+        RAISE NOTICE 'âœ… Issue 5: Completion dates are logical';
     END IF;
     
     RAISE NOTICE '============================================';
     IF total_issues = 0 THEN
-        RAISE NOTICE '✅ ALL COURSE DATA IS LOGICALLY CONSISTENT';
+        RAISE NOTICE 'âœ… ALL COURSE DATA IS LOGICALLY CONSISTENT';
     ELSE
-        RAISE NOTICE '⚠️  TOTAL ISSUES FOUND: %', total_issues;
+        RAISE NOTICE 'âš ï¸  TOTAL ISSUES FOUND: %', total_issues;
     END IF;
     RAISE NOTICE '============================================';
 END $$;
@@ -114,10 +114,10 @@ BEGIN
     WHERE NOT EXISTS (SELECT 1 FROM exercises e WHERE e.id = uea.exercise_id);
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 1: % attempts for non-existent exercises', violation_count;
+        RAISE NOTICE 'âŒ Issue 1: % attempts for non-existent exercises', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 1: All attempts reference valid exercises';
+        RAISE NOTICE 'âœ… Issue 1: All attempts reference valid exercises';
     END IF;
     
     -- 2. Completed attempts without completion time
@@ -126,10 +126,10 @@ BEGIN
     WHERE uea.status = 'completed' AND uea.completed_at IS NULL;
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 2: % completed attempts without completion time', violation_count;
+        RAISE NOTICE 'âŒ Issue 2: % completed attempts without completion time', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 2: All completed attempts have completion time';
+        RAISE NOTICE 'âœ… Issue 2: All completed attempts have completion time';
     END IF;
     
     -- 3. Question answers consistency (skip if no attempts tracked)
@@ -142,10 +142,10 @@ BEGIN
     );
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 3: % question answers for non-existent questions', violation_count;
+        RAISE NOTICE 'âŒ Issue 3: % question answers for non-existent questions', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 3: All answers reference valid questions';
+        RAISE NOTICE 'âœ… Issue 3: All answers reference valid questions';
     END IF;
     
     -- 4. Writing/Speaking exercises without required fields
@@ -155,17 +155,17 @@ BEGIN
     OR (skill_type = 'speaking' AND (speaking_part_number IS NULL OR speaking_prompt_text IS NULL));
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 4: % writing/speaking exercises missing required fields', violation_count;
+        RAISE NOTICE 'âŒ Issue 4: % writing/speaking exercises missing required fields', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 4: All writing/speaking exercises have required fields';
+        RAISE NOTICE 'âœ… Issue 4: All writing/speaking exercises have required fields';
     END IF;
     
     RAISE NOTICE '============================================';
     IF total_issues = 0 THEN
-        RAISE NOTICE '✅ ALL EXERCISE DATA IS LOGICALLY CONSISTENT';
+        RAISE NOTICE 'âœ… ALL EXERCISE DATA IS LOGICALLY CONSISTENT';
     ELSE
-        RAISE NOTICE '⚠️  TOTAL ISSUES FOUND: %', total_issues;
+        RAISE NOTICE 'âš ï¸  TOTAL ISSUES FOUND: %', total_issues;
     END IF;
     RAISE NOTICE '============================================';
 END $$;
@@ -187,10 +187,10 @@ BEGIN
     WHERE ended_at < started_at;
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 1: % study sessions end before they start', violation_count;
+        RAISE NOTICE 'âŒ Issue 1: % study sessions end before they start', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 1: All study session timelines are logical';
+        RAISE NOTICE 'âœ… Issue 1: All study session timelines are logical';
     END IF;
     
     -- 2. Study sessions duration mismatch
@@ -202,10 +202,10 @@ BEGIN
     AND ABS(EXTRACT(EPOCH FROM (ended_at - started_at))/60 - duration_minutes) > 1;
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 2: % study sessions with duration mismatch', violation_count;
+        RAISE NOTICE 'âŒ Issue 2: % study sessions with duration mismatch', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 2: Study session durations match timestamps';
+        RAISE NOTICE 'âœ… Issue 2: Study session durations match timestamps';
     END IF;
     
     -- 3. Study goals with end date before start date
@@ -214,10 +214,10 @@ BEGIN
     WHERE end_date < start_date;
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 3: % study goals end before they start', violation_count;
+        RAISE NOTICE 'âŒ Issue 3: % study goals end before they start', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 3: All study goal timelines are logical';
+        RAISE NOTICE 'âœ… Issue 3: All study goal timelines are logical';
     END IF;
     
     -- 4. Following yourself
@@ -226,10 +226,10 @@ BEGIN
     WHERE follower_id = following_id;
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 4: % users following themselves', violation_count;
+        RAISE NOTICE 'âŒ Issue 4: % users following themselves', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 4: No users following themselves';
+        RAISE NOTICE 'âœ… Issue 4: No users following themselves';
     END IF;
     
     -- 5. Learning progress with invalid band scores
@@ -241,17 +241,17 @@ BEGIN
     OR (speaking_score IS NOT NULL AND (speaking_score < 0 OR speaking_score > 9));
     
     IF violation_count > 0 THEN
-        RAISE NOTICE '❌ Issue 5: % learning progress records with invalid band scores', violation_count;
+        RAISE NOTICE 'âŒ Issue 5: % learning progress records with invalid band scores', violation_count;
         total_issues := total_issues + violation_count;
     ELSE
-        RAISE NOTICE '✅ Issue 5: All band scores are within valid range (0-9)';
+        RAISE NOTICE 'âœ… Issue 5: All band scores are within valid range (0-9)';
     END IF;
     
     RAISE NOTICE '============================================';
     IF total_issues = 0 THEN
-        RAISE NOTICE '✅ ALL USER DATA IS LOGICALLY CONSISTENT';
+        RAISE NOTICE 'âœ… ALL USER DATA IS LOGICALLY CONSISTENT';
     ELSE
-        RAISE NOTICE '⚠️  TOTAL ISSUES FOUND: %', total_issues;
+        RAISE NOTICE 'âš ï¸  TOTAL ISSUES FOUND: %', total_issues;
     END IF;
     RAISE NOTICE '============================================';
 END $$;

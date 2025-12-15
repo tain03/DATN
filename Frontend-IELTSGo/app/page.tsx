@@ -20,11 +20,11 @@ export default function HomePage() {
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/20 to-background" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
-          
+
           {/* Decorative shapes */}
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl opacity-50" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/30 rounded-full blur-3xl opacity-40" />
-          
+
           <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
             <div className="py-16 sm:py-20 lg:py-24">
               <HeroSection />
@@ -34,7 +34,7 @@ export default function HomePage() {
 
         {/* Features Grid */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-12 sm:-mt-16 relative z-10">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 animate-fade-in-stagger">
             <FeatureCard
               icon={<BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />}
               titleKey="features.deepCourses.title"
@@ -66,14 +66,14 @@ export default function HomePage() {
 
         {/* Testimonials Section */}
         <TestimonialsSection />
-        
+
         {/* CTA Section with gradient */}
         <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-primary-foreground">
           {/* Animated background elements */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-background/10 via-transparent to-transparent" />
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-background/10 rounded-full blur-3xl" />
-          
+
           <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
             <div className="text-center max-w-3xl mx-auto space-y-6">
               <CTASection />
@@ -91,11 +91,11 @@ function HeroSection() {
   const tCommon = useTranslations('common')
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
-  
+
   // Personalized content for logged-in users
   if (isAuthenticated && user) {
     const firstName = user.fullName?.split(" ")[0] || tCommon('student')
-    
+
     return (
       <div className="text-center max-w-4xl mx-auto space-y-6">
         <div className="space-y-4">
@@ -107,16 +107,16 @@ function HeroSection() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2">
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             onClick={() => router.push('/dashboard')}
             className="w-full sm:w-auto px-8 text-base sm:text-lg h-12 sm:h-14 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
           >
             <LayoutDashboard className="mr-2 h-5 w-5" />
             {tLoggedIn('goToDashboard')}
           </Button>
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             variant="outline"
             onClick={() => router.push('/my-courses')}
             className="w-full sm:w-auto px-8 text-base sm:text-lg h-12 sm:h-14 border-2 hover:bg-accent/50 transition-all duration-200"
@@ -124,8 +124,8 @@ function HeroSection() {
             <BookOpen className="mr-2 h-5 w-5" />
             {tLoggedIn('myCourses')}
           </Button>
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             variant="outline"
             onClick={() => router.push('/exercises')}
             className="w-full sm:w-auto px-8 text-base sm:text-lg h-12 sm:h-14 border-2 hover:bg-accent/50 transition-all duration-200"
@@ -137,7 +137,7 @@ function HeroSection() {
       </div>
     )
   }
-  
+
   // Default content for non-authenticated users
   return (
     <div className="text-center max-w-4xl mx-auto space-y-6">
@@ -172,7 +172,7 @@ function CTASection() {
   const tCommon = useTranslations('common')
   const { isAuthenticated } = useAuth()
   const router = useRouter()
-  
+
   // Personalized CTA for logged-in users
   if (isAuthenticated) {
     return (
@@ -184,18 +184,18 @@ function CTASection() {
           {tLoggedIn('ctaDescription')}
         </p>
         <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
-          <Button 
-            size="lg" 
-            variant="secondary" 
+          <Button
+            size="lg"
+            variant="secondary"
             onClick={() => router.push('/courses')}
             className="px-8 text-base sm:text-lg h-12 sm:h-14 bg-background text-primary hover:bg-background/95 shadow-lg shadow-black/10 transition-all duration-200 hover:shadow-xl hover:scale-105"
           >
             <BookOpen className="mr-2 h-5 w-5" />
             {tLoggedIn('exploreCourses')}
           </Button>
-          <Button 
-            size="lg" 
-            variant="secondary" 
+          <Button
+            size="lg"
+            variant="secondary"
             onClick={() => router.push('/exercises')}
             className="px-8 text-base sm:text-lg h-12 sm:h-14 bg-background text-primary hover:bg-background/95 shadow-lg shadow-black/10 transition-all duration-200 hover:shadow-xl hover:scale-105"
           >
@@ -206,7 +206,7 @@ function CTASection() {
       </>
     )
   }
-  
+
   // Default CTA for non-authenticated users
   return (
     <>
@@ -218,9 +218,9 @@ function CTASection() {
       </p>
       <div className="pt-4">
         <Link href="/register">
-          <Button 
-            size="lg" 
-            variant="secondary" 
+          <Button
+            size="lg"
+            variant="secondary"
             className="px-8 text-base sm:text-lg h-12 sm:h-14 bg-background text-primary hover:bg-background/95 shadow-lg shadow-black/10 transition-all duration-200 hover:shadow-xl hover:scale-105"
           >
             {t('registerNow')}
@@ -293,12 +293,12 @@ function TestimonialsSection() {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Content */}
                   <p className="text-sm text-foreground leading-relaxed italic">
                     "{t(testimonial.contentKey)}"
                   </p>
-                  
+
                   {/* Author */}
                   <div className="flex items-center gap-3 pt-2 border-t border-border/50">
                     <Avatar className="h-10 w-10">
@@ -334,10 +334,10 @@ function FeatureCard({
 }) {
   const t = useTranslations(namespace)
   return (
-    <div className="group relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl p-6 sm:p-8 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 flex flex-col items-center text-center h-full">
+    <div className="group relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl p-6 sm:p-8 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 flex flex-col items-center text-center h-full cursor-pointer">
       {/* Subtle gradient on hover */}
       <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:via-transparent group-hover:to-transparent transition-all duration-300" />
-      
+
       <div className="relative mb-5 sm:mb-6 flex-shrink-0">
         <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors duration-300">
           {icon}
@@ -356,30 +356,30 @@ function FeatureCard({
 function StatsSection() {
   const t = useTranslations('homepage')
   const stats = [
-    { 
-      icon: Users, 
-      value: "10,000+", 
+    {
+      icon: Users,
+      value: "10,000+",
       labelKey: "stats.activeStudents",
       iconBg: "bg-blue-100 dark:bg-blue-950",
       iconColor: "text-blue-600 dark:text-blue-400"
     },
-    { 
-      icon: BookOpen, 
-      value: "50+", 
+    {
+      icon: BookOpen,
+      value: "50+",
       labelKey: "stats.qualityCourses",
       iconBg: "bg-green-100 dark:bg-green-950",
       iconColor: "text-green-600 dark:text-green-400"
     },
-    { 
-      icon: Target, 
-      value: "500+", 
+    {
+      icon: Target,
+      value: "500+",
       labelKey: "stats.practiceExercises",
       iconBg: "bg-purple-100 dark:bg-purple-950",
       iconColor: "text-purple-600 dark:text-purple-400"
     },
-    { 
-      icon: Award, 
-      value: "95%", 
+    {
+      icon: Award,
+      value: "95%",
       labelKey: "stats.successRate",
       iconBg: "bg-primary/10 dark:bg-primary/20",
       iconColor: "text-primary"
@@ -393,7 +393,7 @@ function StatsSection() {
         <div className="absolute top-10 right-20 w-64 h-64 bg-primary/5 rounded-full blur-2xl" />
         <div className="absolute bottom-10 left-20 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
       </div>
-      
+
       <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           {stats.map((stat, index) => (
@@ -459,7 +459,7 @@ function WhyChooseSection() {
           backgroundSize: '40px 40px'
         }} />
       </div>
-      
+
       <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
         <div className="text-center mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
@@ -469,7 +469,7 @@ function WhyChooseSection() {
             {t('whyChoose.description')}
           </p>
         </div>
-        
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           {benefits.map((benefit, index) => (
             <Card key={index} className="group relative border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card/80 backdrop-blur-sm">

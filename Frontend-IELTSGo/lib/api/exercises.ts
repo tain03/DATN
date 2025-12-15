@@ -12,6 +12,15 @@ export interface SubmissionFilters {
   search?: string    // Search by exercise title
 }
 
+export interface ExerciseFilters {
+  skill?: string[]
+  type?: string[]
+  difficulty?: string[]
+  search?: string
+  sort?: 'newest' | 'popular' | 'title'
+  sort_order?: 'asc' | 'desc'
+}
+
 export interface PaginatedResponse<T> {
   data: T[]
   total: number
@@ -69,11 +78,11 @@ export const exercisesApi = {
     params.append("limit", pageSize.toString())
 
     const response = await apiClient.get<BackendExerciseResponse>(`/exercises?${params.toString()}`)
-    
+
     // Transform backend response to match frontend expectation
     const backendData = response.data.data
     const pagination = backendData.pagination || { page, limit: pageSize, total: 0, total_pages: 0 }
-    
+
     const result: PaginatedResponse<Exercise> = {
       data: backendData.exercises || [],
       total: pagination.total || 0,
@@ -89,9 +98,9 @@ export const exercisesApi = {
 
   // Get single exercise by ID with sections and questions
   getExerciseById: async (id: string): Promise<import("@/types").ExerciseDetailResponse> => {
-    const response = await apiClient.get<{ 
+    const response = await apiClient.get<{
       success: boolean
-      data: import("@/types").ExerciseDetailResponse 
+      data: import("@/types").ExerciseDetailResponse
     }>(`/exercises/${id}`)
     return response.data.data
   },
@@ -112,9 +121,9 @@ export const exercisesApi = {
     text_answer?: string
     time_spent_seconds?: number
   }>, totalTimeSpentSeconds?: number): Promise<void> => {
-    await apiClient.put(`/submissions/${submissionId}/answers`, { 
+    await apiClient.put(`/submissions/${submissionId}/answers`, {
       answers,
-      time_spent_seconds: totalTimeSpentSeconds 
+      time_spent_seconds: totalTimeSpentSeconds
     })
   },
 
@@ -158,7 +167,7 @@ export const exercisesApi = {
     const params = new URLSearchParams()
     params.append("page", page.toString())
     params.append("limit", limit.toString())
-    
+
     if (filters?.search) {
       params.append("search", filters.search)
     }
@@ -180,7 +189,7 @@ export const exercisesApi = {
     if (filters?.date_to) {
       params.append("date_to", filters.date_to)
     }
-    
+
     const response = await apiClient.get<{
       success: boolean
       data: { submissions: import("@/types").SubmissionWithExercise[]; total: number }

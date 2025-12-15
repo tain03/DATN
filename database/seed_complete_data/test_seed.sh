@@ -52,7 +52,7 @@ echo ""
 echo "Testing user_db..."
 test_count "user_db" "user_profiles" "67"
 test_count "user_db" "learning_progress" "67"
-test_count "user_db" "practice_activities" "60"
+test_count "user_db" "practice_activities" "61"
 
 # Test Course DB
 echo ""

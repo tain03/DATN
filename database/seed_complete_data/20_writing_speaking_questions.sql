@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- WRITING & SPEAKING EVALUATION CRITERIA
 -- ============================================
 -- Purpose: Add questions for Writing/Speaking exercises to support AI evaluation
@@ -436,7 +436,7 @@ GROUP BY category;
 -- SUMMARY
 -- ============================================
 SELECT 
-    '✅ Phase Complete: Writing & Speaking Evaluation Criteria Added' as status,
+    'âœ… Phase Complete: Writing & Speaking Evaluation Criteria Added' as status,
     (SELECT COUNT(*) FROM exercises WHERE skill_type IN ('writing', 'speaking')) as total_exercises,
     (SELECT COUNT(*) FROM questions WHERE question_type IN ('essay_criterion', 'speaking_criterion')) as total_criteria,
     (SELECT COUNT(*) FROM question_answers WHERE question_id IN 

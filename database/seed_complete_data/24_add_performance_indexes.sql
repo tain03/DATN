@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- ADD PERFORMANCE INDEXES
 -- ============================================
 -- Purpose: Add missing indexes for common query patterns
@@ -427,7 +427,7 @@ ANALYZE notifications, email_notifications, push_notifications,
 -- Count indexes per database (simplified without dblink)
 DO $$
 BEGIN
-    RAISE NOTICE '✅ Performance indexes created successfully';
+    RAISE NOTICE 'âœ… Performance indexes created successfully';
     RAISE NOTICE 'Run \di+ on each database to see all indexes';
 END $$;
 
@@ -436,7 +436,7 @@ END $$;
 -- ============================================
 
 SELECT 
-    '✅ Phase Complete: Performance Indexes Added' as status,
+    'âœ… Phase Complete: Performance Indexes Added' as status,
     '80+ new indexes created across all databases' as description,
     'Query performance significantly improved' as impact;
 
@@ -474,16 +474,16 @@ INDEX STRATEGY:
 
 QUERY PATTERNS COVERED:
 
-✅ User login and authentication
-✅ Course catalog browsing
-✅ Exercise filtering by skill/difficulty
-✅ Learning progress tracking
-✅ Test result history
-✅ Notification delivery
-✅ Analytics queries
-✅ Leaderboards and rankings
-✅ Social features (follows)
-✅ Search and autocomplete
+âœ… User login and authentication
+âœ… Course catalog browsing
+âœ… Exercise filtering by skill/difficulty
+âœ… Learning progress tracking
+âœ… Test result history
+âœ… Notification delivery
+âœ… Analytics queries
+âœ… Leaderboards and rankings
+âœ… Social features (follows)
+âœ… Search and autocomplete
 
 PERFORMANCE IMPACT:
 

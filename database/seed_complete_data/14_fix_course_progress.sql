@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- FIX COURSE PROGRESS LOGIC
 -- ============================================
 -- Purpose: Remove manually-set progress_percentage in course_enrollments
@@ -29,13 +29,13 @@ BEGIN
        OR lessons_completed > 0;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Reset % enrollment records (will be calculated real-time)', updated_count;
+    RAISE NOTICE 'âœ… Reset % enrollment records (will be calculated real-time)', updated_count;
     RAISE NOTICE '';
-    RAISE NOTICE '📊 Backend calculates these fields dynamically:';
+    RAISE NOTICE 'ðŸ“Š Backend calculates these fields dynamically:';
     RAISE NOTICE '   - progress_percentage = SUM(lesson.progress) / total_lessons';
     RAISE NOTICE '   - lessons_completed = COUNT(lessons WHERE status=completed)';
     RAISE NOTICE '   - total_time_spent = SUM(lesson.last_position_seconds / 60)';
     RAISE NOTICE '';
-    RAISE NOTICE '✅ This ensures data consistency - no drift between enrollments and lesson_progress!';
+    RAISE NOTICE 'âœ… This ensures data consistency - no drift between enrollments and lesson_progress!';
     RAISE NOTICE '============================================';
 END $$;

@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 2B: USER_DB - OFFICIAL TEST RESULTS (PER-SKILL MODEL)
 -- ============================================
 -- Purpose: Seed official IELTS test results with per-skill scoring

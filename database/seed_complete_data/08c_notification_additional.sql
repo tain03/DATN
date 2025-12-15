@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 8: ADDITIONAL MISSING TABLES & RELATIONSHIPS
 -- ============================================
 -- Purpose: Seed data for tables that were missing
@@ -20,8 +20,8 @@ INSERT INTO scheduled_notifications (
 SELECT 
     uuid_generate_v4(),
     ('f' || LPAD((row_number() OVER ()::text), 7, '0') || '-0000-0000-0000-000000000' || LPAD((row_number() OVER ())::text, 3, '0'))::uuid,
-    'Nhắc nhở học tập hàng ngày',
-    'Đã đến giờ học rồi! Hãy dành thời gian để luyện tập IELTS ngay hôm nay.',
+    'Nháº¯c nhá»Ÿ há»c táº­p hÃ ng ngÃ y',
+    'ÄÃ£ Ä‘áº¿n giá» há»c rá»“i! HÃ£y dÃ nh thá»i gian Ä‘á»ƒ luyá»‡n táº­p IELTS ngay hÃ´m nay.',
     'daily',
     CASE (row_number() OVER () % 3)
         WHEN 0 THEN TIME '07:00'
@@ -42,7 +42,7 @@ WHERE random() > 0.4;
 
 -- Summary
 SELECT 
-    '✅ Notification DB Phase 8 Complete' as status,
+    'âœ… Notification DB Phase 8 Complete' as status,
     COUNT(*) as total_scheduled,
     COUNT(*) FILTER (WHERE is_active = true) as active_scheduled
 FROM scheduled_notifications;

@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- REALISTIC EXERCISE ATTEMPTS & SCORES
 -- ============================================
 -- Purpose: Add diverse exercise attempts with realistic score distributions
@@ -134,7 +134,7 @@ BEGIN
         END LOOP;
     END LOOP;
     
-    RAISE NOTICE '✅ Exercise Attempts: Created % attempts with realistic score distribution', attempt_count;
+    RAISE NOTICE 'âœ… Exercise Attempts: Created % attempts with realistic score distribution', attempt_count;
 END $$;
 
 -- ============================================
@@ -197,7 +197,7 @@ BEGIN
         END LOOP;
     END LOOP;
     
-    RAISE NOTICE '✅ Question Answers: Created % detailed answers', answer_count;
+    RAISE NOTICE 'âœ… Question Answers: Created % detailed answers', answer_count;
 END $$;
 
 -- ============================================
@@ -233,7 +233,7 @@ BEGIN
         WHERE exercise_id = exercise_rec.id;
     END LOOP;
     
-    RAISE NOTICE '✅ Exercise Analytics: Updated statistics';
+    RAISE NOTICE 'âœ… Exercise Analytics: Updated statistics';
 END $$;
 
 -- ============================================
@@ -268,7 +268,7 @@ BEGIN
     WHERE uea.user_id::text LIKE '%-4403%' AND uea.status = 'completed';
     
     RAISE NOTICE '============================================';
-    RAISE NOTICE '✅ Exercise Attempts Summary:';
+    RAISE NOTICE 'âœ… Exercise Attempts Summary:';
     RAISE NOTICE '  Total attempts: %', total_attempts;
     RAISE NOTICE '  Completed attempts: %', completed_attempts;
     RAISE NOTICE '  Total question answers: %', total_answers;

@@ -333,6 +333,11 @@ h6 {
     @apply w-full mx-auto;
   }
 
+  /* ============================================
+     PERFORMANCE-OPTIMIZED ANIMATIONS
+     Using GPU-accelerated properties (transform, opacity)
+     ============================================ */
+
   /* Shimmer animation for progress bars and loading states */
   @keyframes shimmer {
     0% {
@@ -345,6 +350,28 @@ h6 {
 
   .animate-shimmer {
     animation: shimmer 2s infinite;
+    will-change: transform;
+  }
+
+  /* Enhanced shimmer with gradient */
+  @keyframes shimmer-gradient {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .animate-shimmer-gradient {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      oklch(0.98 0 0 / 0.4) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-gradient 1.5s ease-in-out infinite;
   }
 
   /* Pulse glow animation for cards */
@@ -375,5 +402,151 @@ h6 {
 
   .animate-fade-in {
     animation: fade-in 0.5s ease-out forwards;
+  }
+
+  /* Staggered fade in for lists */
+  .animate-fade-in-stagger > * {
+    opacity: 0;
+    animation: fade-in 0.4s ease-out forwards;
+  }
+  .animate-fade-in-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .animate-fade-in-stagger > *:nth-child(2) { animation-delay: 50ms; }
+  .animate-fade-in-stagger > *:nth-child(3) { animation-delay: 100ms; }
+  .animate-fade-in-stagger > *:nth-child(4) { animation-delay: 150ms; }
+  .animate-fade-in-stagger > *:nth-child(5) { animation-delay: 200ms; }
+  .animate-fade-in-stagger > *:nth-child(6) { animation-delay: 250ms; }
+
+  /* Floating animation */
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  /* Subtle scale on hover */
+  .hover-lift {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Button press effect */
+  .press-effect {
+    transition: transform 0.1s ease-out;
+  }
+  .press-effect:active {
+    transform: scale(0.97);
+  }
+
+  /* ============================================
+     GLASS MORPHISM EFFECTS
+     Premium transparent card styles
+     ============================================ */
+
+  .glass {
+    background: oklch(1 0 0 / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid oklch(0.92 0 0 / 0.5);
+  }
+
+  .dark .glass {
+    background: oklch(0.22 0 0 / 0.7);
+    border: 1px solid oklch(0.3 0 0 / 0.5);
+  }
+
+  .glass-strong {
+    background: oklch(1 0 0 / 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid oklch(0.92 0 0 / 0.8);
+  }
+
+  .dark .glass-strong {
+    background: oklch(0.22 0 0 / 0.85);
+    border: 1px solid oklch(0.3 0 0 / 0.8);
+  }
+
+  /* ============================================
+     ENHANCED SHADOWS
+     Soft, premium shadow system
+     ============================================ */
+
+  .shadow-soft {
+    box-shadow: 
+      0 2px 8px -2px rgba(0, 0, 0, 0.08),
+      0 4px 16px -4px rgba(0, 0, 0, 0.06);
+  }
+
+  .shadow-soft-lg {
+    box-shadow: 
+      0 4px 16px -4px rgba(0, 0, 0, 0.1),
+      0 8px 32px -8px rgba(0, 0, 0, 0.08);
+  }
+
+  .shadow-glow-primary {
+    box-shadow: 
+      0 4px 16px -4px oklch(0.55 0.22 25 / 0.2),
+      0 8px 32px -8px oklch(0.55 0.22 25 / 0.15);
+  }
+
+  /* ============================================
+     GRADIENT BORDERS
+     Animated gradient border effects
+     ============================================ */
+
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, oklch(0.55 0.22 25 / 0.3), oklch(0.98 0.02 80 / 0.3));
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    pointer-events: none;
+  }
+
+  /* ============================================
+     SMOOTH SCROLLING & CONTENT VISIBILITY
+     Performance optimizations
+     ============================================ */
+
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  .content-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 500px;
+  }
+
+  /* Reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-shimmer,
+    .animate-shimmer-gradient,
+    .animate-pulse-glow,
+    .animate-fade-in,
+    .animate-float,
+    .hover-lift,
+    .press-effect {
+      animation: none !important;
+      transition: none !important;
+    }
   }
 }

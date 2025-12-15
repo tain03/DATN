@@ -56,7 +56,7 @@ export function Navbar({ onMenuClick, showMenuButton = false, hideLogo = false, 
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-all duration-200">
       <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left section */}
         <div className="flex items-center gap-3 flex-shrink-0">
@@ -78,8 +78,8 @@ export function Navbar({ onMenuClick, showMenuButton = false, hideLogo = false, 
                 href={item.href}
                 className={cn(
                   "text-sm font-medium transition-colors duration-200 px-3 py-1.5 rounded-md",
-                  pathname === item.href 
-                    ? "text-primary bg-primary/5" 
+                  pathname === item.href
+                    ? "text-primary bg-primary/5"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
                 )}
               >
@@ -114,7 +114,7 @@ export function Navbar({ onMenuClick, showMenuButton = false, hideLogo = false, 
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     {user ? (
-                      <Link 
+                      <Link
                         href={`/users/${user.id}`}
                         className="flex flex-col space-y-1 hover:opacity-80 transition-opacity cursor-pointer"
                         onClick={(e) => e.stopPropagation()}

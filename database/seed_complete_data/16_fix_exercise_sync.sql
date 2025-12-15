@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- FIX EXERCISE SYNC STATUS
 -- ============================================
 -- Purpose: Mark completed exercises as synced
@@ -29,14 +29,14 @@ BEGIN
       AND user_service_sync_status = 'pending';
     
     GET DIAGNOSTICS synced_count = ROW_COUNT;
-    RAISE NOTICE '✅ Marked % completed attempts as synced', synced_count;
+    RAISE NOTICE 'âœ… Marked % completed attempts as synced', synced_count;
     RAISE NOTICE '';
-    RAISE NOTICE '📊 This simulates successful sync to User Service:';
+    RAISE NOTICE 'ðŸ“Š This simulates successful sync to User Service:';
     RAISE NOTICE '   - learning_progress.total_exercises_completed updated';
     RAISE NOTICE '   - Skill-specific progress tracked';
     RAISE NOTICE '   - Achievement checks performed';
     RAISE NOTICE '';
-    RAISE NOTICE '⚠️  In production: Exercise Service → User Service API call';
+    RAISE NOTICE 'âš ï¸  In production: Exercise Service â†’ User Service API call';
     RAISE NOTICE '============================================';
 END $$;
 
@@ -57,12 +57,12 @@ BEGIN
     
     RAISE NOTICE '';
     RAISE NOTICE 'VALIDATION RESULTS:';
-    RAISE NOTICE '✅ Completed & Synced: %', synced_count;
-    RAISE NOTICE '⚠️  Completed & Pending: %', pending_count;
+    RAISE NOTICE 'âœ… Completed & Synced: %', synced_count;
+    RAISE NOTICE 'âš ï¸  Completed & Pending: %', pending_count;
     
     IF pending_count > 0 THEN
-        RAISE NOTICE '❌ Still have % pending completed attempts!', pending_count;
+        RAISE NOTICE 'âŒ Still have % pending completed attempts!', pending_count;
     ELSE
-        RAISE NOTICE '✅ All completed attempts are synced!';
+        RAISE NOTICE 'âœ… All completed attempts are synced!';
     END IF;
 END $$;

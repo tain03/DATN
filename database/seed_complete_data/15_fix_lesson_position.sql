@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- FIX LESSON LAST POSITION FOR VIDEO RESUME
 -- ============================================
 -- Purpose: Calculate last_position_seconds from progress_percentage
@@ -27,9 +27,9 @@ BEGIN
       AND last_position_seconds = 0;
     
     GET DIAGNOSTICS updated_count = ROW_COUNT;
-    RAISE NOTICE '✅ Updated % lesson progress records with last_position', updated_count;
+    RAISE NOTICE 'âœ… Updated % lesson progress records with last_position', updated_count;
     RAISE NOTICE '';
-    RAISE NOTICE '📺 Users can now resume watching from correct position!';
-    RAISE NOTICE '   Example: 50%% progress on 1000s video → resume at 500s';
+    RAISE NOTICE 'ðŸ“º Users can now resume watching from correct position!';
+    RAISE NOTICE '   Example: 50%% progress on 1000s video â†’ resume at 500s';
     RAISE NOTICE '============================================';
 END $$;

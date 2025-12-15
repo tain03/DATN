@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- DIVERSE COURSE ENROLLMENTS & REVIEWS
 -- ============================================
 -- Purpose: Add realistic course enrollments and detailed reviews
@@ -84,7 +84,7 @@ BEGIN
         END LOOP;
     END LOOP;
     
-    RAISE NOTICE '✅ Course Enrollments: Created % enrollments with realistic progress', enrollment_count;
+    RAISE NOTICE 'âœ… Course Enrollments: Created % enrollments with realistic progress', enrollment_count;
 END $$;
 
 -- ============================================
@@ -153,7 +153,7 @@ BEGIN
         END LOOP;
     END LOOP;
     
-    RAISE NOTICE '✅ Lesson Progress: Created % lesson progress records', progress_count;
+    RAISE NOTICE 'âœ… Lesson Progress: Created % lesson progress records', progress_count;
 END $$;
 
 -- ============================================
@@ -245,7 +245,7 @@ BEGIN
         review_count := review_count + 1;
     END LOOP;
     
-    RAISE NOTICE '✅ Course Reviews: Created % detailed reviews', review_count;
+    RAISE NOTICE 'âœ… Course Reviews: Created % detailed reviews', review_count;
 END $$;
 
 -- ============================================
@@ -276,7 +276,7 @@ BEGIN
         WHERE id = course_rec.id;
     END LOOP;
     
-    RAISE NOTICE '✅ Course Statistics: Updated enrollment and rating stats';
+    RAISE NOTICE 'âœ… Course Statistics: Updated enrollment and rating stats';
 END $$;
 
 -- ============================================
@@ -307,7 +307,7 @@ BEGIN
     SELECT COUNT(*) INTO three_star FROM course_reviews WHERE rating = 3;
     
     RAISE NOTICE '============================================';
-    RAISE NOTICE '✅ Course Activity Summary:';
+    RAISE NOTICE 'âœ… Course Activity Summary:';
     RAISE NOTICE '  Total enrollments: %', total_enrollments;
     RAISE NOTICE '  Active enrollments: %', active_enrollments;
     RAISE NOTICE '  Completed enrollments: %', completed_enrollments;

@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 7: MISSING TABLES & CROSS-DB LINKS
 -- ============================================
 -- Purpose: Seed data for tables that were missing or need cross-db links
@@ -150,6 +150,6 @@ CROSS JOIN generate_series(1, 15); -- 8 types * 15 = 120 questions
 
 -- Summary
 SELECT 
-    '✅ Phase 7 Complete: Question Bank Seeded' as status,
+    'âœ… Phase 7 Complete: Question Bank Seeded' as status,
     (SELECT COUNT(*) FROM question_bank) as total_question_bank_items;
 

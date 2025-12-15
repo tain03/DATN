@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- CROSS-DATABASE VALIDATION TRIGGERS
 -- ============================================
 -- Purpose: Add validation triggers for cross-database foreign key references
@@ -9,9 +9,9 @@
 -- For production, update dblink connection strings with proper credentials
 -- 
 -- VALIDATES:
--- 1. course_db.courses.instructor_id → auth_db.users.id
--- 2. exercise_db.exercises.course_id → course_db.courses.id
--- 3. All user_id references → auth_db.users.id
+-- 1. course_db.courses.instructor_id â†’ auth_db.users.id
+-- 2. exercise_db.exercises.course_id â†’ course_db.courses.id
+-- 3. All user_id references â†’ auth_db.users.id
 -- ============================================
 
 -- ============================================
@@ -488,7 +488,7 @@ CREATE TRIGGER check_user_before_device
 
 -- Print summary
 SELECT 
-    '✅ Phase Complete: Cross-Database Validation Triggers Added' as status,
+    'âœ… Phase Complete: Cross-Database Validation Triggers Added' as status,
     'All foreign key references now validated across databases' as description;
 
 -- ============================================
@@ -562,4 +562,4 @@ INSERT INTO course_enrollments (user_id, ...) VALUES ('...'::uuid, ...);
 */
 
 */
-SELECT '⚠️ Cross-Database Validation Triggers DISABLED' as status, 'Enable after seed by uncommenting' as action;
+SELECT 'âš ï¸ Cross-Database Validation Triggers DISABLED' as status, 'Enable after seed by uncommenting' as action;

@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 6: NOTIFICATION_DB - NOTIFICATIONS
 -- ============================================
 -- Purpose: Create notifications and preferences
@@ -93,12 +93,12 @@ SELECT
     ('f' || LPAD((row_number() OVER ()::text), 7, '0') || '-0000-0000-0000-000000000' || LPAD((1 + (row_number() OVER () - 1) % 50)::text, 3, '0'))::uuid,
     'achievement',
     'success',
-    'Chúc mừng! 🎉',
-    'Bạn đã đạt được thành tựu "' || 
+    'ChÃºc má»«ng! ðŸŽ‰',
+    'Báº¡n Ä‘Ã£ Ä‘áº¡t Ä‘Æ°á»£c thÃ nh tá»±u "' || 
     CASE (row_number() OVER () % 6)
-        WHEN 0 THEN 'Bài học đầu tiên'
-        WHEN 1 THEN '7 ngày liên tiếp'
-        WHEN 2 THEN '30 ngày liên tiếp'
+        WHEN 0 THEN 'BÃ i há»c Ä‘áº§u tiÃªn'
+        WHEN 1 THEN '7 ngÃ y liÃªn tiáº¿p'
+        WHEN 2 THEN '30 ngÃ y liÃªn tiáº¿p'
         WHEN 3 THEN 'IELTS 6.0'
         WHEN 4 THEN 'IELTS 7.0'
         ELSE 'Listening Master'
@@ -132,10 +132,10 @@ SELECT
     su.user_id,
     'exercise_graded',
     'success',
-    'Bài tập đã được chấm điểm',
-    'Bạn đạt ' || (random() * 30 + 60)::INTEGER::text || '% trong bài "IELTS ' || 
+    'BÃ i táº­p Ä‘Ã£ Ä‘Æ°á»£c cháº¥m Ä‘iá»ƒm',
+    'Báº¡n Ä‘áº¡t ' || (random() * 30 + 60)::INTEGER::text || '% trong bÃ i "IELTS ' || 
     CASE (row_number() OVER () % 2) WHEN 0 THEN 'Listening' ELSE 'Reading' END || 
-    ' Practice Test". Xem chi tiết ngay!',
+    ' Practice Test". Xem chi tiáº¿t ngay!',
     'navigate_to_exercise',
     jsonb_build_object('exercise_id', uuid_generate_v4(), 'attempt_id', uuid_generate_v4()),
     'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=100&h=100&fit=crop',
@@ -166,8 +166,8 @@ SELECT
     su.user_id,
     'writing_evaluated',
     'success',
-    'Bài viết đã được đánh giá',
-    'Bạn đạt band ' || (random() * 3.0 + 5.5)::DECIMAL(2,1)::text || ' cho bài Writing. Xem phản hồi chi tiết!',
+    'BÃ i viáº¿t Ä‘Ã£ Ä‘Æ°á»£c Ä‘Ã¡nh giÃ¡',
+    'Báº¡n Ä‘áº¡t band ' || (random() * 3.0 + 5.5)::DECIMAL(2,1)::text || ' cho bÃ i Writing. Xem pháº£n há»“i chi tiáº¿t!',
     'navigate_to_writing',
     jsonb_build_object('submission_id', uuid_generate_v4(), 'evaluation_id', uuid_generate_v4()),
     'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=100&h=100&fit=crop',
@@ -198,8 +198,8 @@ SELECT
     su.user_id,
     'speaking_evaluated',
     'success',
-    'Bài nói đã được đánh giá',
-    'Bạn đạt band ' || (random() * 3.0 + 5.5)::DECIMAL(2,1)::text || ' cho bài Speaking. Xem phản hồi chi tiết!',
+    'BÃ i nÃ³i Ä‘Ã£ Ä‘Æ°á»£c Ä‘Ã¡nh giÃ¡',
+    'Báº¡n Ä‘áº¡t band ' || (random() * 3.0 + 5.5)::DECIMAL(2,1)::text || ' cho bÃ i Speaking. Xem pháº£n há»“i chi tiáº¿t!',
     'navigate_to_speaking',
     jsonb_build_object('submission_id', uuid_generate_v4(), 'evaluation_id', uuid_generate_v4()),
     'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=100&h=100&fit=crop',
@@ -233,15 +233,15 @@ SELECT
     es.user_id,
     'course_update',
     'info',
-    'Khóa học đã được cập nhật',
-    'Khóa học "' || 
+    'KhÃ³a há»c Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t',
+    'KhÃ³a há»c "' || 
     CASE (row_number() OVER () % 5)
         WHEN 0 THEN 'IELTS Listening Foundation'
         WHEN 1 THEN 'IELTS Reading Mastery'
         WHEN 2 THEN 'IELTS Writing Advanced'
         WHEN 3 THEN 'IELTS Speaking Complete'
         ELSE 'IELTS Complete Preparation'
-    END || '" có bài học mới. Xem ngay!',
+    END || '" cÃ³ bÃ i há»c má»›i. Xem ngay!',
     'navigate_to_course',
     jsonb_build_object('course_id', uuid_generate_v4()),
     'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=100&h=100&fit=crop',
@@ -272,8 +272,8 @@ SELECT
     su.user_id,
     'reminder',
     'info',
-    'Đã đến giờ học rồi! 📚',
-    'Hãy dành ' || (30 + (random() * 60)::INTEGER)::text || ' phút để tiếp tục hành trình chinh phục IELTS của bạn!',
+    'ÄÃ£ Ä‘áº¿n giá» há»c rá»“i! ðŸ“š',
+    'HÃ£y dÃ nh ' || (30 + (random() * 60)::INTEGER)::text || ' phÃºt Ä‘á»ƒ tiáº¿p tá»¥c hÃ nh trÃ¬nh chinh phá»¥c IELTS cá»§a báº¡n!',
     'navigate_to_dashboard',
     jsonb_build_object(),
     'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=100&h=100&fit=crop',
@@ -358,7 +358,7 @@ LIMIT 500;
 
 -- Summary
 SELECT 
-    '✅ Phase 6 Complete: Notifications Created' as status,
+    'âœ… Phase 6 Complete: Notifications Created' as status,
     (SELECT COUNT(*) FROM notification_preferences) as total_preferences,
     (SELECT COUNT(*) FROM device_tokens) as total_devices,
     (SELECT COUNT(*) FROM notifications) as total_notifications,

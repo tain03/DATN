@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- CHECK MISSING DATA IN ALL TABLES
 -- ============================================
 -- Purpose: Identify columns with many NULL values
@@ -34,9 +34,9 @@ BEGIN
         ', col_record.column_name) INTO total_rows;
         
         IF total_rows = 0 THEN
-            RAISE NOTICE '❌ %: 0 rows (100%% NULL)', col_record.column_name;
+            RAISE NOTICE 'âŒ %: 0 rows (100%% NULL)', col_record.column_name;
         ELSIF total_rows < 10 THEN
-            RAISE NOTICE '⚠️  %: % rows', col_record.column_name, total_rows;
+            RAISE NOTICE 'âš ï¸  %: % rows', col_record.column_name, total_rows;
         END IF;
     END LOOP;
     
@@ -72,9 +72,9 @@ BEGIN
         ', col_record.column_name) INTO total_rows;
         
         IF total_rows = 0 THEN
-            RAISE NOTICE '❌ %: 0 rows (100%% NULL)', col_record.column_name;
+            RAISE NOTICE 'âŒ %: 0 rows (100%% NULL)', col_record.column_name;
         ELSIF total_rows < 10 THEN
-            RAISE NOTICE '⚠️  %: % rows', col_record.column_name, total_rows;
+            RAISE NOTICE 'âš ï¸  %: % rows', col_record.column_name, total_rows;
         END IF;
     END LOOP;
     
@@ -110,9 +110,9 @@ BEGIN
         ', col_record.column_name) INTO total_rows;
         
         IF total_rows = 0 THEN
-            RAISE NOTICE '❌ %: 0 rows (100%% NULL)', col_record.column_name;
+            RAISE NOTICE 'âŒ %: 0 rows (100%% NULL)', col_record.column_name;
         ELSIF total_rows < 10 THEN
-            RAISE NOTICE '⚠️  %: % rows', col_record.column_name, total_rows;
+            RAISE NOTICE 'âš ï¸  %: % rows', col_record.column_name, total_rows;
         END IF;
     END LOOP;
     

@@ -1,4 +1,4 @@
--- ============================================================================
+﻿-- ============================================================================
 -- PRACTICE ACTIVITIES VALIDATION
 -- ============================================================================
 -- Verify practice_activities data is logical and synchronized with other tables
@@ -6,15 +6,15 @@
 \c user_db
 
 SELECT '=============================================' as separator
-UNION ALL SELECT '✅ PRACTICE ACTIVITIES VALIDATION'
+UNION ALL SELECT 'âœ… PRACTICE ACTIVITIES VALIDATION'
 UNION ALL SELECT '=============================================';
 
 -- Check 1: All have valid timeline
 SELECT 
     CASE 
         WHEN COUNT(*) FILTER (WHERE completed_at < started_at) = 0 
-        THEN '✅ PASS: All practice activities have valid timeline (completed_at >= started_at)'
-        ELSE '❌ FAIL: ' || COUNT(*) FILTER (WHERE completed_at < started_at)::text || ' activities have completed_at < started_at'
+        THEN 'âœ… PASS: All practice activities have valid timeline (completed_at >= started_at)'
+        ELSE 'âŒ FAIL: ' || COUNT(*) FILTER (WHERE completed_at < started_at)::text || ' activities have completed_at < started_at'
     END as validation
 FROM practice_activities;
 
@@ -22,8 +22,8 @@ FROM practice_activities;
 SELECT 
     CASE 
         WHEN COUNT(*) FILTER (WHERE band_score < 0 OR band_score > 9) = 0 
-        THEN '✅ PASS: All band scores are in valid range (0-9)'
-        ELSE '❌ FAIL: ' || COUNT(*) FILTER (WHERE band_score < 0 OR band_score > 9)::text || ' activities have invalid band_score'
+        THEN 'âœ… PASS: All band scores are in valid range (0-9)'
+        ELSE 'âŒ FAIL: ' || COUNT(*) FILTER (WHERE band_score < 0 OR band_score > 9)::text || ' activities have invalid band_score'
     END as validation
 FROM practice_activities
 WHERE band_score IS NOT NULL;
@@ -39,8 +39,8 @@ SELECT
             ) AS e(id uuid) ON e.id = pa.exercise_id
             WHERE pa.exercise_id IS NOT NULL AND e.id IS NULL
         )
-        THEN '✅ PASS: All linked exercises exist in exercise_db'
-        ELSE '❌ FAIL: Some practice activities link to non-existent exercises'
+        THEN 'âœ… PASS: All linked exercises exist in exercise_db'
+        ELSE 'âŒ FAIL: Some practice activities link to non-existent exercises'
     END as validation;
 
 -- Check 4: All users exist
@@ -51,16 +51,16 @@ SELECT
             LEFT JOIN user_profiles up ON up.user_id = pa.user_id
             WHERE up.user_id IS NULL
         )
-        THEN '✅ PASS: All practice activity users exist in user_profiles'
-        ELSE '❌ FAIL: Some practice activities have non-existent users'
+        THEN 'âœ… PASS: All practice activity users exist in user_profiles'
+        ELSE 'âŒ FAIL: Some practice activities have non-existent users'
     END as validation;
 
 -- Check 5: Activity type matches valid enum
 SELECT 
     CASE 
         WHEN COUNT(*) FILTER (WHERE activity_type NOT IN ('drill', 'part_test', 'section_practice', 'question_set')) = 0 
-        THEN '✅ PASS: All activity_type values are valid'
-        ELSE '❌ FAIL: ' || COUNT(*) FILTER (WHERE activity_type NOT IN ('drill', 'part_test', 'section_practice', 'question_set'))::text || ' activities have invalid activity_type'
+        THEN 'âœ… PASS: All activity_type values are valid'
+        ELSE 'âŒ FAIL: ' || COUNT(*) FILTER (WHERE activity_type NOT IN ('drill', 'part_test', 'section_practice', 'question_set'))::text || ' activities have invalid activity_type'
     END as validation
 FROM practice_activities;
 
@@ -68,8 +68,8 @@ FROM practice_activities;
 SELECT 
     CASE 
         WHEN COUNT(*) FILTER (WHERE skill NOT IN ('listening', 'reading', 'writing', 'speaking')) = 0 
-        THEN '✅ PASS: All skill values are valid'
-        ELSE '❌ FAIL: ' || COUNT(*) FILTER (WHERE skill NOT IN ('listening', 'reading', 'writing', 'speaking'))::text || ' activities have invalid skill'
+        THEN 'âœ… PASS: All skill values are valid'
+        ELSE 'âŒ FAIL: ' || COUNT(*) FILTER (WHERE skill NOT IN ('listening', 'reading', 'writing', 'speaking'))::text || ' activities have invalid skill'
     END as validation
 FROM practice_activities;
 
@@ -77,8 +77,8 @@ FROM practice_activities;
 SELECT 
     CASE 
         WHEN COUNT(*) FILTER (WHERE difficulty_level NOT IN ('beginner', 'intermediate', 'advanced', 'expert')) = 0 
-        THEN '✅ PASS: All difficulty_level values are valid'
-        ELSE '❌ FAIL: ' || COUNT(*) FILTER (WHERE difficulty_level NOT IN ('beginner', 'intermediate', 'advanced', 'expert'))::text || ' activities have invalid difficulty_level'
+        THEN 'âœ… PASS: All difficulty_level values are valid'
+        ELSE 'âŒ FAIL: ' || COUNT(*) FILTER (WHERE difficulty_level NOT IN ('beginner', 'intermediate', 'advanced', 'expert'))::text || ' activities have invalid difficulty_level'
     END as validation
 FROM practice_activities
 WHERE difficulty_level IS NOT NULL;
@@ -90,8 +90,8 @@ SELECT
             WHERE total_questions > 0 
             AND ABS(accuracy_percentage - (correct_answers::numeric / total_questions * 100)) > 1.0
         ) = 0 
-        THEN '✅ PASS: All accuracy_percentage values match correct_answers/total_questions'
-        ELSE '⚠️  WARNING: ' || COUNT(*) FILTER (
+        THEN 'âœ… PASS: All accuracy_percentage values match correct_answers/total_questions'
+        ELSE 'âš ï¸  WARNING: ' || COUNT(*) FILTER (
             WHERE total_questions > 0 
             AND ABS(accuracy_percentage - (correct_answers::numeric / total_questions * 100)) > 1.0
         )::text || ' activities have mismatched accuracy_percentage (tolerance 1%)'
@@ -102,8 +102,8 @@ FROM practice_activities;
 SELECT 
     CASE 
         WHEN COUNT(*) FILTER (WHERE completion_status = 'completed' AND time_spent_seconds = 0) = 0 
-        THEN '✅ PASS: All completed activities have time_spent > 0'
-        ELSE '❌ FAIL: ' || COUNT(*) FILTER (WHERE completion_status = 'completed' AND time_spent_seconds = 0)::text || ' completed activities have time_spent_seconds = 0'
+        THEN 'âœ… PASS: All completed activities have time_spent > 0'
+        ELSE 'âŒ FAIL: ' || COUNT(*) FILTER (WHERE completion_status = 'completed' AND time_spent_seconds = 0)::text || ' completed activities have time_spent_seconds = 0'
     END as validation
 FROM practice_activities;
 
@@ -115,8 +115,8 @@ SELECT
             AND ai_evaluated = true 
             AND (ai_feedback_summary IS NULL OR ai_feedback_summary = '')
         ) = 0 
-        THEN '✅ PASS: All AI-evaluated writing/speaking activities have feedback'
-        ELSE '⚠️  WARNING: ' || COUNT(*) FILTER (
+        THEN 'âœ… PASS: All AI-evaluated writing/speaking activities have feedback'
+        ELSE 'âš ï¸  WARNING: ' || COUNT(*) FILTER (
             WHERE skill IN ('writing', 'speaking') 
             AND ai_evaluated = true 
             AND (ai_feedback_summary IS NULL OR ai_feedback_summary = '')

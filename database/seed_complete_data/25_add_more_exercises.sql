@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- ADD MORE REALISTIC IELTS EXERCISES
 -- ============================================
 -- Purpose: Add comprehensive Writing & Speaking exercises
@@ -538,7 +538,7 @@ UPDATE exercises SET total_questions = 4 WHERE skill_type IN ('writing', 'speaki
 -- ============================================
 
 SELECT 
-    '✅ Phase Complete: Additional Exercises Added' as status,
+    'âœ… Phase Complete: Additional Exercises Added' as status,
     (SELECT COUNT(*) FROM exercises WHERE skill_type = 'writing') as total_writing,
     (SELECT COUNT(*) FROM exercises WHERE skill_type = 'speaking') as total_speaking,
     (SELECT COUNT(*) FROM exercises) as total_all_exercises;

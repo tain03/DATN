@@ -1,7 +1,7 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 7B: EVALUATION_FEEDBACK_RATINGS (ai_db)
 -- ============================================
--- ⚠️  DEPRECATED: Evaluation feedback is no longer stored separately
+-- âš ï¸  DEPRECATED: Evaluation feedback is no longer stored separately
 -- 
 -- AI evaluations have been migrated to exercise_service:
 -- - Submissions are in exercise_submissions table (exercise_db)
@@ -61,7 +61,7 @@ LIMIT 50;
 
 -- Summary
 SELECT 
-    '✅ Phase 7B Complete: Evaluation Feedback Seeded' as status,
+    'âœ… Phase 7B Complete: Evaluation Feedback Seeded' as status,
     0 as writing_feedback_count,  -- Migrated to exercise_submissions.feedback
     0 as speaking_feedback_count; -- Migrated to exercise_submissions.feedback
 

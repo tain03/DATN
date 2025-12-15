@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- ENHANCED USER DATA - Realistic & Diverse
 -- ============================================
 -- Purpose: Add 150+ more users with realistic profiles and progression
@@ -168,7 +168,7 @@ INSERT INTO users (id, email, username, email_verified, created_at, last_login) 
 ('550e8400-e29b-41d4-a716-446655440350', 'jiang.mei.li@whu.edu.cn', 'meili_pro_ielts', true, NOW() - INTERVAL '75 days', NOW() - INTERVAL '14 hours')
 ON CONFLICT (id) DO NOTHING;
 
-RAISE NOTICE '✅ Enhanced Users: Added 150 diverse users (40 beginners, 60 intermediate, 50 advanced)';
+RAISE NOTICE 'âœ… Enhanced Users: Added 150 diverse users (40 beginners, 60 intermediate, 50 advanced)';
 
 -- ============================================
 -- USER_DB - Profiles for new users
@@ -185,11 +185,11 @@ INSERT INTO user_profiles (
 SELECT 
     u.id,
     CASE 
-        WHEN u.username LIKE 'nguyen%' THEN 'Nguyễn ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
-        WHEN u.username LIKE 'tran%' THEN 'Trần ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
-        WHEN u.username LIKE 'le%' THEN 'Lê ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
-        WHEN u.username LIKE 'pham%' THEN 'Phạm ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
-        WHEN u.username LIKE 'hoang%' THEN 'Hoàng ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
+        WHEN u.username LIKE 'nguyen%' THEN 'Nguyá»…n ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
+        WHEN u.username LIKE 'tran%' THEN 'Tráº§n ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
+        WHEN u.username LIKE 'le%' THEN 'LÃª ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
+        WHEN u.username LIKE 'pham%' THEN 'Pháº¡m ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
+        WHEN u.username LIKE 'hoang%' THEN 'HoÃ ng ' || INITCAP(REPLACE(SPLIT_PART(u.username, '_', 3), '_', ' '))
         WHEN u.username LIKE 'john%' THEN 'John Smith'
         WHEN u.username LIKE 'emily%' THEN 'Emily Johnson'
         WHEN u.username LIKE 'michael%' THEN 'Michael Brown'
@@ -220,7 +220,7 @@ SELECT
         ELSE 'Vietnam'
     END as country,
     CASE 
-        WHEN u.id::text LIKE '%-4401%' THEN (ARRAY['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ'])[FLOOR(RANDOM() * 5 + 1)]
+        WHEN u.id::text LIKE '%-4401%' THEN (ARRAY['HÃ  Ná»™i', 'Há»“ ChÃ­ Minh', 'ÄÃ  Náºµng', 'Háº£i PhÃ²ng', 'Cáº§n ThÆ¡'])[FLOOR(RANDOM() * 5 + 1)]
         WHEN u.username LIKE '%tanaka%' OR u.username LIKE '%sato%' THEN (ARRAY['Tokyo', 'Osaka', 'Kyoto', 'Fukuoka'])[FLOOR(RANDOM() * 4 + 1)]
         WHEN u.username LIKE '%kim%' OR u.username LIKE '%park%' THEN (ARRAY['Seoul', 'Busan', 'Incheon', 'Daegu'])[FLOOR(RANDOM() * 4 + 1)]
         WHEN u.username LIKE '%wang%' OR u.username LIKE '%chen%' THEN (ARRAY['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen'])[FLOOR(RANDOM() * 4 + 1)]
@@ -238,7 +238,7 @@ SELECT
     END as timezone,
     'https://ui-avatars.com/api/?name=' || REPLACE(u.username, '_', '+') || '&background=random' as avatar_url,
     CASE 
-        WHEN u.id::text LIKE '%-4401%' THEN 'Đang học IELTS để đi du học. Mục tiêu band 6.5-7.0'
+        WHEN u.id::text LIKE '%-4401%' THEN 'Äang há»c IELTS Ä‘á»ƒ Ä‘i du há»c. Má»¥c tiÃªu band 6.5-7.0'
         WHEN u.id::text LIKE '%-4402%' THEN 'Preparing for IELTS to study abroad. Target band 6.5-7.5'
         WHEN u.id::text LIKE '%-4403%' THEN 'Advanced IELTS learner aiming for band 8.0+. Focus on academic writing and speaking fluency.'
         ELSE 'IELTS learner'
@@ -266,7 +266,7 @@ FROM dblink(
 ) AS u(id UUID, email TEXT, username TEXT, created_at TIMESTAMP, last_login TIMESTAMP)
 ON CONFLICT (id) DO NOTHING;
 
-RAISE NOTICE '✅ User Profiles: Created profiles for 150 new users with realistic data';
+RAISE NOTICE 'âœ… User Profiles: Created profiles for 150 new users with realistic data';
 
 -- ============================================
 -- SUMMARY
@@ -284,7 +284,7 @@ BEGIN
     SELECT COUNT(*) INTO profile_count FROM user_profiles;
     
     RAISE NOTICE '============================================';
-    RAISE NOTICE '✅ Enhanced Users Summary:';
+    RAISE NOTICE 'âœ… Enhanced Users Summary:';
     RAISE NOTICE '  Total auth users: %', auth_count;
     RAISE NOTICE '  Total user profiles: %', profile_count;
     RAISE NOTICE '  Beginner users (Band 3-4): 40';

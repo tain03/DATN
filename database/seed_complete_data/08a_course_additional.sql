@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 8: ADDITIONAL MISSING TABLES & RELATIONSHIPS
 -- ============================================
 -- Purpose: Seed data for tables that were missing
@@ -79,7 +79,7 @@ LIMIT 200;
 
 -- Summary
 SELECT 
-    '✅ Course DB Phase 8 Complete' as status,
+    'âœ… Course DB Phase 8 Complete' as status,
     (SELECT COUNT(*) FROM video_subtitles) as video_subtitles_count,
     (SELECT COUNT(*) FROM lesson_materials) as lesson_materials_count;
 

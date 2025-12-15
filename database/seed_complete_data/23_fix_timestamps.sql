@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- FIX TIMESTAMP LOGIC ISSUES
 -- ============================================
 -- Purpose: Fix illogical timestamps across all databases
@@ -485,7 +485,7 @@ WHERE next_send_at IS NULL OR next_send_at < created_at;
 -- Create verification report (simplified without dblink to avoid errors)
 DO $$
 BEGIN
-    RAISE NOTICE '✅ Timestamp fixes applied across all databases';
+    RAISE NOTICE 'âœ… Timestamp fixes applied across all databases';
     RAISE NOTICE 'Run individual queries on each database to verify if needed';
 END $$;
 
@@ -494,7 +494,7 @@ END $$;
 -- ============================================
 
 SELECT 
-    '✅ Phase Complete: Timestamp Logic Fixed' as status,
+    'âœ… Phase Complete: Timestamp Logic Fixed' as status,
     'All timestamps now follow logical order' as description,
     'Check constraints added to prevent future issues' as prevention;
 

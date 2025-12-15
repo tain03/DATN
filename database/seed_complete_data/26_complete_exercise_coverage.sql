@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- COMPLETE EXERCISE COVERAGE - IELTS REALISTIC
 -- ============================================
 -- Purpose: Add missing exercise types for complete IELTS coverage
@@ -426,7 +426,7 @@ ORDER BY skill_type;
 -- ============================================
 
 SELECT 
-    '✅ Complete Exercise Coverage Achieved' as status,
+    'âœ… Complete Exercise Coverage Achieved' as status,
     (SELECT COUNT(*) FROM exercises WHERE skill_type = 'writing' AND writing_task_type = 'task1') as writing_task1,
     (SELECT COUNT(*) FROM exercises WHERE skill_type = 'writing' AND writing_task_type = 'task2') as writing_task2,
     (SELECT COUNT(*) FROM exercises WHERE skill_type = 'speaking' AND speaking_part_number = 1) as speaking_part1,
