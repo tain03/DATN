@@ -1,8 +1,8 @@
-#!/bin/bash
+﻿#!/bin/bash
 
-# Script kiểm tra health của hệ thống
+# Script kiá»ƒm tra health cá»§a há»‡ thá»‘ng
 
-echo "🔍 Đang kiểm tra health của các services..."
+echo "ðŸ” Äang kiá»ƒm tra health cá»§a cÃ¡c services..."
 echo ""
 
 # Color codes
@@ -21,10 +21,10 @@ check_service() {
     response=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null)
     
     if [ "$response" == "200" ] || [ "$response" == "204" ]; then
-        echo -e "${GREEN}✓ OK${NC}"
+        echo -e "${GREEN}âœ“ OK${NC}"
         return 0
     else
-        echo -e "${RED}✗ FAIL (HTTP $response)${NC}"
+        echo -e "${RED}âœ— FAIL (HTTP $response)${NC}"
         return 1
     fi
 }
@@ -36,10 +36,10 @@ check_container() {
     echo -n "Checking container $container_name... "
     
     if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
-        echo -e "${GREEN}✓ RUNNING${NC}"
+        echo -e "${GREEN}âœ“ RUNNING${NC}"
         return 0
     else
-        echo -e "${RED}✗ NOT RUNNING${NC}"
+        echo -e "${RED}âœ— NOT RUNNING${NC}"
         return 1
     fi
 }
@@ -48,8 +48,8 @@ check_container() {
 success_count=0
 total_count=0
 
-echo "📦 Kiểm tra Docker containers:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "ðŸ“¦ Kiá»ƒm tra Docker containers:"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 
 # Check infrastructure containers
 containers=(
@@ -67,8 +67,8 @@ for container in "${containers[@]}"; do
 done
 
 echo ""
-echo "🌐 Kiểm tra HTTP endpoints:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "ðŸŒ Kiá»ƒm tra HTTP endpoints:"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 
 # Check HTTP endpoints
 services=(
@@ -90,29 +90,29 @@ for service_info in "${services[@]}"; do
 done
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo ""
 
 # Summary
-echo "📊 Kết quả: $success_count/$total_count services đang hoạt động"
+echo "ðŸ“Š Káº¿t quáº£: $success_count/$total_count services Ä‘ang hoáº¡t Ä‘á»™ng"
 echo ""
 
 if [ $success_count -eq $total_count ]; then
-    echo -e "${GREEN}✅ Tất cả services đang hoạt động tốt!${NC}"
+    echo -e "${GREEN}âœ… Táº¥t cáº£ services Ä‘ang hoáº¡t Ä‘á»™ng tá»‘t!${NC}"
     echo ""
-    echo "🔗 Truy cập:"
-    echo "  • PgAdmin: http://localhost:5050"
-    echo "  • RabbitMQ: http://localhost:15672"
+    echo "ðŸ”— Truy cáº­p:"
+    echo "  â€¢ PgAdmin: http://localhost:5050"
+    echo "  â€¢ RabbitMQ: http://localhost:15672"
     if docker ps --format '{{.Names}}' | grep -q "^ielts_auth_service$"; then
-        echo "  • Auth API: http://localhost:8001/health"
+        echo "  â€¢ Auth API: http://localhost:8001/health"
     fi
     exit 0
 else
-    echo -e "${YELLOW}⚠️  Một số services chưa sẵn sàng${NC}"
+    echo -e "${YELLOW}âš ï¸  Má»™t sá»‘ services chÆ°a sáºµn sÃ ng${NC}"
     echo ""
-    echo "💡 Thử các lệnh sau:"
-    echo "  • docker-compose ps          - Xem trạng thái containers"
-    echo "  • docker-compose logs        - Xem logs"
-    echo "  • make restart               - Khởi động lại"
+    echo "ðŸ’¡ Thá»­ cÃ¡c lá»‡nh sau:"
+    echo "  â€¢ docker-compose ps          - Xem tráº¡ng thÃ¡i containers"
+    echo "  â€¢ docker-compose logs        - Xem logs"
+    echo "  â€¢ make restart               - Khá»Ÿi Ä‘á»™ng láº¡i"
     exit 1
 fi

@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # ============================================
 # RUN ALL DATABASE MIGRATIONS
@@ -28,25 +28,25 @@ export PGPASSWORD
 
 # Determine execution environment
 if [ -f /.dockerenv ]; then
-    echo -e "${GREEN}✅ Running inside Docker container${NC}"
+    echo -e "${GREEN}âœ… Running inside Docker container${NC}"
     PSQL_CMD_BASE="psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER}"
     MIGRATION_DIR="/migrations"
 elif docker ps | grep -q $DB_CONTAINER; then
-    echo -e "${GREEN}✅ Using Docker container: ${DB_CONTAINER}${NC}"
+    echo -e "${GREEN}âœ… Using Docker container: ${DB_CONTAINER}${NC}"
     PSQL_CMD_BASE="docker exec -i ${DB_CONTAINER} psql -U ${DB_USER}"
     MIGRATION_DIR="./database/migrations"
 else
-    echo -e "${YELLOW}⚠️  Using local PostgreSQL${NC}"
+    echo -e "${YELLOW}âš ï¸  Using local PostgreSQL${NC}"
     PSQL_CMD_BASE="PGPASSWORD=${PGPASSWORD} psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER}"
     MIGRATION_DIR="./database/migrations"
 fi
 
 echo ""
-echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║                                                            ║${NC}"
-echo -e "${CYAN}║        DATABASE MIGRATIONS - ALL SERVICES                  ║${NC}"
-echo -e "${CYAN}║                                                            ║${NC}"
-echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+echo -e "${CYAN}â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—${NC}"
+echo -e "${CYAN}â•‘                                                            â•‘${NC}"
+echo -e "${CYAN}â•‘        DATABASE MIGRATIONS - ALL SERVICES                  â•‘${NC}"
+echo -e "${CYAN}â•‘                                                            â•‘${NC}"
+echo -e "${CYAN}â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${NC}"
 echo ""
 
 # List of databases to run migrations on
@@ -66,7 +66,7 @@ TOTAL_ERRORS=0
 # Function to create migration tracking table
 create_migration_table() {
     local db_name=$1
-    echo -e "${YELLOW}📋 Creating migrations tracking table in ${db_name}...${NC}"
+    echo -e "${YELLOW}ðŸ“‹ Creating migrations tracking table in ${db_name}...${NC}"
     
     $PSQL_CMD_BASE -d $db_name << 'EOF' 2>/dev/null || true
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     checksum VARCHAR(64)
 );
 EOF
-    echo -e "${GREEN}✅ Migration tracking ready${NC}"
+    echo -e "${GREEN}âœ… Migration tracking ready${NC}"
 }
 
 # Function to run migrations for a specific database
@@ -85,9 +85,9 @@ run_database_migrations() {
     local service_name=$2
     
     echo ""
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}📚 ${service_name} (${db_name})${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
+    echo -e "${BLUE}ðŸ“š ${service_name} (${db_name})${NC}"
+    echo -e "${BLUE}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
     
     # Create tracking table
     create_migration_table $db_name
@@ -112,10 +112,10 @@ run_database_migrations() {
             "SELECT COUNT(*) FROM schema_migrations WHERE migration_file = '${filename}';" 2>/dev/null | tr -d ' ')
         
         if [ "$already_applied" -gt 0 ]; then
-            echo -e "${YELLOW}⏭️  SKIP: ${filename}${NC}"
+            echo -e "${YELLOW}â­ï¸  SKIP: ${filename}${NC}"
             skipped=$((skipped + 1))
         else
-            echo -e "${CYAN}📝 APPLYING: ${filename}${NC}"
+            echo -e "${CYAN}ðŸ“ APPLYING: ${filename}${NC}"
             
             # Apply migration
             if [ -f /.dockerenv ]; then
@@ -123,10 +123,10 @@ run_database_migrations() {
                 if $PSQL_CMD_BASE -d $db_name < "$migration_file" 2>&1; then
                     $PSQL_CMD_BASE -d $db_name -c \
                         "INSERT INTO schema_migrations (migration_file) VALUES ('${filename}');" >/dev/null
-                    echo -e "${GREEN}✅ SUCCESS: ${filename}${NC}"
+                    echo -e "${GREEN}âœ… SUCCESS: ${filename}${NC}"
                     applied=$((applied + 1))
                 else
-                    echo -e "${RED}❌ FAILED: ${filename}${NC}"
+                    echo -e "${RED}âŒ FAILED: ${filename}${NC}"
                     TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
                 fi
             else
@@ -134,10 +134,10 @@ run_database_migrations() {
                 if cat "$migration_file" | $PSQL_CMD_BASE -d $db_name 2>&1; then
                     echo "INSERT INTO schema_migrations (migration_file) VALUES ('${filename}');" | \
                         $PSQL_CMD_BASE -d $db_name >/dev/null
-                    echo -e "${GREEN}✅ SUCCESS: ${filename}${NC}"
+                    echo -e "${GREEN}âœ… SUCCESS: ${filename}${NC}"
                     applied=$((applied + 1))
                 else
-                    echo -e "${RED}❌ FAILED: ${filename}${NC}"
+                    echo -e "${RED}âŒ FAILED: ${filename}${NC}"
                     TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
                 fi
             fi
@@ -162,7 +162,7 @@ run_database_migrations() {
             local table_count=$($PSQL_CMD_BASE -d $db_name -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';" 2>/dev/null | tr -d ' ')
             if [ -z "$table_count" ]; then table_count=0; fi
             if [ "$table_count" -eq 0 ]; then
-                echo -e "${CYAN}🧱 No migrations found. Applying base schema for ${service_name} from ${schema_file}${NC}"
+                echo -e "${CYAN}ðŸ§± No migrations found. Applying base schema for ${service_name} from ${schema_file}${NC}"
                 if [ -f /.dockerenv ]; then
                     $PSQL_CMD_BASE -d $db_name < "$schema_file" 2>&1 || true
                 else
@@ -171,12 +171,12 @@ run_database_migrations() {
                 # Recompute table count
                 table_count=$($PSQL_CMD_BASE -d $db_name -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';" 2>/dev/null | tr -d ' ')
                 if [ "$table_count" -gt 0 ]; then
-                    echo -e "${GREEN}✅ Base schema applied for ${service_name}${NC}"
+                    echo -e "${GREEN}âœ… Base schema applied for ${service_name}${NC}"
                 else
-                    echo -e "${YELLOW}⚠️  Could not apply base schema for ${service_name}. Please check logs.${NC}"
+                    echo -e "${YELLOW}âš ï¸  Could not apply base schema for ${service_name}. Please check logs.${NC}"
                 fi
             else
-                echo -e "${YELLOW}ℹ️  ${service_name} already has tables; skipping base schema.${NC}"
+                echo -e "${YELLOW}â„¹ï¸  ${service_name} already has tables; skipping base schema.${NC}"
             fi
         fi
     fi
@@ -185,9 +185,9 @@ run_database_migrations() {
     TOTAL_SKIPPED=$((TOTAL_SKIPPED + skipped))
     
     if [ $applied -gt 0 ] || [ $skipped -gt 0 ]; then
-        echo -e "${GREEN}📊 ${service_name}: Applied ${applied}, Skipped ${skipped}${NC}"
+        echo -e "${GREEN}ðŸ“Š ${service_name}: Applied ${applied}, Skipped ${skipped}${NC}"
     else
-        echo -e "${YELLOW}ℹ️  No migrations found for ${service_name}${NC}"
+        echo -e "${YELLOW}â„¹ï¸  No migrations found for ${service_name}${NC}"
     fi
 }
 
@@ -202,17 +202,17 @@ for db_info in "${DATABASES[@]}"; do
     if [ "$db_exists" = "1" ]; then
         run_database_migrations "$db_name" "$service_name"
     else
-        echo -e "${YELLOW}⚠️  Database ${db_name} does not exist, skipping${NC}"
+        echo -e "${YELLOW}âš ï¸  Database ${db_name} does not exist, skipping${NC}"
     fi
 done
 
 # Summary
 echo ""
-echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║                                                            ║${NC}"
-echo -e "${CYAN}║                   MIGRATION SUMMARY                        ║${NC}"
-echo -e "${CYAN}║                                                            ║${NC}"
-echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+echo -e "${CYAN}â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—${NC}"
+echo -e "${CYAN}â•‘                                                            â•‘${NC}"
+echo -e "${CYAN}â•‘                   MIGRATION SUMMARY                        â•‘${NC}"
+echo -e "${CYAN}â•‘                                                            â•‘${NC}"
+echo -e "${CYAN}â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${NC}"
 echo ""
 echo -e "Total Applied:  ${GREEN}${TOTAL_APPLIED}${NC}"
 echo -e "Total Skipped:  ${YELLOW}${TOTAL_SKIPPED}${NC}"
@@ -220,9 +220,9 @@ echo -e "Total Errors:   ${RED}${TOTAL_ERRORS}${NC}"
 echo ""
 
 if [ $TOTAL_ERRORS -gt 0 ]; then
-    echo -e "${RED}❌ Some migrations failed! Please check the errors above.${NC}"
+    echo -e "${RED}âŒ Some migrations failed! Please check the errors above.${NC}"
     exit 1
 else
-    echo -e "${GREEN}✅ All migrations completed successfully!${NC}"
+    echo -e "${GREEN}âœ… All migrations completed successfully!${NC}"
     exit 0
 fi

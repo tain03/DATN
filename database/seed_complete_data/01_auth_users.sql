@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 1: AUTH_DB - USERS, ROLES, PERMISSIONS
 -- ============================================
 -- Purpose: Create foundation users for testing
@@ -153,7 +153,7 @@ ON CONFLICT (user_id, role_id) DO NOTHING;
 
 -- Summary
 SELECT 
-    '✅ Phase 1 Complete: Users Created' as status,
+    'âœ… Phase 1 Complete: Users Created' as status,
     (SELECT COUNT(*) FROM users WHERE id::text LIKE 'a%') as admins,
     (SELECT COUNT(*) FROM users WHERE id::text LIKE 'b%') as instructors,
     (SELECT COUNT(*) FROM users WHERE id::text LIKE 'f%') as students,

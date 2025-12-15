@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- PHASE 4: EXERCISE_DB - EXERCISES & USER ACTIVITIES
 -- ============================================
 -- Purpose: Create comprehensive exercises with questions and user attempts
@@ -912,7 +912,7 @@ WHERE es.id IN (
 
 -- Summary
 SELECT 
-    '✅ Phase 4 Complete: Exercises Created' as status,
+    'âœ… Phase 4 Complete: Exercises Created' as status,
     (SELECT COUNT(*) FROM exercises) as total_exercises,
     (SELECT COUNT(*) FROM exercise_sections) as total_sections,
     (SELECT COUNT(*) FROM questions) as total_questions,

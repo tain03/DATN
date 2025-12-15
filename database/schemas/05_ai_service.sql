@@ -1,4 +1,4 @@
--- ============================================-- ============================================
+﻿-- ============================================-- ============================================
 
 -- AI Service Database Schema (MINIMAL - Pure Evaluation Engine)-- AI Service Database Schema (MINIMAL - Pure Evaluation Engine)
 
@@ -20,15 +20,15 @@
 
 -- AI Service is a PURE EVALUATION ENGINE that:-- AI Service is a PURE EVALUATION ENGINE that:
 
--- ✅ ONLY evaluates content when called by Exercise Service-- ✅ ONLY evaluates content when called by Exercise Service
+-- âœ… ONLY evaluates content when called by Exercise Service-- âœ… ONLY evaluates content when called by Exercise Service
 
--- ✅ ONLY caches results to reduce OpenAI API costs-- ✅ ONLY caches results to reduce OpenAI API costs
+-- âœ… ONLY caches results to reduce OpenAI API costs-- âœ… ONLY caches results to reduce OpenAI API costs
 
--- ✅ Does NOT store submissions (Exercise Service does that)-- ✅ Does NOT store submissions (Exercise Service does that)
+-- âœ… Does NOT store submissions (Exercise Service does that)-- âœ… Does NOT store submissions (Exercise Service does that)
 
--- ✅ Does NOT store prompts (Exercise Service does that)-- ✅ Does NOT store prompts (Exercise Service does that)
+-- âœ… Does NOT store prompts (Exercise Service does that)-- âœ… Does NOT store prompts (Exercise Service does that)
 
--- ✅ Does NOT integrate with other services-- ✅ Does NOT integrate with other services
+-- âœ… Does NOT integrate with other services-- âœ… Does NOT integrate with other services
 
 ----
 
@@ -408,19 +408,19 @@ $$ LANGUAGE plpgsql;$$ LANGUAGE plpgsql;
 
 COMMENT ON DATABASE ai_db IS 'AI Service Database - Minimal stateless evaluation engine';COMMENT ON DATABASE ai_db IS 'AI Service Database - Minimal stateless evaluation engine';
 
-COMMENT ON TABLE ai_evaluation_cache IS 'Cache kết quả đánh giá AI để giảm chi phí API và tăng tốc độ';COMMENT ON TABLE ai_evaluation_cache IS 'Cache kết quả đánh giá AI để giảm chi phí API và tăng tốc độ';
+COMMENT ON TABLE ai_evaluation_cache IS 'Cache káº¿t quáº£ Ä‘Ã¡nh giÃ¡ AI Ä‘á»ƒ giáº£m chi phÃ­ API vÃ  tÄƒng tá»‘c Ä‘á»™';COMMENT ON TABLE ai_evaluation_cache IS 'Cache káº¿t quáº£ Ä‘Ã¡nh giÃ¡ AI Ä‘á»ƒ giáº£m chi phÃ­ API vÃ  tÄƒng tá»‘c Ä‘á»™';
 
-COMMENT ON TABLE ai_evaluation_logs IS 'Logs đánh giá AI cho monitoring và analytics (optional)';COMMENT ON TABLE ai_evaluation_logs IS 'Logs đánh giá AI cho monitoring và analytics (optional)';
+COMMENT ON TABLE ai_evaluation_logs IS 'Logs Ä‘Ã¡nh giÃ¡ AI cho monitoring vÃ  analytics (optional)';COMMENT ON TABLE ai_evaluation_logs IS 'Logs Ä‘Ã¡nh giÃ¡ AI cho monitoring vÃ  analytics (optional)';
 
-COMMENT ON TABLE schema_migrations IS 'Tracking migrations đã chạy';COMMENT ON TABLE schema_migrations IS 'Tracking migrations đã chạy';
+COMMENT ON TABLE schema_migrations IS 'Tracking migrations Ä‘Ã£ cháº¡y';COMMENT ON TABLE schema_migrations IS 'Tracking migrations Ä‘Ã£ cháº¡y';
 
 
 
-COMMENT ON COLUMN ai_evaluation_cache.content_hash IS 'SHA-256 hash của nội dung submission, dùng làm cache key';COMMENT ON COLUMN ai_evaluation_cache.content_hash IS 'SHA-256 hash của nội dung submission, dùng làm cache key';
+COMMENT ON COLUMN ai_evaluation_cache.content_hash IS 'SHA-256 hash cá»§a ná»™i dung submission, dÃ¹ng lÃ m cache key';COMMENT ON COLUMN ai_evaluation_cache.content_hash IS 'SHA-256 hash cá»§a ná»™i dung submission, dÃ¹ng lÃ m cache key';
 
-COMMENT ON COLUMN ai_evaluation_cache.hit_count IS 'Số lần cache được sử dụng (cost savings metric)';COMMENT ON COLUMN ai_evaluation_cache.hit_count IS 'Số lần cache được sử dụng (cost savings metric)';
+COMMENT ON COLUMN ai_evaluation_cache.hit_count IS 'Sá»‘ láº§n cache Ä‘Æ°á»£c sá»­ dá»¥ng (cost savings metric)';COMMENT ON COLUMN ai_evaluation_cache.hit_count IS 'Sá»‘ láº§n cache Ä‘Æ°á»£c sá»­ dá»¥ng (cost savings metric)';
 
-COMMENT ON COLUMN ai_evaluation_cache.expires_at IS 'Thời điểm cache hết hạn, NULL = không hết hạn';COMMENT ON COLUMN ai_evaluation_cache.expires_at IS 'Thời điểm cache hết hạn, NULL = không hết hạn';
+COMMENT ON COLUMN ai_evaluation_cache.expires_at IS 'Thá»i Ä‘iá»ƒm cache háº¿t háº¡n, NULL = khÃ´ng háº¿t háº¡n';COMMENT ON COLUMN ai_evaluation_cache.expires_at IS 'Thá»i Ä‘iá»ƒm cache háº¿t háº¡n, NULL = khÃ´ng háº¿t háº¡n';
 
 
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # Colors
 GREEN='\033[0;32m'
@@ -17,7 +17,7 @@ ADMIN_NAME="Test Administrator"
 EXISTING=$(docker exec ielts_postgres psql -U ielts_admin -d auth_db -tAc "SELECT COUNT(*) FROM users WHERE email = '$ADMIN_EMAIL';")
 
 if [ "$EXISTING" -gt "0" ]; then
-    echo -e "${GREEN}✓ Admin user already exists: $ADMIN_EMAIL${NC}"
+    echo -e "${GREEN}âœ“ Admin user already exists: $ADMIN_EMAIL${NC}"
 else
     echo -e "${BLUE}Creating new admin user...${NC}"
     
@@ -34,7 +34,7 @@ else
     USER_ID=$(docker exec ielts_postgres psql -U ielts_admin -d auth_db -tAc "SELECT id FROM users WHERE email = '$ADMIN_EMAIL';")
     
     if [ -z "$USER_ID" ]; then
-        echo -e "${RED}✗ Failed to create user${NC}"
+        echo -e "${RED}âœ— Failed to create user${NC}"
         exit 1
     fi
     
@@ -42,7 +42,7 @@ else
     ADMIN_ROLE_ID=$(docker exec ielts_postgres psql -U ielts_admin -d auth_db -tAc "SELECT id FROM roles WHERE name = 'admin';")
     
     if [ -z "$ADMIN_ROLE_ID" ]; then
-        echo -e "${RED}✗ Admin role not found${NC}"
+        echo -e "${RED}âœ— Admin role not found${NC}"
         exit 1
     fi
     
@@ -53,7 +53,7 @@ else
         ON CONFLICT (user_id, role_id) DO NOTHING;
     " > /dev/null
     
-    echo -e "${GREEN}✓ Admin user created successfully${NC}"
+    echo -e "${GREEN}âœ“ Admin user created successfully${NC}"
 fi
 
 echo -e "\n${BLUE}=== Admin Credentials ===${NC}"
@@ -74,12 +74,12 @@ ADMIN_TOKEN=$(echo $ADMIN_RESPONSE | jq -r '.data.access_token')
 ADMIN_USER_ID=$(echo $ADMIN_RESPONSE | jq -r '.data.user_id')
 
 if [ "$ADMIN_TOKEN" == "null" ] || [ -z "$ADMIN_TOKEN" ]; then
-    echo -e "${RED}✗ Failed to login${NC}"
+    echo -e "${RED}âœ— Failed to login${NC}"
     echo "Response: $ADMIN_RESPONSE"
     exit 1
 fi
 
-echo -e "${GREEN}✓ Login successful${NC}"
+echo -e "${GREEN}âœ“ Login successful${NC}"
 echo "User ID: $ADMIN_USER_ID"
 echo "Token: ${ADMIN_TOKEN:0:50}..."
 echo ""
@@ -101,5 +101,5 @@ echo "export STUDENT_EMAIL='student1@test.com'" >> /tmp/admin_creds.sh
 echo "export STUDENT_TOKEN='$STUDENT_TOKEN'" >> /tmp/admin_creds.sh
 echo "export STUDENT_USER_ID='$STUDENT_USER_ID'" >> /tmp/admin_creds.sh
 
-echo -e "${GREEN}✓ Credentials saved to /tmp/admin_creds.sh${NC}"
+echo -e "${GREEN}âœ“ Credentials saved to /tmp/admin_creds.sh${NC}"
 echo -e "${BLUE}Run: source /tmp/admin_creds.sh to use these credentials${NC}\n"

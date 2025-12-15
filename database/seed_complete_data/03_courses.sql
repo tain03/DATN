@@ -1,4 +1,4 @@
--- Real YouTube video IDs (120 videos, can be reused)
+﻿-- Real YouTube video IDs (120 videos, can be reused)
 -- Format: https://www.youtube.com/watch?v=[VIDEO_ID]
 -- These videos are real and available
 -- Video IDs: 120 unique YouTube video IDs randomly distributed across lessons
@@ -1486,7 +1486,7 @@ SET
             FROM lessons l
             WHERE l.course_id = c.id AND l.duration_minutes IS NOT NULL
         ) * 
-        -- Add variation: ±5% based on course hash to create diversity
+        -- Add variation: Â±5% based on course hash to create diversity
         (1.0 + (ABS(hashtext(c.id::text)::bigint % 11) - 5) * 0.01),
         2
     ),
@@ -1503,7 +1503,7 @@ SET
 
 -- Summary
 SELECT 
-    '✅ Courses, Modules, and Lessons Created' as status,
+    'âœ… Courses, Modules, and Lessons Created' as status,
     (SELECT COUNT(*) FROM courses) as total_courses,
     (SELECT COUNT(*) FROM modules) as total_modules,
     (SELECT COUNT(*) FROM lessons) as total_lessons,
